@@ -2,8 +2,19 @@
 <html lang="zh-CN" data-theme="light">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>顾客生日簿</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>顾客记录</title>
+
+<!-- PWA: 让网页可以像 App 一样添加到手机主屏幕 -->
+<link rel="manifest" href="manifest.json" />
+<meta name="theme-color" content="#C4635A" />
+<link rel="icon" href="icon-192.png" />
+<link rel="apple-touch-icon" href="apple-touch-icon.png" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="生日簿" />
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -18,6 +29,7 @@
     --input-border: #E5DACB;
     --accent: #C4635A;
     --accent-text: #FBF7F0;
+    --warn: #C97A2B;
   }
   html[data-theme="dark"] {
     --bg: #211D1A;
@@ -43,7 +55,7 @@
   .wrap {
     max-width: 680px;
     margin: 0 auto;
-    padding: 48px 24px;
+    padding: calc(48px + env(safe-area-inset-top)) 24px calc(24px + env(safe-area-inset-bottom));
   }
   .header {
     display: flex;
@@ -232,11 +244,16 @@
     border: 1px solid var(--card-border);
     background: var(--card);
     transition: border-color 0.15s;
+    cursor: pointer;
   }
   .row:hover { border-color: color-mix(in srgb, var(--accent) 30%, var(--card-border)); }
   .row.today {
     background: color-mix(in srgb, var(--accent) 12%, var(--bg));
     border-color: color-mix(in srgb, var(--accent) 40%, var(--card-border));
+  }
+  .row.inactive {
+    background: color-mix(in srgb, var(--warn) 8%, var(--bg));
+    border-color: color-mix(in srgb, var(--warn) 30%, var(--card-border));
   }
   .row-left {
     display: flex;
@@ -262,11 +279,12 @@
     background: var(--accent);
     color: var(--accent-text);
   }
-  .info { min-width: 0; }
+  .info { min-width: 0; flex: 1; }
   .cust-name-row {
     display: flex;
     align-items: center;
     gap: 6px;
+    flex-wrap: wrap;
   }
   .cust-name {
     font-weight: 600;
@@ -281,6 +299,18 @@
     font-size: 12px;
     flex-shrink: 0;
   }
+  .category-badge {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 999px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    flex-shrink: 0;
+  }
+  .category-badge.new { background: color-mix(in srgb, #5B5FC7 18%, var(--card)); color: #5B5FC7; }
+  .category-badge.regular { background: color-mix(in srgb, var(--muted) 16%, var(--card)); color: var(--muted); }
+  .category-badge.vip { background: color-mix(in srgb, #C08A2E 22%, var(--card)); color: #C08A2E; }
   .cust-meta {
     font-size: 12px;
     color: var(--muted);
@@ -290,6 +320,11 @@
   .cust-meta.product-line {
     color: var(--text);
     opacity: 0.75;
+  }
+  .cust-meta.warn-line {
+    color: var(--warn);
+    font-weight: 600;
+    opacity: 1;
   }
   .row-right {
     display: flex;
@@ -445,82 +480,25 @@
   }
   .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
-  .purchases-section {
-    margin-top: 16px;
-    padding-top: 14px;
-    border-top: 1px solid var(--card-border);
+  .category-toggle {
+    display: flex;
+    gap: 6px;
   }
-  .purchase-row {
-    position: relative;
-    background: var(--input-bg);
+  .category-btn {
+    flex: 1;
+    padding: 8px 0;
+    border-radius: 10px;
     border: 1px solid var(--input-border);
-    border-radius: 14px;
-    padding: 14px;
-    margin-bottom: 10px;
-  }
-  .purchase-remove {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    background: none;
-    border: none;
-    color: var(--muted-light);
-    cursor: pointer;
-    padding: 4px;
-    display: flex;
-    border-radius: 6px;
-  }
-  .purchase-remove:hover { color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
-  .purchase-row textarea.product-textarea {
-    min-height: 76px;
-  }
-  .amount-wrap {
-    display: flex;
-    align-items: stretch;
-    border: 1px solid var(--input-border);
-    border-radius: 12px;
     background: var(--input-bg);
-    overflow: hidden;
-  }
-  .amount-wrap .rm-prefix {
-    display: flex;
-    align-items: center;
-    padding: 0 4px 0 14px;
-    font-size: 14px;
+    color: var(--muted);
+    font-size: 12px;
     font-weight: 600;
-    color: var(--muted);
-    white-space: nowrap;
-    background: color-mix(in srgb, var(--accent) 8%, var(--input-bg));
-  }
-  .amount-wrap input {
-    border: none !important;
-    background: transparent !important;
-    box-shadow: none !important;
-    padding-left: 6px;
-  }
-  .add-purchase-btn {
-    width: 100%;
-    padding: 10px 0;
-    border-radius: 12px;
-    border: 1px dashed var(--input-border);
-    background: none;
-    color: var(--muted);
-    font-size: 13px;
     font-family: inherit;
     cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    margin-top: 4px;
   }
-  .add-purchase-btn:hover { color: var(--accent); border-color: var(--accent); }
-  .no-purchases-hint {
-    font-size: 12px;
-    color: var(--muted-light);
-    text-align: center;
-    padding: 10px 0;
-  }
+  .category-btn.active.new { background: color-mix(in srgb, #5B5FC7 18%, var(--input-bg)); color: #5B5FC7; border-color: #5B5FC7; }
+  .category-btn.active.regular { background: color-mix(in srgb, var(--muted) 20%, var(--input-bg)); color: var(--text); border-color: var(--muted); }
+  .category-btn.active.vip { background: color-mix(in srgb, #C08A2E 20%, var(--input-bg)); color: #C08A2E; border-color: #C08A2E; }
 
   .error-msg {
     font-size: 12px;
@@ -620,6 +598,193 @@
   }
   .modal-close:hover { color: var(--muted); }
 
+  /* purchases section (edit modal) */
+  .purchases-section {
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid var(--card-border);
+  }
+  .purchase-row {
+    position: relative;
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: 14px;
+    padding: 14px;
+    margin-bottom: 10px;
+  }
+  .purchase-remove {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: none;
+    border: none;
+    color: var(--muted-light);
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    border-radius: 6px;
+  }
+  .purchase-remove:hover { color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+  .purchase-row textarea.product-textarea {
+    min-height: 70px;
+  }
+  .purchase-row textarea.purchase-note-textarea {
+    min-height: 50px;
+  }
+  .amount-wrap {
+    display: flex;
+    align-items: stretch;
+    border: 1px solid var(--input-border);
+    border-radius: 12px;
+    background: var(--input-bg);
+    overflow: hidden;
+  }
+  .amount-wrap .rm-prefix {
+    display: flex;
+    align-items: center;
+    padding: 0 4px 0 14px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--muted);
+    white-space: nowrap;
+    background: color-mix(in srgb, var(--accent) 8%, var(--input-bg));
+  }
+  .amount-wrap input {
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    padding-left: 6px;
+  }
+  .add-purchase-btn {
+    width: 100%;
+    padding: 10px 0;
+    border-radius: 12px;
+    border: 1px dashed var(--input-border);
+    background: none;
+    color: var(--muted);
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 4px;
+  }
+  .add-purchase-btn:hover { color: var(--accent); border-color: var(--accent); }
+  .no-purchases-hint {
+    font-size: 12px;
+    color: var(--muted-light);
+    text-align: center;
+    padding: 10px 0;
+  }
+
+  /* customer detail (view) modal */
+  .detail-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .detail-avatar {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--accent) 14%, var(--card));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+  .detail-name-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .detail-name { font-size: 17px; font-weight: 600; margin: 0; font-family: 'Fraunces', serif; }
+  .detail-info-line {
+    font-size: 13px;
+    color: var(--muted);
+    margin: 2px 0 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .detail-warn-banner {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--warn);
+    background: color-mix(in srgb, var(--warn) 12%, var(--card));
+    border-radius: 10px;
+    padding: 8px 12px;
+    margin: 12px 0;
+  }
+  .detail-notes-box {
+    font-size: 13px;
+    color: var(--text);
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: 12px;
+    padding: 10px 12px;
+    margin: 6px 0 0;
+    white-space: pre-wrap;
+    line-height: 1.5;
+  }
+  .detail-section-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin: 18px 0 8px;
+  }
+  .history-item {
+    border-left: 2px solid var(--card-border);
+    padding: 2px 0 14px 14px;
+    margin-left: 4px;
+    position: relative;
+  }
+  .history-item::before {
+    content: "";
+    position: absolute;
+    left: -5px;
+    top: 4px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+  .history-item:last-child { padding-bottom: 0; }
+  .history-date {
+    font-size: 11px;
+    color: var(--muted-light);
+    font-weight: 600;
+  }
+  .history-product {
+    font-size: 14px;
+    color: var(--text);
+    margin: 2px 0 0;
+    line-height: 1.5;
+    white-space: pre-wrap;
+  }
+  .history-amount {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--accent);
+    margin-top: 2px;
+  }
+  .history-note {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 4px;
+    background: var(--input-bg);
+    border-radius: 8px;
+    padding: 6px 10px;
+    white-space: pre-wrap;
+  }
+
   @media (max-width: 480px) {
     .two-col { grid-template-columns: 1fr; }
   }
@@ -630,9 +795,9 @@
     <div class="header">
       <div class="header-left">
         <div class="icon-badge">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-text)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8"/><path d="M4 16s.5-1 2-1 2.5 2 4 2 2.5-2 4-2 2.5 2 4 2 2-1 2-1"/><path d="M2 21h20"/><path d="M7 8v3"/><path d="M12 8v3"/><path d="M17 8v3"/><path d="M7 4h.01"/><path d="M12 4h.01"/><path d="M17 4h.01"/></svg>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-text)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
         </div>
-        <h1 class="font-display" id="title">顾客生日簿</h1>
+        <h1 class="font-display" id="title">顾客记录</h1>
       </div>
       <div class="settings-wrap">
         <button class="settings-btn" id="settingsBtn" aria-label="设置">
@@ -669,7 +834,7 @@
         </div>
       </div>
     </div>
-    <p class="subtitle" id="subtitle">记录每一位顾客的生日,不错过任何一个惊喜的理由</p>
+    <p class="subtitle" id="subtitle">记录顾客资料、购买记录与生日,轻松跟进每一位顾客</p>
 
     <button class="add-btn" id="openAddBtn" type="button">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
@@ -683,6 +848,38 @@
     <p class="footer-count" id="footerCount" style="display:none;"></p>
   </div>
 
+  <!-- Customer detail (view) modal -->
+  <div class="modal-overlay" id="detailOverlay">
+    <div class="modal-box">
+      <div class="detail-header">
+        <div class="detail-avatar" id="detailAvatar">👤</div>
+        <div>
+          <div class="detail-name-row">
+            <p class="detail-name" id="detailName"></p>
+            <span class="category-badge" id="detailCategoryBadge"></span>
+          </div>
+          <p class="detail-info-line" id="detailBirthdayLine"></p>
+          <p class="detail-info-line" id="detailPhoneLine" style="display:none;"></p>
+        </div>
+      </div>
+
+      <p class="detail-warn-banner" id="detailWarnBanner" style="display:none;"></p>
+
+      <div id="detailNotesWrap" style="display:none;">
+        <p class="detail-section-title" id="detailNotesTitle">备注</p>
+        <p class="detail-notes-box" id="detailNotesBox"></p>
+      </div>
+
+      <p class="detail-section-title" id="detailHistoryTitle">购买记录</p>
+      <div id="detailHistoryList"></div>
+
+      <div class="modal-actions">
+        <button id="detailCloseBtn" type="button"><span id="detailCloseLabel">关闭</span></button>
+        <button class="primary-btn" id="detailEditBtn" type="button"><span id="detailEditLabel">编辑资料</span></button>
+      </div>
+    </div>
+  </div>
+
   <!-- Add / Edit customer modal -->
   <div class="modal-overlay" id="customerOverlay">
     <div class="modal-box">
@@ -691,12 +888,13 @@
 
       <div class="emoji-row">
         <div class="emoji-wrap">
-          <button class="emoji-btn" id="emojiBtn" type="button">🎂</button>
+          <button class="emoji-btn" id="emojiBtn" type="button">👤</button>
           <div class="emoji-panel" id="emojiPanel">
             <div class="emoji-grid" id="emojiGrid">
-              <button class="emoji-option active" data-emoji="🎂">🎂</button>
+              <button class="emoji-option active" data-emoji="👤">👤</button>
+              <button class="emoji-option" data-emoji="🎂">🎂</button>
               <button class="emoji-option" data-emoji="🎉">🎉</button>
-              <button class="emoji-option" data-emoji="🎈">🎈</button>
+              <button class="emoji-option" data-emoji="🛍️">🛍️</button>
               <button class="emoji-option" data-emoji="🥳">🥳</button>
               <button class="emoji-option" data-emoji="🎁">🎁</button>
               <button class="emoji-option" data-emoji="🌟">🌟</button>
@@ -704,7 +902,6 @@
               <button class="emoji-option" data-emoji="🌸">🌸</button>
               <button class="emoji-option" data-emoji="😊">😊</button>
               <button class="emoji-option" data-emoji="👑">👑</button>
-              <button class="emoji-option" data-emoji="🍀">🍀</button>
               <button class="emoji-option" data-emoji="⭐">⭐</button>
             </div>
             <div class="emoji-custom">
@@ -715,6 +912,13 @@
         <div style="flex:1;">
           <input id="nameInput" type="text" />
         </div>
+      </div>
+
+      <label class="field-label" id="categoryFieldLabel">顾客分类</label>
+      <div class="category-toggle" id="categoryToggle">
+        <button class="category-btn" data-category="new" type="button"><span id="categoryNewLabel">新顾客</span></button>
+        <button class="category-btn" data-category="regular" type="button"><span id="categoryRegularLabel">一般</span></button>
+        <button class="category-btn" data-category="vip" type="button"><span id="categoryVipLabel">VIP</span></button>
       </div>
 
       <label class="field-label" id="phoneFieldLabel">电话号码</label>
@@ -775,11 +979,12 @@
 <script>
 const API = "/api/customers";
 let customers = [];
+const INACTIVE_DAYS_THRESHOLD = 60; // 约 2 个月
 
 const I18N = {
   zh: {
-    title: "顾客生日簿",
-    subtitle: "记录每一位顾客的生日,不错过任何一个惊喜的理由",
+    title: "顾客记录",
+    subtitle: "记录顾客资料、购买记录与生日,轻松跟进每一位顾客",
     addBtnLabel: "添加顾客",
     namePlaceholder: "顾客姓名",
     phonePlaceholder: "例如 +60123456789",
@@ -816,16 +1021,23 @@ const I18N = {
     noPhoneHint: "该顾客未填写电话号码,无法通过 WhatsApp 发送",
     phoneFieldLabel: "电话号码(选填)",
     birthdayFieldLabel: "生日",
+    categoryFieldLabel: "顾客分类",
+    categoryNew: "新顾客",
+    categoryRegular: "一般",
+    categoryVip: "VIP",
     purchasesFieldLabel: "购买记录",
     purchaseDateLabel: "购买日期",
     purchaseProductLabel: "购买产品",
     purchaseAmountLabel: "金额",
+    purchaseNoteLabel: "备注(选填)",
     productPlaceholder: "例如 Nutrilite 蛋白粉,可以写详细一点",
     amountPlaceholder: "150",
+    purchaseNotePlaceholder: "记录这次购买的情况…",
     addPurchaseLabel: "添加购买记录",
     removePurchaseLabel: "删除这笔记录",
     noPurchasesHint: "还没有购买记录",
     purchasesSummary: (count, total) => `🛍 ${count} 笔购买 · 共 RM${total}`,
+    inactiveWarning: "⚠️ 已超过 2 个月未购买",
     notesFieldLabel: "备注(选填)",
     cancelLabel: "取消",
     saveLabel: "保存",
@@ -834,6 +1046,11 @@ const I18N = {
     modalEditTitle: "编辑顾客",
     modalSubtitle: "记录顾客的资料,之后随时可以修改",
     deleteConfirm: "确定要删除这位顾客吗?此操作无法撤销。",
+    notesLabel: "备注",
+    phoneLabel: "电话",
+    detailCloseLabel: "关闭",
+    detailEditLabel: "编辑资料",
+    noHistoryHint: "暂无购买记录",
     wishes: [
       (name) => `祝${name}生日快乐,愿你的每一天都充满阳光与好运!🎂`,
       (name) => `亲爱的${name},生日快乐!感谢一直以来的支持,祝你新的一岁心想事成、笑口常开!🎉`,
@@ -844,8 +1061,8 @@ const I18N = {
     ],
   },
   en: {
-    title: "Customer Birthdays",
-    subtitle: "Keep track of every customer's birthday, and never miss a reason to celebrate",
+    title: "Customer Records",
+    subtitle: "Track customer details, purchases, and birthdays in one place",
     addBtnLabel: "Add Customer",
     namePlaceholder: "Customer name",
     phonePlaceholder: "e.g. +60123456789",
@@ -885,16 +1102,23 @@ const I18N = {
     noPhoneHint: "No phone number on file for this customer — WhatsApp isn't available",
     phoneFieldLabel: "Phone number (optional)",
     birthdayFieldLabel: "Birthday",
+    categoryFieldLabel: "Category",
+    categoryNew: "New",
+    categoryRegular: "Regular",
+    categoryVip: "VIP",
     purchasesFieldLabel: "Purchase records",
     purchaseDateLabel: "Purchase date",
     purchaseProductLabel: "Product",
     purchaseAmountLabel: "Amount",
+    purchaseNoteLabel: "Note (optional)",
     productPlaceholder: "e.g. Nutrilite Protein — feel free to add detail",
     amountPlaceholder: "150",
+    purchaseNotePlaceholder: "Any notes about this purchase…",
     addPurchaseLabel: "Add purchase record",
     removePurchaseLabel: "Remove this record",
     noPurchasesHint: "No purchases recorded yet",
     purchasesSummary: (count, total) => `🛍 ${count} purchase${count === 1 ? "" : "s"} · RM${total} total`,
+    inactiveWarning: "⚠️ No purchase in over 2 months",
     notesFieldLabel: "Notes (optional)",
     cancelLabel: "Cancel",
     saveLabel: "Save",
@@ -903,6 +1127,11 @@ const I18N = {
     modalEditTitle: "Edit Customer",
     modalSubtitle: "Save this customer's details — you can edit them anytime",
     deleteConfirm: "Delete this customer? This cannot be undone.",
+    notesLabel: "Notes",
+    phoneLabel: "Phone",
+    detailCloseLabel: "Close",
+    detailEditLabel: "Edit details",
+    noHistoryHint: "No purchases yet",
     wishes: [
       (name) => `Happy Birthday, ${name}! Wishing you a day filled with joy and a year full of good things. 🎂`,
       (name) => `Dear ${name}, happy birthday! Thank you for your support — here's to a wonderful new year ahead. 🎉`,
@@ -941,6 +1170,13 @@ function applyPrefs() {
 
 function t() { return I18N[prefs.lang]; }
 
+function categoryLabel(cat) {
+  const s = t();
+  if (cat === "vip") return s.categoryVip;
+  if (cat === "regular") return s.categoryRegular;
+  return s.categoryNew;
+}
+
 function applyLanguage() {
   const s = t();
   document.title = s.title;
@@ -957,6 +1193,10 @@ function applyLanguage() {
   document.getElementById("customEmojiInput").placeholder = s.emojiPlaceholder;
   document.getElementById("phoneFieldLabel").textContent = s.phoneFieldLabel;
   document.getElementById("birthdayFieldLabel").textContent = s.birthdayFieldLabel;
+  document.getElementById("categoryFieldLabel").textContent = s.categoryFieldLabel;
+  document.getElementById("categoryNewLabel").textContent = s.categoryNew;
+  document.getElementById("categoryRegularLabel").textContent = s.categoryRegular;
+  document.getElementById("categoryVipLabel").textContent = s.categoryVip;
   document.getElementById("purchasesFieldLabel").textContent = s.purchasesFieldLabel;
   document.getElementById("addPurchaseLabel").textContent = s.addPurchaseLabel;
   document.getElementById("notesFieldLabel").textContent = s.notesFieldLabel;
@@ -969,6 +1209,10 @@ function applyLanguage() {
   document.getElementById("copyLabel").textContent = s.copy;
   document.getElementById("wishCloseBtn").textContent = s.close;
   document.getElementById("whatsappLabel").textContent = s.whatsappSend;
+  document.getElementById("detailCloseLabel").textContent = s.detailCloseLabel;
+  document.getElementById("detailEditLabel").textContent = s.detailEditLabel;
+  document.getElementById("detailNotesTitle").textContent = s.notesLabel;
+  document.getElementById("detailHistoryTitle").textContent = s.purchasesFieldLabel;
   document.documentElement.lang = prefs.lang === "zh" ? "zh-CN" : "en";
   renderPurchaseRows();
   render();
@@ -989,6 +1233,23 @@ function ageTurning(dateStr) {
   let next = new Date(today.getFullYear(), m - 1, d);
   if (next < today) next.setFullYear(today.getFullYear() + 1);
   return next.getFullYear() - y;
+}
+
+function lastPurchaseDate(purchases) {
+  const dates = (purchases || [])
+    .map(p => p.date)
+    .filter(d => d && /^\d{4}-\d{2}-\d{2}$/.test(d))
+    .map(d => new Date(d));
+  if (dates.length === 0) return null;
+  return new Date(Math.max(...dates.map(d => d.getTime())));
+}
+
+function daysSince(date) {
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const d = new Date(date);
+  d.setHours(0,0,0,0);
+  return Math.round((today - d) / 86400000);
 }
 
 const contentEl = document.getElementById("content");
@@ -1024,6 +1285,8 @@ function render() {
     const isToday = c.days === 0;
     const [, mm, dd] = c.date.split("-").map(Number);
     const purchases = Array.isArray(c.purchases) ? c.purchases : [];
+    const category = c.category || "new";
+
     let purchaseLine = "";
     if (purchases.length > 0) {
       const total = purchases.reduce((sum, p) => {
@@ -1033,31 +1296,42 @@ function render() {
       const totalStr = Number.isInteger(total) ? String(total) : total.toFixed(2);
       purchaseLine = `<p class="cust-meta product-line">${s.purchasesSummary(purchases.length, totalStr)}</p>`;
     }
+
+    let isInactive = false;
+    const lastDate = lastPurchaseDate(purchases);
+    if (lastDate && daysSince(lastDate) >= INACTIVE_DAYS_THRESHOLD) {
+      isInactive = true;
+    }
+    const warnLine = isInactive ? `<p class="cust-meta warn-line">${s.inactiveWarning}</p>` : "";
+
     const whatsappIcon = c.phone
-      ? `<button class="icon-btn whatsapp-icon" onclick="openWhatsAppChat('${c.id}')" aria-label="${s.whatsappChatLabel}">
+      ? `<button class="icon-btn whatsapp-icon" onclick="event.stopPropagation(); openWhatsAppChat('${c.id}')" aria-label="${s.whatsappChatLabel}">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38a9.9 9.9 0 0 0 4.74 1.21h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.86 9.86 0 0 0 12.04 2zm5.8 14.15c-.24.68-1.4 1.3-1.93 1.38-.5.08-1.11.11-1.79-.11a13 13 0 0 1-1.86-.7c-2.83-1.22-4.67-4.08-4.81-4.27-.14-.19-1.15-1.53-1.15-2.92 0-1.39.73-2.07.98-2.35.26-.28.56-.35.75-.35.19 0 .37 0 .53.01.17.01.4-.06.62.48.24.58.8 2 .87 2.14.07.14.12.31.02.5-.09.19-.14.31-.28.47-.14.16-.29.36-.42.48-.14.14-.28.29-.12.57.16.28.71 1.18 1.53 1.91 1.05.94 1.94 1.24 2.22 1.38.28.14.44.12.6-.07.16-.19.68-.79.87-1.06.19-.28.37-.23.62-.14.26.09 1.63.77 1.91.91.28.14.47.21.53.33.07.12.07.68-.17 1.36z"/></svg>
         </button>`
       : "";
+
     return `
-      <div class="row ${isToday ? "today" : ""}">
+      <div class="row ${isToday ? "today" : ""} ${isInactive ? "inactive" : ""}" onclick="openDetailModal('${c.id}')">
         <div class="row-left">
-          <div class="avatar">${c.emoji || "🎂"}</div>
+          <div class="avatar">${c.emoji || "👤"}</div>
           <div class="info">
             <div class="cust-name-row">
               <p class="cust-name">${escapeHtml(c.name)}</p>
-              ${c.notes ? `<span class="notes-dot" title="${escapeHtml(c.notes)}">📝</span>` : ""}
+              <span class="category-badge ${category}">${categoryLabel(category)}</span>
+              ${c.notes ? `<span class="notes-dot" title="${escapeAttr(c.notes)}">📝</span>` : ""}
             </div>
             <p class="cust-meta">${s.monthDay(mm, dd)} · ${s.willTurn(ageTurning(c.date))}${c.phone ? " · " + escapeHtml(c.phone) : ""}</p>
             ${purchaseLine}
+            ${warnLine}
           </div>
         </div>
         <div class="row-right">
           <span class="days-left">${isToday ? s.todayBirthday : s.daysAfter(c.days)}</span>
           ${whatsappIcon}
-          <button class="icon-btn" onclick="openWishModal('${c.id}')" aria-label="${s.sendWishLabel}">
+          <button class="icon-btn" onclick="event.stopPropagation(); openWishModal('${c.id}')" aria-label="${s.sendWishLabel}">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
           </button>
-          <button class="icon-btn" onclick="openEditModal('${c.id}')" aria-label="${s.editLabel}">
+          <button class="icon-btn" onclick="event.stopPropagation(); openEditModal('${c.id}')" aria-label="${s.editLabel}">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
           </button>
         </div>
@@ -1086,6 +1360,89 @@ function openWhatsAppChat(id) {
   window.open(`https://wa.me/${digits}`, "_blank");
 }
 
+/* ---------- Customer detail (view) modal ---------- */
+const detailOverlay = document.getElementById("detailOverlay");
+let detailCustomerId = null;
+
+function openDetailModal(id) {
+  const c = customers.find(x => x.id === id);
+  if (!c) return;
+  const s = t();
+  detailCustomerId = id;
+
+  document.getElementById("detailAvatar").textContent = c.emoji || "👤";
+  document.getElementById("detailName").textContent = c.name;
+  const badge = document.getElementById("detailCategoryBadge");
+  const category = c.category || "new";
+  badge.textContent = categoryLabel(category);
+  badge.className = `category-badge ${category}`;
+
+  const [, mm, dd] = c.date.split("-").map(Number);
+  document.getElementById("detailBirthdayLine").textContent = `🎂 ${s.monthDay(mm, dd)} · ${s.willTurn(ageTurning(c.date))}`;
+
+  const phoneLine = document.getElementById("detailPhoneLine");
+  if (c.phone) {
+    phoneLine.style.display = "flex";
+    phoneLine.textContent = `📞 ${c.phone}`;
+  } else {
+    phoneLine.style.display = "none";
+  }
+
+  const purchases = Array.isArray(c.purchases) ? c.purchases : [];
+  const warnBanner = document.getElementById("detailWarnBanner");
+  const lastDate = lastPurchaseDate(purchases);
+  if (lastDate && daysSince(lastDate) >= INACTIVE_DAYS_THRESHOLD) {
+    warnBanner.style.display = "block";
+    warnBanner.textContent = s.inactiveWarning;
+  } else {
+    warnBanner.style.display = "none";
+  }
+
+  const notesWrap = document.getElementById("detailNotesWrap");
+  if (c.notes) {
+    notesWrap.style.display = "block";
+    document.getElementById("detailNotesBox").textContent = c.notes;
+  } else {
+    notesWrap.style.display = "none";
+  }
+
+  const historyList = document.getElementById("detailHistoryList");
+  if (purchases.length === 0) {
+    historyList.innerHTML = `<p class="no-purchases-hint">${s.noHistoryHint}</p>`;
+  } else {
+    const sortedPurchases = [...purchases].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+    historyList.innerHTML = sortedPurchases.map(p => {
+      const dateLabel = p.date ? (() => {
+        const [, m, d] = p.date.split("-").map(Number);
+        return s.monthDay(m, d);
+      })() : "";
+      return `
+        <div class="history-item">
+          ${dateLabel ? `<p class="history-date">${dateLabel}</p>` : ""}
+          ${p.product ? `<p class="history-product">${escapeHtml(p.product)}</p>` : ""}
+          ${p.amount ? `<p class="history-amount">RM${escapeHtml(p.amount)}</p>` : ""}
+          ${p.note ? `<p class="history-note">${escapeHtml(p.note)}</p>` : ""}
+        </div>`;
+    }).join("");
+  }
+
+  detailOverlay.classList.add("open");
+}
+
+function closeDetailModal() {
+  detailOverlay.classList.remove("open");
+}
+
+document.getElementById("detailCloseBtn").addEventListener("click", closeDetailModal);
+detailOverlay.addEventListener("click", (e) => {
+  if (e.target === detailOverlay) closeDetailModal();
+});
+document.getElementById("detailEditBtn").addEventListener("click", () => {
+  if (!detailCustomerId) return;
+  closeDetailModal();
+  openEditModal(detailCustomerId);
+});
+
 /* ---------- Add / Edit customer modal ---------- */
 const customerOverlay = document.getElementById("customerOverlay");
 const customerModalTitle = document.getElementById("customerModalTitle");
@@ -1097,19 +1454,34 @@ const errorMsg = document.getElementById("errorMsg");
 const deleteCustomerBtn = document.getElementById("deleteCustomerBtn");
 const purchasesList = document.getElementById("purchasesList");
 
-let selectedEmoji = "🎂";
+let selectedEmoji = "👤";
+let selectedCategory = "new";
 let editingId = null;
-let purchaseRows = []; // { key, date, product, amount }
+let purchaseRows = []; // { key, date, product, amount, note }
 let purchaseKeyCounter = 0;
+
+function setCategory(cat) {
+  selectedCategory = cat;
+  document.querySelectorAll(".category-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.category === cat);
+    btn.classList.toggle(btn.dataset.category, btn.dataset.category === cat);
+  });
+}
+
+document.querySelectorAll(".category-btn").forEach(btn => {
+  btn.addEventListener("click", () => setCategory(btn.dataset.category));
+});
 
 function syncPurchaseRowsFromDOM() {
   purchaseRows.forEach(row => {
     const dateEl = document.getElementById(`p-date-${row.key}`);
     const productEl = document.getElementById(`p-product-${row.key}`);
     const amountEl = document.getElementById(`p-amount-${row.key}`);
+    const noteEl = document.getElementById(`p-note-${row.key}`);
     if (dateEl) row.date = dateEl.value;
     if (productEl) row.product = productEl.value;
     if (amountEl) row.amount = amountEl.value;
+    if (noteEl) row.note = noteEl.value;
   });
 }
 
@@ -1141,6 +1513,8 @@ function renderPurchaseRows() {
       </div>
       <label class="field-label">${s.purchaseProductLabel}</label>
       <textarea class="product-textarea" id="p-product-${row.key}" placeholder="${escapeAttr(s.productPlaceholder)}">${escapeHtml(row.product)}</textarea>
+      <label class="field-label">${s.purchaseNoteLabel}</label>
+      <textarea class="purchase-note-textarea" id="p-note-${row.key}" placeholder="${escapeAttr(s.purchaseNotePlaceholder)}">${escapeHtml(row.note)}</textarea>
     </div>
   `).join("");
 }
@@ -1154,6 +1528,7 @@ function addPurchaseRow(initial) {
     date: initial.date || "",
     product: initial.product || "",
     amount: initial.amount || "",
+    note: initial.note || "",
   });
   renderPurchaseRows();
 }
@@ -1173,10 +1548,11 @@ function resetCustomerForm() {
   notesInput.value = "";
   purchaseRows = [];
   renderPurchaseRows();
-  selectedEmoji = "🎂";
+  selectedEmoji = "👤";
   document.getElementById("emojiBtn").textContent = selectedEmoji;
   document.getElementById("customEmojiInput").value = "";
   document.querySelectorAll(".emoji-option").forEach(b => b.classList.toggle("active", b.dataset.emoji === selectedEmoji));
+  setCategory("new");
   errorMsg.style.display = "none";
 }
 
@@ -1201,13 +1577,14 @@ function openEditModal(id) {
   notesInput.value = c.notes || "";
   purchaseRows = (Array.isArray(c.purchases) ? c.purchases : []).map(p => {
     purchaseKeyCounter += 1;
-    return { key: purchaseKeyCounter, date: p.date || "", product: p.product || "", amount: p.amount || "" };
+    return { key: purchaseKeyCounter, date: p.date || "", product: p.product || "", amount: p.amount || "", note: p.note || "" };
   });
   renderPurchaseRows();
-  selectedEmoji = c.emoji || "🎂";
+  selectedEmoji = c.emoji || "👤";
   document.getElementById("emojiBtn").textContent = selectedEmoji;
   document.getElementById("customEmojiInput").value = "";
   document.querySelectorAll(".emoji-option").forEach(b => b.classList.toggle("active", b.dataset.emoji === selectedEmoji));
+  setCategory(c.category || "new");
   customerModalTitle.textContent = s.modalEditTitle;
   deleteCustomerBtn.style.display = "block";
   customerOverlay.classList.add("open");
@@ -1243,10 +1620,10 @@ async function saveCustomer() {
 
   syncPurchaseRowsFromDOM();
   const purchases = purchaseRows
-    .map(r => ({ date: r.date.trim(), product: r.product.trim(), amount: r.amount.trim() }))
-    .filter(p => p.date || p.product || p.amount);
+    .map(r => ({ date: r.date.trim(), product: r.product.trim(), amount: r.amount.trim(), note: r.note.trim() }))
+    .filter(p => p.date || p.product || p.amount || p.note);
 
-  const payload = { name, date, phone, emoji: selectedEmoji, purchases, notes };
+  const payload = { name, date, phone, emoji: selectedEmoji, purchases, notes, category: selectedCategory };
 
   try {
     let res, saved;
@@ -1444,6 +1821,7 @@ whatsappBtn.addEventListener("click", () => {
   window.open(url, "_blank");
 });
 
+setCategory("new");
 applyPrefs();
 loadCustomers();
 </script>
