@@ -33,7 +33,7 @@ app.get("/api/customers", (req, res) => {
 
 // 新增顾客
 app.post("/api/customers", (req, res) => {
-  const { name, date, emoji } = req.body;
+  const { name, date, emoji, phone } = req.body;
   if (!name || !name.trim()) {
     return res.status(400).json({ error: "姓名不能为空" });
   }
@@ -46,6 +46,7 @@ app.post("/api/customers", (req, res) => {
     name: name.trim(),
     date,
     emoji: (emoji && emoji.trim()) || "🎂",
+    phone: (phone && phone.trim()) || "",
   };
   customers.push(newCustomer);
   writeData(customers);
