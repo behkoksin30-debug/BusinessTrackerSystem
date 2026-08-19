@@ -424,60 +424,6 @@
   input::placeholder, textarea::placeholder { color: var(--muted-light); }
 
   .emoji-row { display: flex; align-items: center; gap: 10px; }
-  .emoji-wrap { position: relative; flex-shrink: 0; }
-  .emoji-btn {
-    width: 42px;
-    height: 42px;
-    border-radius: 12px;
-    border: 1px solid var(--input-border);
-    background: var(--input-bg);
-    font-size: 19px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .emoji-panel {
-    position: absolute;
-    left: 0;
-    top: 48px;
-    width: 220px;
-    background: var(--card);
-    border: 1px solid var(--card-border);
-    border-radius: 14px;
-    padding: 12px;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
-    z-index: 30;
-    display: none;
-  }
-  .emoji-panel.open { display: block; }
-  .emoji-grid {
-    display: grid;
-    grid-template-columns: repeat(6, 1fr);
-    gap: 6px;
-    margin-bottom: 10px;
-  }
-  .emoji-option {
-    font-size: 18px;
-    background: none;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    padding: 4px 0;
-  }
-  .emoji-option:hover, .emoji-option.active { background: var(--input-bg); }
-  .emoji-custom {
-    display: flex;
-    gap: 6px;
-    border-top: 1px solid var(--card-border);
-    padding-top: 10px;
-  }
-  .emoji-custom input {
-    flex: 1;
-    min-width: 0;
-    padding: 6px 10px;
-    font-size: 14px;
-  }
   .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
   .category-toggle {
@@ -499,6 +445,36 @@
   .category-btn.active.new { background: color-mix(in srgb, #5B5FC7 18%, var(--input-bg)); color: #5B5FC7; border-color: #5B5FC7; }
   .category-btn.active.regular { background: color-mix(in srgb, var(--muted) 20%, var(--input-bg)); color: var(--text); border-color: var(--muted); }
   .category-btn.active.vip { background: color-mix(in srgb, #C08A2E 20%, var(--input-bg)); color: #C08A2E; border-color: #C08A2E; }
+
+  .avatar-preview {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 19px;
+    flex-shrink: 0;
+  }
+  .gender-toggle {
+    display: flex;
+    gap: 6px;
+  }
+  .gender-btn {
+    flex: 1;
+    padding: 8px 0;
+    border-radius: 10px;
+    border: 1px solid var(--input-border);
+    background: var(--input-bg);
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+  }
+  .gender-btn.active { background: color-mix(in srgb, var(--accent) 18%, var(--input-bg)); color: var(--accent); border-color: var(--accent); }
 
   .error-msg {
     font-size: 12px;
@@ -887,31 +863,17 @@
       <p class="modal-subtitle" id="customerModalSubtitle">记录顾客的资料,之后随时可以修改</p>
 
       <div class="emoji-row">
-        <div class="emoji-wrap">
-          <button class="emoji-btn" id="emojiBtn" type="button">👤</button>
-          <div class="emoji-panel" id="emojiPanel">
-            <div class="emoji-grid" id="emojiGrid">
-              <button class="emoji-option active" data-emoji="👤">👤</button>
-              <button class="emoji-option" data-emoji="🎂">🎂</button>
-              <button class="emoji-option" data-emoji="🎉">🎉</button>
-              <button class="emoji-option" data-emoji="🛍️">🛍️</button>
-              <button class="emoji-option" data-emoji="🥳">🥳</button>
-              <button class="emoji-option" data-emoji="🎁">🎁</button>
-              <button class="emoji-option" data-emoji="🌟">🌟</button>
-              <button class="emoji-option" data-emoji="❤️">❤️</button>
-              <button class="emoji-option" data-emoji="🌸">🌸</button>
-              <button class="emoji-option" data-emoji="😊">😊</button>
-              <button class="emoji-option" data-emoji="👑">👑</button>
-              <button class="emoji-option" data-emoji="⭐">⭐</button>
-            </div>
-            <div class="emoji-custom">
-              <input id="customEmojiInput" type="text" maxlength="8" placeholder="输入任意 emoji" />
-            </div>
-          </div>
-        </div>
+        <div class="avatar-preview" id="avatarPreview">👤</div>
         <div style="flex:1;">
           <input id="nameInput" type="text" />
         </div>
+      </div>
+
+      <label class="field-label" id="genderFieldLabel">性别</label>
+      <div class="gender-toggle" id="genderToggle">
+        <button class="gender-btn" data-gender="male" type="button"><span id="genderMaleLabel">男</span></button>
+        <button class="gender-btn" data-gender="female" type="button"><span id="genderFemaleLabel">女</span></button>
+        <button class="gender-btn active" data-gender="" type="button"><span id="genderUnsetLabel">不设置</span></button>
       </div>
 
       <label class="field-label" id="categoryFieldLabel">顾客分类</label>
@@ -1009,7 +971,11 @@ const I18N = {
     deleteLabel: "删除",
     editLabel: "编辑",
     whatsappChatLabel: "打开 WhatsApp 聊天",
-    emojiPlaceholder: "输入任意 emoji",
+    genderFieldLabel: "性别",
+    genderMale: "男",
+    genderFemale: "女",
+    genderUnset: "不设置",
+    deleteRowConfirm: (name) => `确定要删除顾客「${name}」吗?此操作无法撤销。`,
     sendWishLabel: "送祝福语",
     wishTitle: "送祝福语",
     wishSubtitle: (name) => `给 ${name} 的生日祝福,可以直接复制发送`,
@@ -1090,7 +1056,11 @@ const I18N = {
     deleteLabel: "Delete",
     editLabel: "Edit",
     whatsappChatLabel: "Open WhatsApp chat",
-    emojiPlaceholder: "Type any emoji",
+    genderFieldLabel: "Gender",
+    genderMale: "Male",
+    genderFemale: "Female",
+    genderUnset: "Not set",
+    deleteRowConfirm: (name) => `Delete customer "${name}"? This cannot be undone.`,
     sendWishLabel: "Send wishes",
     wishTitle: "Send a birthday wish",
     wishSubtitle: (name) => `A birthday message for ${name} — ready to copy and send`,
@@ -1177,6 +1147,12 @@ function categoryLabel(cat) {
   return s.categoryNew;
 }
 
+function genderAvatar(c) {
+  if (c.gender === "male") return "👨";
+  if (c.gender === "female") return "👩";
+  return c.emoji || "👤";
+}
+
 function applyLanguage() {
   const s = t();
   document.title = s.title;
@@ -1190,9 +1166,12 @@ function applyLanguage() {
   document.getElementById("darkModeLabel").textContent = s.darkModeLabel;
   document.getElementById("langLabel").textContent = s.langLabel;
   document.getElementById("loadingLabel").textContent = s.loading;
-  document.getElementById("customEmojiInput").placeholder = s.emojiPlaceholder;
   document.getElementById("phoneFieldLabel").textContent = s.phoneFieldLabel;
   document.getElementById("birthdayFieldLabel").textContent = s.birthdayFieldLabel;
+  document.getElementById("genderFieldLabel").textContent = s.genderFieldLabel;
+  document.getElementById("genderMaleLabel").textContent = s.genderMale;
+  document.getElementById("genderFemaleLabel").textContent = s.genderFemale;
+  document.getElementById("genderUnsetLabel").textContent = s.genderUnset;
   document.getElementById("categoryFieldLabel").textContent = s.categoryFieldLabel;
   document.getElementById("categoryNewLabel").textContent = s.categoryNew;
   document.getElementById("categoryRegularLabel").textContent = s.categoryRegular;
@@ -1313,7 +1292,7 @@ function render() {
     return `
       <div class="row ${isToday ? "today" : ""} ${isInactive ? "inactive" : ""}" onclick="openDetailModal('${c.id}')">
         <div class="row-left">
-          <div class="avatar">${c.emoji || "👤"}</div>
+          <div class="avatar">${genderAvatar(c)}</div>
           <div class="info">
             <div class="cust-name-row">
               <p class="cust-name">${escapeHtml(c.name)}</p>
@@ -1333,6 +1312,9 @@ function render() {
           </button>
           <button class="icon-btn" onclick="event.stopPropagation(); openEditModal('${c.id}')" aria-label="${s.editLabel}">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+          </button>
+          <button class="icon-btn" onclick="event.stopPropagation(); deleteCustomerFromRow('${c.id}')" aria-label="${s.deleteLabel}">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
           </button>
         </div>
       </div>`;
@@ -1370,7 +1352,7 @@ function openDetailModal(id) {
   const s = t();
   detailCustomerId = id;
 
-  document.getElementById("detailAvatar").textContent = c.emoji || "👤";
+  document.getElementById("detailAvatar").textContent = genderAvatar(c);
   document.getElementById("detailName").textContent = c.name;
   const badge = document.getElementById("detailCategoryBadge");
   const category = c.category || "new";
@@ -1454,11 +1436,31 @@ const errorMsg = document.getElementById("errorMsg");
 const deleteCustomerBtn = document.getElementById("deleteCustomerBtn");
 const purchasesList = document.getElementById("purchasesList");
 
-let selectedEmoji = "👤";
+let selectedGender = "";
 let selectedCategory = "new";
 let editingId = null;
 let purchaseRows = []; // { key, date, product, amount, note }
 let purchaseKeyCounter = 0;
+
+function updateAvatarPreview() {
+  const preview = document.getElementById("avatarPreview");
+  if (!preview) return;
+  if (selectedGender === "male") preview.textContent = "👨";
+  else if (selectedGender === "female") preview.textContent = "👩";
+  else preview.textContent = "👤";
+}
+
+function setGender(gender) {
+  selectedGender = gender;
+  document.querySelectorAll(".gender-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.gender === gender);
+  });
+  updateAvatarPreview();
+}
+
+document.querySelectorAll(".gender-btn").forEach(btn => {
+  btn.addEventListener("click", () => setGender(btn.dataset.gender));
+});
 
 function setCategory(cat) {
   selectedCategory = cat;
@@ -1548,10 +1550,7 @@ function resetCustomerForm() {
   notesInput.value = "";
   purchaseRows = [];
   renderPurchaseRows();
-  selectedEmoji = "👤";
-  document.getElementById("emojiBtn").textContent = selectedEmoji;
-  document.getElementById("customEmojiInput").value = "";
-  document.querySelectorAll(".emoji-option").forEach(b => b.classList.toggle("active", b.dataset.emoji === selectedEmoji));
+  setGender("");
   setCategory("new");
   errorMsg.style.display = "none";
 }
@@ -1580,10 +1579,7 @@ function openEditModal(id) {
     return { key: purchaseKeyCounter, date: p.date || "", product: p.product || "", amount: p.amount || "", note: p.note || "" };
   });
   renderPurchaseRows();
-  selectedEmoji = c.emoji || "👤";
-  document.getElementById("emojiBtn").textContent = selectedEmoji;
-  document.getElementById("customEmojiInput").value = "";
-  document.querySelectorAll(".emoji-option").forEach(b => b.classList.toggle("active", b.dataset.emoji === selectedEmoji));
+  setGender(c.gender || "");
   setCategory(c.category || "new");
   customerModalTitle.textContent = s.modalEditTitle;
   deleteCustomerBtn.style.display = "block";
@@ -1592,7 +1588,6 @@ function openEditModal(id) {
 
 function closeCustomerModal() {
   customerOverlay.classList.remove("open");
-  document.getElementById("emojiPanel").classList.remove("open");
 }
 
 document.getElementById("openAddBtn").addEventListener("click", openAddModal);
@@ -1623,7 +1618,7 @@ async function saveCustomer() {
     .map(r => ({ date: r.date.trim(), product: r.product.trim(), amount: r.amount.trim(), note: r.note.trim() }))
     .filter(p => p.date || p.product || p.amount || p.note);
 
-  const payload = { name, date, phone, emoji: selectedEmoji, purchases, notes, category: selectedCategory };
+  const payload = { name, date, phone, gender: selectedGender, purchases, notes, category: selectedCategory };
 
   try {
     let res, saved;
@@ -1660,57 +1655,37 @@ async function saveCustomer() {
 
 document.getElementById("saveCustomerBtn").addEventListener("click", saveCustomer);
 
+async function deleteCustomerById(id) {
+  const s = t();
+  try {
+    await fetch(`${API}/${id}`, { method: "DELETE" });
+    customers = customers.filter(c => c.id !== id);
+    render();
+    return true;
+  } catch (e) {
+    alert(s.deleteFailed);
+    return false;
+  }
+}
+
+async function deleteCustomerFromRow(id) {
+  const s = t();
+  const c = customers.find(x => x.id === id);
+  if (!c) return;
+  if (!confirm(s.deleteRowConfirm(c.name))) return;
+  await deleteCustomerById(id);
+}
+
 deleteCustomerBtn.addEventListener("click", async () => {
   const s = t();
   if (!editingId) return;
   if (!confirm(s.deleteConfirm)) return;
-  try {
-    await fetch(`${API}/${editingId}`, { method: "DELETE" });
-    customers = customers.filter(c => c.id !== editingId);
-    closeCustomerModal();
-    render();
-  } catch (e) {
-    alert(s.deleteFailed);
-  }
+  const ok = await deleteCustomerById(editingId);
+  if (ok) closeCustomerModal();
 });
 
 [nameInput, phoneInput, dateInput].forEach(el => {
   el.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); saveCustomer(); } });
-});
-
-/* ---------- emoji picker ---------- */
-const emojiBtn = document.getElementById("emojiBtn");
-const emojiPanel = document.getElementById("emojiPanel");
-const customEmojiInput = document.getElementById("customEmojiInput");
-
-emojiBtn.addEventListener("click", (e) => {
-  e.stopPropagation();
-  emojiPanel.classList.toggle("open");
-});
-
-document.querySelectorAll(".emoji-option").forEach(btn => {
-  btn.addEventListener("click", () => {
-    selectedEmoji = btn.dataset.emoji;
-    emojiBtn.textContent = selectedEmoji;
-    customEmojiInput.value = "";
-    document.querySelectorAll(".emoji-option").forEach(b => b.classList.toggle("active", b === btn));
-    emojiPanel.classList.remove("open");
-  });
-});
-
-customEmojiInput.addEventListener("input", (e) => {
-  const val = e.target.value.trim();
-  if (val) {
-    selectedEmoji = val;
-    emojiBtn.textContent = val;
-    document.querySelectorAll(".emoji-option").forEach(b => b.classList.remove("active"));
-  }
-});
-
-document.addEventListener("click", (e) => {
-  if (!emojiPanel.contains(e.target) && e.target !== emojiBtn) {
-    emojiPanel.classList.remove("open");
-  }
 });
 
 /* ---------- settings panel ---------- */
