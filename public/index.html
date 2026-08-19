@@ -445,6 +445,83 @@
   }
   .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
+  .purchases-section {
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid var(--card-border);
+  }
+  .purchase-row {
+    position: relative;
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: 14px;
+    padding: 14px;
+    margin-bottom: 10px;
+  }
+  .purchase-remove {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: none;
+    border: none;
+    color: var(--muted-light);
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    border-radius: 6px;
+  }
+  .purchase-remove:hover { color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+  .purchase-row textarea.product-textarea {
+    min-height: 76px;
+  }
+  .amount-wrap {
+    display: flex;
+    align-items: stretch;
+    border: 1px solid var(--input-border);
+    border-radius: 12px;
+    background: var(--input-bg);
+    overflow: hidden;
+  }
+  .amount-wrap .rm-prefix {
+    display: flex;
+    align-items: center;
+    padding: 0 4px 0 14px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--muted);
+    white-space: nowrap;
+    background: color-mix(in srgb, var(--accent) 8%, var(--input-bg));
+  }
+  .amount-wrap input {
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    padding-left: 6px;
+  }
+  .add-purchase-btn {
+    width: 100%;
+    padding: 10px 0;
+    border-radius: 12px;
+    border: 1px dashed var(--input-border);
+    background: none;
+    color: var(--muted);
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 4px;
+  }
+  .add-purchase-btn:hover { color: var(--accent); border-color: var(--accent); }
+  .no-purchases-hint {
+    font-size: 12px;
+    color: var(--muted-light);
+    text-align: center;
+    padding: 10px 0;
+  }
+
   .error-msg {
     font-size: 12px;
     color: var(--accent);
@@ -646,15 +723,13 @@
       <label class="field-label" id="birthdayFieldLabel">生日</label>
       <input id="dateInput" type="date" />
 
-      <div class="two-col">
-        <div>
-          <label class="field-label" id="productFieldLabel">购买产品</label>
-          <input id="productInput" type="text" />
-        </div>
-        <div>
-          <label class="field-label" id="amountFieldLabel">金额</label>
-          <input id="amountInput" type="text" />
-        </div>
+      <div class="purchases-section">
+        <label class="field-label" id="purchasesFieldLabel" style="margin-top:0;">购买记录</label>
+        <div id="purchasesList"></div>
+        <button class="add-purchase-btn" id="addPurchaseBtn" type="button">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+          <span id="addPurchaseLabel">添加购买记录</span>
+        </button>
       </div>
 
       <label class="field-label" id="notesFieldLabel">备注</label>
@@ -708,8 +783,6 @@ const I18N = {
     addBtnLabel: "添加顾客",
     namePlaceholder: "顾客姓名",
     phonePlaceholder: "例如 +60123456789",
-    productPlaceholder: "例如 Nutrilite 蛋白粉",
-    amountPlaceholder: "例如 150",
     notesPlaceholder: "记录一些关于这位顾客的备注…",
     colorLabel: "颜色",
     darkModeLabel: "深色模式",
@@ -743,8 +816,16 @@ const I18N = {
     noPhoneHint: "该顾客未填写电话号码,无法通过 WhatsApp 发送",
     phoneFieldLabel: "电话号码(选填)",
     birthdayFieldLabel: "生日",
-    productFieldLabel: "购买产品(选填)",
-    amountFieldLabel: "金额(选填)",
+    purchasesFieldLabel: "购买记录",
+    purchaseDateLabel: "购买日期",
+    purchaseProductLabel: "购买产品",
+    purchaseAmountLabel: "金额",
+    productPlaceholder: "例如 Nutrilite 蛋白粉,可以写详细一点",
+    amountPlaceholder: "150",
+    addPurchaseLabel: "添加购买记录",
+    removePurchaseLabel: "删除这笔记录",
+    noPurchasesHint: "还没有购买记录",
+    purchasesSummary: (count, total) => `🛍 ${count} 笔购买 · 共 RM${total}`,
     notesFieldLabel: "备注(选填)",
     cancelLabel: "取消",
     saveLabel: "保存",
@@ -768,8 +849,6 @@ const I18N = {
     addBtnLabel: "Add Customer",
     namePlaceholder: "Customer name",
     phonePlaceholder: "e.g. +60123456789",
-    productPlaceholder: "e.g. Nutrilite Protein",
-    amountPlaceholder: "e.g. 150",
     notesPlaceholder: "Any notes about this customer…",
     colorLabel: "Color",
     darkModeLabel: "Dark mode",
@@ -806,8 +885,16 @@ const I18N = {
     noPhoneHint: "No phone number on file for this customer — WhatsApp isn't available",
     phoneFieldLabel: "Phone number (optional)",
     birthdayFieldLabel: "Birthday",
-    productFieldLabel: "Product purchased (optional)",
-    amountFieldLabel: "Amount (optional)",
+    purchasesFieldLabel: "Purchase records",
+    purchaseDateLabel: "Purchase date",
+    purchaseProductLabel: "Product",
+    purchaseAmountLabel: "Amount",
+    productPlaceholder: "e.g. Nutrilite Protein — feel free to add detail",
+    amountPlaceholder: "150",
+    addPurchaseLabel: "Add purchase record",
+    removePurchaseLabel: "Remove this record",
+    noPurchasesHint: "No purchases recorded yet",
+    purchasesSummary: (count, total) => `🛍 ${count} purchase${count === 1 ? "" : "s"} · RM${total} total`,
     notesFieldLabel: "Notes (optional)",
     cancelLabel: "Cancel",
     saveLabel: "Save",
@@ -862,8 +949,6 @@ function applyLanguage() {
   document.getElementById("addBtnLabel").textContent = s.addBtnLabel;
   document.getElementById("nameInput").placeholder = s.namePlaceholder;
   document.getElementById("phoneInput").placeholder = s.phonePlaceholder;
-  document.getElementById("productInput").placeholder = s.productPlaceholder;
-  document.getElementById("amountInput").placeholder = s.amountPlaceholder;
   document.getElementById("notesInput").placeholder = s.notesPlaceholder;
   document.getElementById("colorLabel").textContent = s.colorLabel;
   document.getElementById("darkModeLabel").textContent = s.darkModeLabel;
@@ -872,8 +957,8 @@ function applyLanguage() {
   document.getElementById("customEmojiInput").placeholder = s.emojiPlaceholder;
   document.getElementById("phoneFieldLabel").textContent = s.phoneFieldLabel;
   document.getElementById("birthdayFieldLabel").textContent = s.birthdayFieldLabel;
-  document.getElementById("productFieldLabel").textContent = s.productFieldLabel;
-  document.getElementById("amountFieldLabel").textContent = s.amountFieldLabel;
+  document.getElementById("purchasesFieldLabel").textContent = s.purchasesFieldLabel;
+  document.getElementById("addPurchaseLabel").textContent = s.addPurchaseLabel;
   document.getElementById("notesFieldLabel").textContent = s.notesFieldLabel;
   document.getElementById("cancelLabel").textContent = s.cancelLabel;
   document.getElementById("saveLabel").textContent = s.saveLabel;
@@ -885,6 +970,7 @@ function applyLanguage() {
   document.getElementById("wishCloseBtn").textContent = s.close;
   document.getElementById("whatsappLabel").textContent = s.whatsappSend;
   document.documentElement.lang = prefs.lang === "zh" ? "zh-CN" : "en";
+  renderPurchaseRows();
   render();
 }
 
@@ -914,6 +1000,14 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
+function escapeAttr(str) {
+  return String(str || "")
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
 function render() {
   const s = t();
   if (customers.length === 0) {
@@ -929,9 +1023,16 @@ function render() {
   const rows = sorted.map(c => {
     const isToday = c.days === 0;
     const [, mm, dd] = c.date.split("-").map(Number);
-    const productLine = (c.product || c.amount)
-      ? `<p class="cust-meta product-line">🛍 ${escapeHtml(c.product || "")}${c.product && c.amount ? " · " : ""}${escapeHtml(c.amount || "")}</p>`
-      : "";
+    const purchases = Array.isArray(c.purchases) ? c.purchases : [];
+    let purchaseLine = "";
+    if (purchases.length > 0) {
+      const total = purchases.reduce((sum, p) => {
+        const n = parseFloat(String(p.amount).replace(/[^\d.]/g, ""));
+        return sum + (isNaN(n) ? 0 : n);
+      }, 0);
+      const totalStr = Number.isInteger(total) ? String(total) : total.toFixed(2);
+      purchaseLine = `<p class="cust-meta product-line">${s.purchasesSummary(purchases.length, totalStr)}</p>`;
+    }
     const whatsappIcon = c.phone
       ? `<button class="icon-btn whatsapp-icon" onclick="openWhatsAppChat('${c.id}')" aria-label="${s.whatsappChatLabel}">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38a9.9 9.9 0 0 0 4.74 1.21h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.86 9.86 0 0 0 12.04 2zm5.8 14.15c-.24.68-1.4 1.3-1.93 1.38-.5.08-1.11.11-1.79-.11a13 13 0 0 1-1.86-.7c-2.83-1.22-4.67-4.08-4.81-4.27-.14-.19-1.15-1.53-1.15-2.92 0-1.39.73-2.07.98-2.35.26-.28.56-.35.75-.35.19 0 .37 0 .53.01.17.01.4-.06.62.48.24.58.8 2 .87 2.14.07.14.12.31.02.5-.09.19-.14.31-.28.47-.14.16-.29.36-.42.48-.14.14-.28.29-.12.57.16.28.71 1.18 1.53 1.91 1.05.94 1.94 1.24 2.22 1.38.28.14.44.12.6-.07.16-.19.68-.79.87-1.06.19-.28.37-.23.62-.14.26.09 1.63.77 1.91.91.28.14.47.21.53.33.07.12.07.68-.17 1.36z"/></svg>
@@ -947,7 +1048,7 @@ function render() {
               ${c.notes ? `<span class="notes-dot" title="${escapeHtml(c.notes)}">📝</span>` : ""}
             </div>
             <p class="cust-meta">${s.monthDay(mm, dd)} · ${s.willTurn(ageTurning(c.date))}${c.phone ? " · " + escapeHtml(c.phone) : ""}</p>
-            ${productLine}
+            ${purchaseLine}
           </div>
         </div>
         <div class="row-right">
@@ -991,22 +1092,87 @@ const customerModalTitle = document.getElementById("customerModalTitle");
 const nameInput = document.getElementById("nameInput");
 const phoneInput = document.getElementById("phoneInput");
 const dateInput = document.getElementById("dateInput");
-const productInput = document.getElementById("productInput");
-const amountInput = document.getElementById("amountInput");
 const notesInput = document.getElementById("notesInput");
 const errorMsg = document.getElementById("errorMsg");
 const deleteCustomerBtn = document.getElementById("deleteCustomerBtn");
+const purchasesList = document.getElementById("purchasesList");
 
 let selectedEmoji = "🎂";
 let editingId = null;
+let purchaseRows = []; // { key, date, product, amount }
+let purchaseKeyCounter = 0;
+
+function syncPurchaseRowsFromDOM() {
+  purchaseRows.forEach(row => {
+    const dateEl = document.getElementById(`p-date-${row.key}`);
+    const productEl = document.getElementById(`p-product-${row.key}`);
+    const amountEl = document.getElementById(`p-amount-${row.key}`);
+    if (dateEl) row.date = dateEl.value;
+    if (productEl) row.product = productEl.value;
+    if (amountEl) row.amount = amountEl.value;
+  });
+}
+
+function renderPurchaseRows() {
+  if (!purchasesList) return;
+  syncPurchaseRowsFromDOM();
+  const s = t();
+  if (purchaseRows.length === 0) {
+    purchasesList.innerHTML = `<p class="no-purchases-hint">${s.noPurchasesHint}</p>`;
+    return;
+  }
+  purchasesList.innerHTML = purchaseRows.map(row => `
+    <div class="purchase-row" data-key="${row.key}">
+      <button type="button" class="purchase-remove" onclick="removePurchaseRow(${row.key})" aria-label="${s.removePurchaseLabel}">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="M6 6l12 12"/></svg>
+      </button>
+      <div class="two-col">
+        <div>
+          <label class="field-label" style="margin-top:0;">${s.purchaseDateLabel}</label>
+          <input type="date" id="p-date-${row.key}" value="${escapeAttr(row.date)}" />
+        </div>
+        <div>
+          <label class="field-label" style="margin-top:0;">${s.purchaseAmountLabel}</label>
+          <div class="amount-wrap">
+            <span class="rm-prefix">RM</span>
+            <input type="text" inputmode="decimal" id="p-amount-${row.key}" value="${escapeAttr(row.amount)}" placeholder="${escapeAttr(s.amountPlaceholder)}" />
+          </div>
+        </div>
+      </div>
+      <label class="field-label">${s.purchaseProductLabel}</label>
+      <textarea class="product-textarea" id="p-product-${row.key}" placeholder="${escapeAttr(s.productPlaceholder)}">${escapeHtml(row.product)}</textarea>
+    </div>
+  `).join("");
+}
+
+function addPurchaseRow(initial) {
+  initial = initial || {};
+  syncPurchaseRowsFromDOM();
+  purchaseKeyCounter += 1;
+  purchaseRows.push({
+    key: purchaseKeyCounter,
+    date: initial.date || "",
+    product: initial.product || "",
+    amount: initial.amount || "",
+  });
+  renderPurchaseRows();
+}
+
+function removePurchaseRow(key) {
+  syncPurchaseRowsFromDOM();
+  purchaseRows = purchaseRows.filter(r => r.key !== key);
+  renderPurchaseRows();
+}
+
+document.getElementById("addPurchaseBtn").addEventListener("click", () => addPurchaseRow());
 
 function resetCustomerForm() {
   nameInput.value = "";
   phoneInput.value = "";
   dateInput.value = "";
-  productInput.value = "";
-  amountInput.value = "";
   notesInput.value = "";
+  purchaseRows = [];
+  renderPurchaseRows();
   selectedEmoji = "🎂";
   document.getElementById("emojiBtn").textContent = selectedEmoji;
   document.getElementById("customEmojiInput").value = "";
@@ -1032,9 +1198,12 @@ function openEditModal(id) {
   nameInput.value = c.name || "";
   phoneInput.value = c.phone || "";
   dateInput.value = c.date || "";
-  productInput.value = c.product || "";
-  amountInput.value = c.amount || "";
   notesInput.value = c.notes || "";
+  purchaseRows = (Array.isArray(c.purchases) ? c.purchases : []).map(p => {
+    purchaseKeyCounter += 1;
+    return { key: purchaseKeyCounter, date: p.date || "", product: p.product || "", amount: p.amount || "" };
+  });
+  renderPurchaseRows();
   selectedEmoji = c.emoji || "🎂";
   document.getElementById("emojiBtn").textContent = selectedEmoji;
   document.getElementById("customEmojiInput").value = "";
@@ -1065,8 +1234,6 @@ async function saveCustomer() {
   const name = nameInput.value.trim();
   const phone = phoneInput.value.trim();
   const date = dateInput.value;
-  const product = productInput.value.trim();
-  const amount = amountInput.value.trim();
   const notes = notesInput.value.trim();
   errorMsg.style.display = "none";
 
@@ -1074,7 +1241,12 @@ async function saveCustomer() {
   if (!date) { showError(s.errorDate); return; }
   if (phone && !/^[+\d][\d\s\-()]{4,}$/.test(phone)) { showError(s.errorPhone); return; }
 
-  const payload = { name, date, phone, emoji: selectedEmoji, product, amount, notes };
+  syncPurchaseRowsFromDOM();
+  const purchases = purchaseRows
+    .map(r => ({ date: r.date.trim(), product: r.product.trim(), amount: r.amount.trim() }))
+    .filter(p => p.date || p.product || p.amount);
+
+  const payload = { name, date, phone, emoji: selectedEmoji, purchases, notes };
 
   try {
     let res, saved;
@@ -1125,7 +1297,7 @@ deleteCustomerBtn.addEventListener("click", async () => {
   }
 });
 
-[nameInput, phoneInput, dateInput, productInput, amountInput].forEach(el => {
+[nameInput, phoneInput, dateInput].forEach(el => {
   el.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); saveCustomer(); } });
 });
 
