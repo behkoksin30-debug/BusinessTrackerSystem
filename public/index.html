@@ -203,12 +203,16 @@
     box-shadow: 0 1px 2px rgba(0,0,0,0.03);
   }
   .form-grid {
-    display: grid;
-    grid-template-columns: auto 1fr 1fr auto;
+    display: flex;
+    flex-wrap: wrap;
     gap: 12px;
   }
-  @media (max-width: 560px) {
-    .form-grid { grid-template-columns: 1fr; }
+  .form-grid input[type="text"].name-input { flex: 2 1 160px; }
+  .form-grid input[type="text"].phone-input { flex: 1 1 140px; }
+  .form-grid input[type="date"] { flex: 1 1 140px; }
+  .form-grid button.primary { flex: 1 1 100%; }
+  @media (min-width: 640px) {
+    .form-grid button.primary { flex: 0 0 auto; }
   }
   .emoji-wrap { position: relative; }
   .emoji-btn {
@@ -487,6 +491,30 @@
     padding: 4px;
   }
   .modal-close:hover { color: var(--muted); }
+  .whatsapp-btn {
+    width: 100%;
+    margin-top: 12px;
+    padding: 10px 0;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+    border: none;
+    background: #25D366;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .whatsapp-btn:hover { filter: brightness(0.95); }
+  .no-phone-hint {
+    font-size: 12px;
+    color: var(--muted-light);
+    text-align: center;
+    margin: 10px 0 0;
+  }
 </style>
 </head>
 <body>
@@ -559,7 +587,8 @@
             </div>
           </div>
         </div>
-        <input id="nameInput" type="text" />
+        <input id="nameInput" class="name-input" type="text" />
+        <input id="phoneInput" class="phone-input" type="tel" />
         <input id="dateInput" type="date" />
         <button class="primary" id="addBtn">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
@@ -581,6 +610,11 @@
       <p class="modal-title" id="wishTitle">送祝福语</p>
       <p class="modal-subtitle" id="wishSubtitle"></p>
       <textarea class="modal-textarea" id="wishTextarea" readonly></textarea>
+      <button class="whatsapp-btn" id="whatsappBtn" type="button" style="display:none;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38a9.9 9.9 0 0 0 4.74 1.21h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.86 9.86 0 0 0 12.04 2zm5.8 14.15c-.24.68-1.4 1.3-1.93 1.38-.5.08-1.11.11-1.79-.11a13 13 0 0 1-1.86-.7c-2.83-1.22-4.67-4.08-4.81-4.27-.14-.19-1.15-1.53-1.15-2.92 0-1.39.73-2.07.98-2.35.26-.28.56-.35.75-.35.19 0 .37 0 .53.01.17.01.4-.06.62.48.24.58.8 2 .87 2.14.07.14.12.31.02.5-.09.19-.14.31-.28.47-.14.16-.29.36-.42.48-.14.14-.28.29-.12.57.16.28.71 1.18 1.53 1.91 1.05.94 1.94 1.24 2.22 1.38.28.14.44.12.6-.07.16-.19.68-.79.87-1.06.19-.28.37-.23.62-.14.26.09 1.63.77 1.91.91.28.14.47.21.53.33.07.12.07.68-.17 1.36z"/></svg>
+          <span id="whatsappLabel">WhatsApp 发送</span>
+        </button>
+      <p class="no-phone-hint" id="noPhoneHint" style="display:none;"></p>
       <div class="modal-actions">
         <button id="shuffleBtn" type="button">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>
@@ -604,6 +638,7 @@ const I18N = {
     title: "顾客生日簿",
     subtitle: "记录每一位顾客的生日,不错过任何一个惊喜的理由",
     namePlaceholder: "顾客姓名",
+    phonePlaceholder: "电话号码(选填)",
     addBtn: "添加",
     colorLabel: "颜色",
     darkModeLabel: "深色模式",
@@ -616,6 +651,7 @@ const I18N = {
     errorDate: "请选择生日日期",
     errorAdd: "添加失败",
     errorNetwork: "网络错误,请重试",
+    errorPhone: "电话号码格式不正确",
     todayBirthday: "今天生日!",
     daysAfter: (n) => `${n} 天后`,
     willTurn: (n) => `将满 ${n} 岁`,
@@ -630,6 +666,8 @@ const I18N = {
     copy: "复制",
     copied: "已复制!",
     close: "关闭",
+    whatsappSend: "WhatsApp 发送",
+    noPhoneHint: "该顾客未填写电话号码,无法通过 WhatsApp 发送",
     wishes: [
       (name) => `祝${name}生日快乐,愿你的每一天都充满阳光与好运!🎂`,
       (name) => `亲爱的${name},生日快乐!感谢一直以来的支持,祝你新的一岁心想事成、笑口常开!🎉`,
@@ -643,6 +681,7 @@ const I18N = {
     title: "Customer Birthdays",
     subtitle: "Keep track of every customer's birthday, and never miss a reason to celebrate",
     namePlaceholder: "Customer name",
+    phonePlaceholder: "Phone (optional)",
     addBtn: "Add",
     colorLabel: "Color",
     darkModeLabel: "Dark mode",
@@ -653,6 +692,7 @@ const I18N = {
     deleteFailed: "Failed to delete. Please try again.",
     errorName: "Please enter a customer name",
     errorDate: "Please select a birthday",
+    errorPhone: "Please enter a valid phone number",
     errorAdd: "Failed to add",
     errorNetwork: "Network error, please try again",
     todayBirthday: "Birthday today!",
@@ -672,6 +712,8 @@ const I18N = {
     copy: "Copy",
     copied: "Copied!",
     close: "Close",
+    whatsappSend: "Send via WhatsApp",
+    noPhoneHint: "No phone number on file for this customer — WhatsApp isn't available",
     wishes: [
       (name) => `Happy Birthday, ${name}! Wishing you a day filled with joy and a year full of good things. 🎂`,
       (name) => `Dear ${name}, happy birthday! Thank you for your support — here's to a wonderful new year ahead. 🎉`,
@@ -722,6 +764,8 @@ function applyLanguage() {
   document.getElementById("langLabel").textContent = s.langLabel;
   document.getElementById("loadingLabel").textContent = s.loading;
   document.getElementById("customEmojiInput").placeholder = s.emojiPlaceholder;
+  document.getElementById("phoneInput").placeholder = s.phonePlaceholder;
+  document.getElementById("whatsappLabel").textContent = s.whatsappSend;
   document.getElementById("wishTitle").textContent = s.wishTitle;
   document.getElementById("shuffleLabel").textContent = s.shuffle;
   document.getElementById("copyLabel").textContent = s.copy;
@@ -753,6 +797,7 @@ const contentEl = document.getElementById("content");
 const footerEl = document.getElementById("footerCount");
 const nameInput = document.getElementById("nameInput");
 const dateInput = document.getElementById("dateInput");
+const phoneInput = document.getElementById("phoneInput");
 const errorMsg = document.getElementById("errorMsg");
 
 function render() {
@@ -776,7 +821,7 @@ function render() {
           <div class="avatar">${c.emoji || "🎂"}</div>
           <div class="info">
             <p class="cust-name">${escapeHtml(c.name)}</p>
-            <p class="cust-meta">${s.monthDay(mm, dd)} · ${s.willTurn(ageTurning(c.date))}</p>
+            <p class="cust-meta">${s.monthDay(mm, dd)} · ${s.willTurn(ageTurning(c.date))}${c.phone ? " · " + escapeHtml(c.phone) : ""}</p>
           </div>
         </div>
         <div class="row-right">
@@ -816,16 +861,18 @@ async function addCustomer() {
   const s = t();
   const name = nameInput.value.trim();
   const date = dateInput.value;
+  const phone = phoneInput.value.trim();
   errorMsg.style.display = "none";
 
   if (!name) { showError(s.errorName); return; }
   if (!date) { showError(s.errorDate); return; }
+  if (phone && !/^[+\d][\d\s\-()]{4,}$/.test(phone)) { showError(s.errorPhone); return; }
 
   try {
     const res = await fetch(API, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, date, emoji: selectedEmoji }),
+      body: JSON.stringify({ name, date, emoji: selectedEmoji, phone }),
     });
     if (!res.ok) {
       const data = await res.json();
@@ -836,6 +883,7 @@ async function addCustomer() {
     customers.push(newCustomer);
     nameInput.value = "";
     dateInput.value = "";
+    phoneInput.value = "";
     selectedEmoji = "🎂";
     document.getElementById("emojiBtn").textContent = selectedEmoji;
     document.getElementById("customEmojiInput").value = "";
@@ -862,7 +910,7 @@ function showError(msg) {
 }
 
 document.getElementById("addBtn").addEventListener("click", addCustomer);
-[nameInput, dateInput].forEach(el => {
+[nameInput, dateInput, phoneInput].forEach(el => {
   el.addEventListener("keydown", e => { if (e.key === "Enter") addCustomer(); });
 });
 
@@ -872,7 +920,10 @@ const wishSubtitleEl = document.getElementById("wishSubtitle");
 const wishTextarea = document.getElementById("wishTextarea");
 const copyBtn = document.getElementById("copyBtn");
 const copyLabelEl = document.getElementById("copyLabel");
+const whatsappBtn = document.getElementById("whatsappBtn");
+const noPhoneHint = document.getElementById("noPhoneHint");
 let wishCustomerName = "";
+let wishCustomerPhone = "";
 
 function pickWish() {
   const s = t();
@@ -886,9 +937,18 @@ function openWishModal(id) {
   if (!c) return;
   const s = t();
   wishCustomerName = c.name;
+  wishCustomerPhone = c.phone || "";
   wishSubtitleEl.textContent = s.wishSubtitle(c.name);
   copyLabelEl.textContent = s.copy;
   pickWish();
+  if (wishCustomerPhone) {
+    whatsappBtn.style.display = "flex";
+    noPhoneHint.style.display = "none";
+  } else {
+    whatsappBtn.style.display = "none";
+    noPhoneHint.style.display = "block";
+    noPhoneHint.textContent = s.noPhoneHint;
+  }
   wishOverlay.classList.add("open");
 }
 
@@ -912,6 +972,13 @@ copyBtn.addEventListener("click", async () => {
   }
   copyLabelEl.textContent = s.copied;
   setTimeout(() => { copyLabelEl.textContent = s.copy; }, 1500);
+});
+
+whatsappBtn.addEventListener("click", () => {
+  if (!wishCustomerPhone) return;
+  const digits = wishCustomerPhone.replace(/[^\d+]/g, "").replace(/^\+/, "");
+  const url = `https://wa.me/${digits}?text=${encodeURIComponent(wishTextarea.value)}`;
+  window.open(url, "_blank");
 });
 
 // emoji picker
