@@ -4,7 +4,10 @@ const path = require("path");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const DATA_FILE = path.join(__dirname, "data.json");
+// DATA_DIR 可以通过环境变量指定,配合 Railway 的 Volume(持久化卷)使用,
+// 这样每次重新部署时数据不会丢失。本地开发不设置也没关系,默认存在项目目录下。
+const DATA_DIR = process.env.DATA_DIR || __dirname;
+const DATA_FILE = path.join(DATA_DIR, "data.json");
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
@@ -19,6 +22,7 @@ function readData() {
 }
 
 function writeData(customers) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
   fs.writeFileSync(DATA_FILE, JSON.stringify(customers, null, 2), "utf-8");
 }
 
@@ -29,7 +33,7 @@ app.get("/api/customers", (req, res) => {
 
 // 新增顾客
 app.post("/api/customers", (req, res) => {
-  const { name, date } = req.body;
+  const { name, date, emoji } = req.body;
   if (!name || !name.trim()) {
     return res.status(400).json({ error: "姓名不能为空" });
   }
@@ -41,6 +45,7 @@ app.post("/api/customers", (req, res) => {
     id: Date.now().toString(),
     name: name.trim(),
     date,
+    emoji: (emoji && emoji.trim()) || "🎂",
   };
   customers.push(newCustomer);
   writeData(customers);
