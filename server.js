@@ -29,6 +29,11 @@ function sanitizeCategory(category) {
   return VALID_CATEGORIES.includes(category) ? category : "new";
 }
 
+const VALID_GENDERS = ["male", "female"];
+function sanitizeGender(gender) {
+  return VALID_GENDERS.includes(gender) ? gender : "";
+}
+
 function migrateCustomer(c) {
   let next = c;
   if (!Array.isArray(next.purchases)) {
@@ -41,6 +46,9 @@ function migrateCustomer(c) {
   }
   if (!next.category) {
     next = { ...next, category: "new" };
+  }
+  if (typeof next.gender !== "string") {
+    next = { ...next, gender: "" };
   }
   return next;
 }
@@ -68,12 +76,13 @@ function validationError(body) {
 }
 
 function buildCustomerFields(body) {
-  const { name, date, phone, emoji, purchases, notes, category } = body;
+  const { name, date, phone, emoji, gender, purchases, notes, category } = body;
   return {
     name: name.trim(),
     date,
     phone: (phone || "").toString().trim(),
-    emoji: (emoji && emoji.trim()) || "👤",
+    gender: sanitizeGender(gender),
+    emoji: (emoji && emoji.trim()) || "",
     purchases: sanitizePurchases(purchases),
     notes: (notes || "").toString().trim(),
     category: sanitizeCategory(category),
