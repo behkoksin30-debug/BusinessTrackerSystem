@@ -12,10 +12,32 @@ const DATA_FILE = path.join(DATA_DIR, "data.json");
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
+function sanitizePurchases(purchases) {
+  if (!Array.isArray(purchases)) return [];
+  return purchases
+    .map((p) => ({
+      date: p && p.date ? String(p.date).trim() : "",
+      product: p && p.product ? String(p.product).trim() : "",
+      amount: p && p.amount ? String(p.amount).trim() : "",
+    }))
+    .filter((p) => p.date || p.product || p.amount);
+}
+
+function migrateCustomer(c) {
+  if (Array.isArray(c.purchases)) return c;
+  // 兼容旧版本(单一 product / amount 字段),自动转换成购买记录数组
+  const purchases = (c.product || c.amount)
+    ? [{ date: "", product: c.product || "", amount: c.amount || "" }]
+    : [];
+  const { product, amount, ...rest } = c;
+  return { ...rest, purchases };
+}
+
 function readData() {
   try {
     const raw = fs.readFileSync(DATA_FILE, "utf-8");
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    return parsed.map(migrateCustomer);
   } catch (e) {
     return [];
   }
@@ -34,14 +56,13 @@ function validationError(body) {
 }
 
 function buildCustomerFields(body) {
-  const { name, date, phone, emoji, product, amount, notes } = body;
+  const { name, date, phone, emoji, purchases, notes } = body;
   return {
     name: name.trim(),
     date,
     phone: (phone || "").toString().trim(),
     emoji: (emoji && emoji.trim()) || "🎂",
-    product: (product || "").toString().trim(),
-    amount: (amount || "").toString().trim(),
+    purchases: sanitizePurchases(purchases),
     notes: (notes || "").toString().trim(),
   };
 }
