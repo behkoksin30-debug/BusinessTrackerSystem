@@ -26,6 +26,26 @@ function writeData(customers) {
   fs.writeFileSync(DATA_FILE, JSON.stringify(customers, null, 2), "utf-8");
 }
 
+function validationError(body) {
+  const { name, date } = body;
+  if (!name || !name.trim()) return "姓名不能为空";
+  if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return "生日日期格式不正确";
+  return null;
+}
+
+function buildCustomerFields(body) {
+  const { name, date, phone, emoji, product, amount, notes } = body;
+  return {
+    name: name.trim(),
+    date,
+    phone: (phone || "").toString().trim(),
+    emoji: (emoji && emoji.trim()) || "🎂",
+    product: (product || "").toString().trim(),
+    amount: (amount || "").toString().trim(),
+    notes: (notes || "").toString().trim(),
+  };
+}
+
 // 获取所有顾客
 app.get("/api/customers", (req, res) => {
   res.json(readData());
@@ -33,24 +53,33 @@ app.get("/api/customers", (req, res) => {
 
 // 新增顾客
 app.post("/api/customers", (req, res) => {
-  const { name, date, emoji, phone } = req.body;
-  if (!name || !name.trim()) {
-    return res.status(400).json({ error: "姓名不能为空" });
-  }
-  if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-    return res.status(400).json({ error: "生日日期格式不正确" });
-  }
+  const err = validationError(req.body);
+  if (err) return res.status(400).json({ error: err });
   const customers = readData();
   const newCustomer = {
     id: Date.now().toString(),
-    name: name.trim(),
-    date,
-    emoji: (emoji && emoji.trim()) || "🎂",
-    phone: (phone && phone.trim()) || "",
+    ...buildCustomerFields(req.body),
   };
   customers.push(newCustomer);
   writeData(customers);
   res.status(201).json(newCustomer);
+});
+
+// 更新顾客(编辑所有字段)
+app.put("/api/customers/:id", (req, res) => {
+  const err = validationError(req.body);
+  if (err) return res.status(400).json({ error: err });
+  const customers = readData();
+  const idx = customers.findIndex((c) => c.id === req.params.id);
+  if (idx === -1) {
+    return res.status(404).json({ error: "未找到该顾客" });
+  }
+  customers[idx] = {
+    id: customers[idx].id,
+    ...buildCustomerFields(req.body),
+  };
+  writeData(customers);
+  res.json(customers[idx]);
 });
 
 // 删除顾客
