@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>顾客生日簿</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #FBF7F0;
+    --text: #3A2E2A;
+    --muted: #8A7A72;
+    --muted-light: #B3A69B;
+    --card: #FFFFFF;
+    --card-border: #EDE4D8;
+    --input-bg: #FDFBF7;
+    --input-border: #E5DACB;
+    --accent: #C4635A;
+    --accent-hover: #B0554C;
+    --today-bg: #FCEEE9;
+    --today-border: #E9B8AC;
+    --chip-bg: #F3EBDF;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Manrope', sans-serif;
+    min-height: 100vh;
+  }
+  .font-display { font-family: 'Fraunces', serif; }
+  .wrap {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 48px 24px;
+  }
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 4px;
+  }
+  .icon-badge {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  h1 {
+    font-size: 30px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin: 0;
+  }
+  .subtitle {
+    font-size: 14px;
+    color: var(--muted);
+    margin: 0 0 40px 52px;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 40px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+  }
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 12px;
+  }
+  @media (max-width: 560px) {
+    .form-grid { grid-template-columns: 1fr; }
+  }
+  input {
+    padding: 10px 16px;
+    border-radius: 12px;
+    border: 1px solid var(--input-border);
+    background: var(--input-bg);
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--text);
+    outline: none;
+  }
+  input:focus {
+    box-shadow: 0 0 0 3px rgba(196, 99, 90, 0.25);
+  }
+  input::placeholder { color: var(--muted-light); }
+  button {
+    padding: 10px 16px;
+    border-radius: 12px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    font-size: 14px;
+    font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: background 0.15s;
+  }
+  button:hover { background: var(--accent-hover); }
+  .error-msg {
+    font-size: 12px;
+    color: var(--accent);
+    margin: 8px 0 0;
+  }
+  .empty-state, .loading-state {
+    text-align: center;
+    padding: 60px 0;
+    color: var(--muted-light);
+    font-size: 14px;
+  }
+  .list { display: flex; flex-direction: column; gap: 8px; }
+  .row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    border-radius: 12px;
+    border: 1px solid var(--card-border);
+    background: var(--card);
+    transition: border-color 0.15s;
+  }
+  .row:hover { border-color: #DCCFBE; }
+  .row.today {
+    background: var(--today-bg);
+    border-color: var(--today-border);
+  }
+  .row-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-width: 0;
+  }
+  .avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--chip-bg);
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+  .row.today .avatar {
+    background: var(--accent);
+    color: white;
+  }
+  .info { min-width: 0; }
+  .cust-name {
+    font-weight: 500;
+    font-size: 14px;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .cust-meta {
+    font-size: 12px;
+    color: var(--muted);
+    margin: 2px 0 0;
+  }
+  .row-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+  .days-left {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--muted-light);
+  }
+  .row.today .days-left { color: var(--accent); }
+  .del-btn {
+    background: none;
+    border: none;
+    color: #C4A79A;
+    cursor: pointer;
+    padding: 4px;
+    opacity: 0;
+    transition: opacity 0.15s, color 0.15s;
+  }
+  .row:hover .del-btn { opacity: 1; }
+  .del-btn:hover { color: var(--accent); background: none; }
+  .footer-count {
+    text-align: center;
+    font-size: 12px;
+    color: var(--muted-light);
+    margin-top: 32px;
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="header">
+      <div class="icon-badge">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FBF7F0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8"/><path d="M4 16s.5-1 2-1 2.5 2 4 2 2.5-2 4-2 2.5 2 4 2 2-1 2-1"/><path d="M2 21h20"/><path d="M7 8v3"/><path d="M12 8v3"/><path d="M17 8v3"/><path d="M7 4h.01"/><path d="M12 4h.01"/><path d="M17 4h.01"/></svg>
+      </div>
+      <h1 class="font-display">顾客生日簿</h1>
+    </div>
+    <p class="subtitle">记录每一位顾客的生日,不错过任何一个惊喜的理由</p>
+
+    <div class="card">
+      <div class="form-grid">
+        <input id="nameInput" type="text" placeholder="顾客姓名" />
+        <input id="dateInput" type="date" />
+        <button id="addBtn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+          添加
+        </button>
+      </div>
+      <p class="error-msg" id="errorMsg" style="display:none;"></p>
+    </div>
+
+    <div id="content">
+      <div class="loading-state">加载中…</div>
+    </div>
+
+    <p class="footer-count" id="footerCount" style="display:none;"></p>
+  </div>
+
+<script>
+const API = "/api/customers";
+let customers = [];
+
+const contentEl = document.getElementById("content");
+const footerEl = document.getElementById("footerCount");
+const nameInput = document.getElementById("nameInput");
+const dateInput = document.getElementById("dateInput");
+const errorMsg = document.getElementById("errorMsg");
+
+function daysUntilNextBirthday(dateStr) {
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const [, m, d] = dateStr.split("-").map(Number);
+  let next = new Date(today.getFullYear(), m - 1, d);
+  if (next < today) next = new Date(today.getFullYear() + 1, m - 1, d);
+  return Math.round((next - today) / 86400000);
+}
+
+function formatMonthDay(dateStr) {
+  const [, m, d] = dateStr.split("-").map(Number);
+  return `${m}月${d}日`;
+}
+
+function ageTurning(dateStr) {
+  const today = new Date();
+  const [y, m, d] = dateStr.split("-").map(Number);
+  let next = new Date(today.getFullYear(), m - 1, d);
+  if (next < today) next.setFullYear(today.getFullYear() + 1);
+  return next.getFullYear() - y;
+}
+
+function render() {
+  if (customers.length === 0) {
+    contentEl.innerHTML = `<div class="empty-state">还没有记录,添加第一位顾客的生日吧</div>`;
+    footerEl.style.display = "none";
+    return;
+  }
+
+  const sorted = [...customers]
+    .map(c => ({ ...c, days: daysUntilNextBirthday(c.date) }))
+    .sort((a, b) => a.days - b.days);
+
+  const rows = sorted.map(c => {
+    const isToday = c.days === 0;
+    return `
+      <div class="row ${isToday ? "today" : ""}">
+        <div class="row-left">
+          <div class="avatar">${isToday ? "🎉" : formatMonthDay(c.date).slice(0, -1)}</div>
+          <div class="info">
+            <p class="cust-name">${escapeHtml(c.name)}</p>
+            <p class="cust-meta">${formatMonthDay(c.date)} · 将满 ${ageTurning(c.date)} 岁</p>
+          </div>
+        </div>
+        <div class="row-right">
+          <span class="days-left">${isToday ? "今天生日!" : c.days + " 天后"}</span>
+          <button class="del-btn" onclick="removeCustomer('${c.id}')" aria-label="删除">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+          </button>
+        </div>
+      </div>`;
+  }).join("");
+
+  contentEl.innerHTML = `<div class="list">${rows}</div>`;
+  footerEl.style.display = "block";
+  footerEl.textContent = `共 ${sorted.length} 位顾客 · 按生日临近顺序排列`;
+}
+
+function escapeHtml(str) {
+  const div = document.createElement("div");
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+async function loadCustomers() {
+  try {
+    const res = await fetch(API);
+    customers = await res.json();
+    render();
+  } catch (e) {
+    contentEl.innerHTML = `<div class="empty-state">加载失败,请刷新重试</div>`;
+  }
+}
+
+async function addCustomer() {
+  const name = nameInput.value.trim();
+  const date = dateInput.value;
+  errorMsg.style.display = "none";
+
+  if (!name) {
+    showError("请输入顾客姓名");
+    return;
+  }
+  if (!date) {
+    showError("请选择生日日期");
+    return;
+  }
+
+  try {
+    const res = await fetch(API, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, date }),
+    });
+    if (!res.ok) {
+      const data = await res.json();
+      showError(data.error || "添加失败");
+      return;
+    }
+    const newCustomer = await res.json();
+    customers.push(newCustomer);
+    nameInput.value = "";
+    dateInput.value = "";
+    render();
+  } catch (e) {
+    showError("网络错误,请重试");
+  }
+}
+
+async function removeCustomer(id) {
+  try {
+    await fetch(`${API}/${id}`, { method: "DELETE" });
+    customers = customers.filter(c => c.id !== id);
+    render();
+  } catch (e) {
+    alert("删除失败,请重试");
+  }
+}
+
+function showError(msg) {
+  errorMsg.textContent = msg;
+  errorMsg.style.display = "block";
+}
+
+document.getElementById("addBtn").addEventListener("click", addCustomer);
+[nameInput, dateInput].forEach(el => {
+  el.addEventListener("keydown", e => { if (e.key === "Enter") addCustomer(); });
+});
+
+loadCustomers();
+</script>
+</body>
+</html>
