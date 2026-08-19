@@ -19,18 +19,30 @@ function sanitizePurchases(purchases) {
       date: p && p.date ? String(p.date).trim() : "",
       product: p && p.product ? String(p.product).trim() : "",
       amount: p && p.amount ? String(p.amount).trim() : "",
+      note: p && p.note ? String(p.note).trim() : "",
     }))
-    .filter((p) => p.date || p.product || p.amount);
+    .filter((p) => p.date || p.product || p.amount || p.note);
+}
+
+const VALID_CATEGORIES = ["new", "regular", "vip"];
+function sanitizeCategory(category) {
+  return VALID_CATEGORIES.includes(category) ? category : "new";
 }
 
 function migrateCustomer(c) {
-  if (Array.isArray(c.purchases)) return c;
-  // 兼容旧版本(单一 product / amount 字段),自动转换成购买记录数组
-  const purchases = (c.product || c.amount)
-    ? [{ date: "", product: c.product || "", amount: c.amount || "" }]
-    : [];
-  const { product, amount, ...rest } = c;
-  return { ...rest, purchases };
+  let next = c;
+  if (!Array.isArray(next.purchases)) {
+    // 兼容旧版本(单一 product / amount 字段),自动转换成购买记录数组
+    const purchases = (next.product || next.amount)
+      ? [{ date: "", product: next.product || "", amount: next.amount || "", note: "" }]
+      : [];
+    const { product, amount, ...rest } = next;
+    next = { ...rest, purchases };
+  }
+  if (!next.category) {
+    next = { ...next, category: "new" };
+  }
+  return next;
 }
 
 function readData() {
@@ -56,14 +68,15 @@ function validationError(body) {
 }
 
 function buildCustomerFields(body) {
-  const { name, date, phone, emoji, purchases, notes } = body;
+  const { name, date, phone, emoji, purchases, notes, category } = body;
   return {
     name: name.trim(),
     date,
     phone: (phone || "").toString().trim(),
-    emoji: (emoji && emoji.trim()) || "🎂",
+    emoji: (emoji && emoji.trim()) || "👤",
     purchases: sanitizePurchases(purchases),
     notes: (notes || "").toString().trim(),
+    category: sanitizeCategory(category),
   };
 }
 
@@ -115,5 +128,5 @@ app.delete("/api/customers/:id", (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`顾客生日系统已启动: http://localhost:${PORT}`);
+  console.log(`顾客记录系统已启动: http://localhost:${PORT}`);
 });
