@@ -3275,7 +3275,7 @@ deleteCustomerBtn.addEventListener("click", async () => {
   if (ok) closeCustomerModal();
 });
 
-[nameInput, phoneInput, dateInput].forEach(el => {
+[nameInput, phoneInput].forEach(el => {
   el.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); saveCustomer(); } });
 });
 
