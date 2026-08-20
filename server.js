@@ -60,6 +60,19 @@ function isValidDateOrEmpty(d) {
   return !d || /^\d{4}-\d{2}-\d{2}$/.test(d);
 }
 
+// 生日只需要月/日,不需要年份;兼容旧数据(YYYY-MM-DD)自动去掉年份部分
+function toMonthDay(dateStr) {
+  if (!dateStr) return "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr.slice(5);
+  if (/^\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+  return "";
+}
+
+function isValidMonthDayOrEmpty(md) {
+  if (!md) return true;
+  return /^(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.test(md);
+}
+
 function migrateCustomer(c) {
   let next = c;
   if (!Array.isArray(next.purchases)) {
@@ -81,6 +94,10 @@ function migrateCustomer(c) {
   }
   if (typeof next.sawDemo !== "string") {
     next = { ...next, sawDemo: "" };
+  }
+  const migratedDate = toMonthDay(next.date);
+  if (migratedDate !== next.date) {
+    next = { ...next, date: migratedDate };
   }
   return next;
 }
@@ -109,7 +126,7 @@ function readProspects() {
       name: p.name || "",
       gender: sanitizeGender(p.gender),
       background: p.background || "",
-      date: isValidDateOrEmpty(p.date) ? (p.date || "") : "",
+      date: toMonthDay(p.date),
       phone: p.phone || "",
       oppDate: isValidDateOrEmpty(p.oppDate) ? (p.oppDate || "") : "",
       notes: p.notes || "",
@@ -134,7 +151,7 @@ function readBirthdays() {
       id: b.id,
       name: b.name || "",
       gender: sanitizeGender(b.gender),
-      date: isValidDateOrEmpty(b.date) ? (b.date || "") : "",
+      date: toMonthDay(b.date),
       phone: b.phone || "",
       notes: b.notes || "",
     }));
@@ -151,7 +168,7 @@ function writeBirthdays(birthdays) {
 function birthdayValidationError(body) {
   const { name, date } = body;
   if (!name || !name.trim()) return "姓名不能为空";
-  if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return "生日日期格式不正确";
+  if (!date || !isValidMonthDayOrEmpty(date) || date.length !== 5) return "生日日期格式不正确";
   return null;
 }
 
@@ -160,7 +177,7 @@ function buildBirthdayFields(body) {
   return {
     name: name.trim(),
     gender: sanitizeGender(gender),
-    date,
+    date: toMonthDay(date),
     phone: (phone || "").toString().trim(),
     notes: (notes || "").toString().trim(),
   };
@@ -169,7 +186,7 @@ function buildBirthdayFields(body) {
 function prospectValidationError(body) {
   const { name, date, oppDate } = body;
   if (!name || !name.trim()) return "姓名不能为空";
-  if (!isValidDateOrEmpty(date)) return "生日日期格式不正确";
+  if (!isValidMonthDayOrEmpty(date)) return "生日日期格式不正确";
   if (!isValidDateOrEmpty(oppDate)) return "日期格式不正确";
   return null;
 }
@@ -180,7 +197,7 @@ function buildProspectFields(body) {
     name: name.trim(),
     gender: sanitizeGender(gender),
     background: (background || "").toString().trim(),
-    date: isValidDateOrEmpty(date) ? (date || "") : "",
+    date: toMonthDay(date),
     phone: (phone || "").toString().trim(),
     oppDate: isValidDateOrEmpty(oppDate) ? (oppDate || "") : "",
     notes: (notes || "").toString().trim(),
@@ -192,7 +209,7 @@ function buildProspectFields(body) {
 function validationError(body) {
   const { name, date } = body;
   if (!name || !name.trim()) return "姓名不能为空";
-  if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return "生日日期格式不正确";
+  if (date && !isValidMonthDayOrEmpty(date)) return "生日日期格式不正确";
   return null;
 }
 
@@ -200,7 +217,7 @@ function buildCustomerFields(body) {
   const { name, date, phone, emoji, gender, purchases, notes, category, lastMeeting, sawDemo } = body;
   return {
     name: name.trim(),
-    date,
+    date: toMonthDay(date),
     phone: (phone || "").toString().trim(),
     gender: sanitizeGender(gender),
     emoji: (emoji && emoji.trim()) || "",
