@@ -198,6 +198,7 @@ function readAbos() {
       meetingsAttended: a.meetingsAttended || "",
       currentStatus: a.currentStatus || "",
       notes: a.notes || "",
+      createdAt: a.createdAt || "",
     }));
   } catch (e) {
     return [];
@@ -465,6 +466,7 @@ app.post("/api/abos", (req, res) => {
   const abos = readAbos();
   const newAbo = {
     id: Date.now().toString(),
+    createdAt: new Date().toISOString(),
     ...buildAboFields(req.body),
   };
   abos.push(newAbo);
@@ -483,6 +485,7 @@ app.put("/api/abos/:id", (req, res) => {
   }
   abos[idx] = {
     id: abos[idx].id,
+    createdAt: abos[idx].createdAt || new Date().toISOString(),
     ...buildAboFields(req.body),
   };
   writeAbos(abos);
