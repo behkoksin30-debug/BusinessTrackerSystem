@@ -42,7 +42,7 @@ function sanitizeCategory(category) {
   return VALID_CATEGORIES.includes(category) ? category : "new";
 }
 
-const VALID_PROSPECT_STATUS = ["pending", "considering", "not_interested", "joined", "customer", "unreachable"];
+const VALID_PROSPECT_STATUS = ["pending", "considering", "not_interested", "joined", "customer", "other_member", "unreachable"];
 function sanitizeProspectStatus(status) {
   return VALID_PROSPECT_STATUS.includes(status) ? status : "pending";
 }
@@ -54,11 +54,6 @@ function sanitizeGender(gender) {
 
 const VALID_SAW_DEMO = ["yes", "no"];
 function sanitizeSawDemo(val) {
-  return VALID_SAW_DEMO.includes(val) ? val : "";
-}
-
-// 通用的"是/否/不确定"三态字段,复用同一套校验规则(对产品有兴趣、关系健康等)
-function sanitizeYesNo(val) {
   return VALID_SAW_DEMO.includes(val) ? val : "";
 }
 
@@ -146,8 +141,8 @@ function readProspects() {
       notes: p.notes || "",
       status: sanitizeProspectStatus(p.status),
       followUps: sanitizeFollowUps(p.followUps),
-      interested: sanitizeYesNo(p.interested),
-      relationshipHealthy: sanitizeYesNo(p.relationshipHealthy),
+      interested: (p.interested || "").toString().trim(),
+      rejectionReason: (p.rejectionReason || "").toString().trim(),
     }));
   } catch (e) {
     return [];
@@ -271,7 +266,7 @@ function prospectValidationError(body) {
 }
 
 function buildProspectFields(body) {
-  const { name, gender, background, date, phone, oppDate, notes, status, followUps, interested, relationshipHealthy } = body;
+  const { name, gender, background, date, phone, oppDate, notes, status, followUps, interested, rejectionReason } = body;
   return {
     name: name.trim(),
     gender: sanitizeGender(gender),
@@ -282,8 +277,8 @@ function buildProspectFields(body) {
     notes: (notes || "").toString().trim(),
     status: sanitizeProspectStatus(status),
     followUps: sanitizeFollowUps(followUps),
-    interested: sanitizeYesNo(interested),
-    relationshipHealthy: sanitizeYesNo(relationshipHealthy),
+    interested: (interested || "").toString().trim(),
+    rejectionReason: (rejectionReason || "").toString().trim(),
   };
 }
 
