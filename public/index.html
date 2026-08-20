@@ -476,6 +476,64 @@
   }
   .gender-btn.active { background: color-mix(in srgb, var(--accent) 18%, var(--input-bg)); color: var(--accent); border-color: var(--accent); }
 
+  .demo-btn {
+    flex: 1;
+    padding: 8px 0;
+    border-radius: 10px;
+    border: 1px solid var(--input-border);
+    background: var(--input-bg);
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+  }
+  .demo-btn.active { background: color-mix(in srgb, var(--accent) 18%, var(--input-bg)); color: var(--accent); border-color: var(--accent); }
+
+  .tab-switcher {
+    display: flex;
+    gap: 4px;
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+    padding: 4px;
+    margin-bottom: 20px;
+  }
+  .tab-btn {
+    flex: 1;
+    padding: 10px 0;
+    border-radius: 10px;
+    border: none;
+    background: none;
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+  }
+  .tab-btn.active { background: var(--accent); color: var(--accent-text); }
+
+  .demo-badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: color-mix(in srgb, #2F8F84 15%, transparent);
+    color: #2F8F84;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+  }
+  .background-line {
+    font-size: 12px;
+    color: var(--muted);
+    margin: 3px 0 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
   .error-msg {
     font-size: 12px;
     color: var(--accent);
@@ -812,16 +870,33 @@
     </div>
     <p class="subtitle" id="subtitle">记录顾客资料、购买记录与生日,轻松跟进每一位顾客</p>
 
+    <div class="tab-switcher">
+      <button class="tab-btn active" id="tabCustomersBtn" type="button" onclick="switchTab('customers')">
+        <span id="tabCustomersLabel">顾客</span>
+      </button>
+      <button class="tab-btn" id="tabProspectsBtn" type="button" onclick="switchTab('prospects')">
+        <span id="tabProspectsLabel">OPP 名单</span>
+      </button>
+    </div>
+
     <button class="add-btn" id="openAddBtn" type="button">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
       <span id="addBtnLabel">添加顾客</span>
     </button>
 
-    <div id="content">
-      <div class="loading-state" id="loadingLabel">加载中…</div>
+    <div id="customersView">
+      <div id="content">
+        <div class="loading-state" id="loadingLabel">加载中…</div>
+      </div>
+      <p class="footer-count" id="footerCount" style="display:none;"></p>
     </div>
 
-    <p class="footer-count" id="footerCount" style="display:none;"></p>
+    <div id="prospectsView" style="display:none;">
+      <div id="prospectsContent">
+        <div class="loading-state" id="prospectsLoadingLabel">加载中…</div>
+      </div>
+      <p class="footer-count" id="prospectsFooterCount" style="display:none;"></p>
+    </div>
   </div>
 
   <!-- Customer detail (view) modal -->
@@ -836,6 +911,7 @@
           </div>
           <p class="detail-info-line" id="detailBirthdayLine"></p>
           <p class="detail-info-line" id="detailPhoneLine" style="display:none;"></p>
+          <p class="detail-info-line" id="detailMeetingLine" style="display:none;"></p>
         </div>
       </div>
 
@@ -889,6 +965,16 @@
       <label class="field-label" id="birthdayFieldLabel">生日</label>
       <input id="dateInput" type="date" />
 
+      <label class="field-label" id="lastMeetingFieldLabel">最后一次见面(选填)</label>
+      <input id="lastMeetingInput" type="date" />
+
+      <label class="field-label" id="sawDemoFieldLabel">看过示范吗</label>
+      <div class="category-toggle" id="sawDemoToggle">
+        <button class="demo-btn" data-demo="yes" type="button"><span id="sawDemoYesLabel">看过</span></button>
+        <button class="demo-btn" data-demo="no" type="button"><span id="sawDemoNoLabel">没看过</span></button>
+        <button class="demo-btn active" data-demo="" type="button"><span id="sawDemoUnsetLabel">不确定</span></button>
+      </div>
+
       <div class="purchases-section">
         <label class="field-label" id="purchasesFieldLabel" style="margin-top:0;">购买记录</label>
         <div id="purchasesList"></div>
@@ -909,6 +995,58 @@
       </div>
       <button class="delete-row-btn" id="deleteCustomerBtn" type="button" style="display:none;">
         <span id="deleteCustomerLabel">删除这位顾客</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Add / Edit prospect (OPP list) modal -->
+  <div class="modal-overlay" id="prospectOverlay">
+    <div class="modal-box">
+      <p class="modal-title" id="prospectModalTitle">添加 OPP 名单</p>
+      <p class="modal-subtitle" id="prospectModalSubtitle">记录讲 OPP 后的联系人资料</p>
+
+      <div class="emoji-row">
+        <div class="avatar-preview" id="prospectAvatarPreview">👤</div>
+        <div style="flex:1;">
+          <input id="prospectNameInput" type="text" />
+        </div>
+      </div>
+
+      <label class="field-label" id="prospectGenderFieldLabel">性别</label>
+      <div class="gender-toggle" id="prospectGenderToggle">
+        <button class="gender-btn" data-gender="male" type="button"><span id="prospectGenderMaleLabel">男</span></button>
+        <button class="gender-btn" data-gender="female" type="button"><span id="prospectGenderFemaleLabel">女</span></button>
+        <button class="gender-btn active" data-gender="" type="button"><span id="prospectGenderUnsetLabel">不设置</span></button>
+      </div>
+
+      <label class="field-label" id="backgroundFieldLabel">背景</label>
+      <textarea id="backgroundInput"></textarea>
+
+      <label class="field-label" id="phoneFieldLabel2">电话号码(选填)</label>
+      <input id="prospectPhoneInput" type="tel" />
+
+      <div class="two-col">
+        <div>
+          <label class="field-label" id="oppDateFieldLabel">讲 OPP 的日期</label>
+          <input id="oppDateInput" type="date" />
+        </div>
+        <div>
+          <label class="field-label" id="prospectBirthdayFieldLabel">生日(选填)</label>
+          <input id="prospectDateInput" type="date" />
+        </div>
+      </div>
+
+      <label class="field-label" id="prospectNotesFieldLabel">备注</label>
+      <textarea id="prospectNotesInput"></textarea>
+
+      <p class="error-msg" id="prospectErrorMsg" style="display:none;"></p>
+
+      <div class="modal-actions">
+        <button id="cancelProspectBtn" type="button"><span id="cancelProspectLabel">取消</span></button>
+        <button class="primary-btn" id="saveProspectBtn" type="button"><span id="saveProspectLabel">保存</span></button>
+      </div>
+      <button class="delete-row-btn" id="deleteProspectBtn" type="button" style="display:none;">
+        <span id="deleteProspectLabel">删除这条记录</span>
       </button>
     </div>
   </div>
@@ -987,6 +1125,30 @@ const I18N = {
     noPhoneHint: "该顾客未填写电话号码,无法通过 WhatsApp 发送",
     phoneFieldLabel: "电话号码(选填)",
     birthdayFieldLabel: "生日",
+    lastMeetingFieldLabel: "最后一次见面(选填)",
+    sawDemoFieldLabel: "看过示范吗",
+    sawDemoYes: "看过",
+    sawDemoNo: "没看过",
+    sawDemoUnset: "不确定",
+    lastMeetingRowLabel: (d) => `上次见面 ${d}`,
+    sawDemoBadge: "✅ 已看示范",
+    tabCustomers: "顾客",
+    tabProspects: "OPP 名单",
+    addProspectBtnLabel: "添加 OPP 名单",
+    modalAddProspectTitle: "添加 OPP 名单",
+    modalEditProspectTitle: "编辑 OPP 名单",
+    prospectModalSubtitle: "记录讲 OPP 后的联系人资料",
+    backgroundFieldLabel: "背景",
+    backgroundPlaceholder: "例如:朋友介绍、做生意的、对健康有兴趣…",
+    oppDateFieldLabel: "讲 OPP 的日期",
+    prospectBirthdayFieldLabel: "生日(选填)",
+    prospectNotesPlaceholder: "记录关于这个人的想法、跟进计划…",
+    prospectEmpty: "还没有记录,添加第一位吧",
+    prospectFooterCount: (n) => `共 ${n} 位`,
+    deleteProspectRowConfirm: (name) => `确定要删除「${name}」吗?此操作无法撤销。`,
+    deleteProspectConfirm: "确定要删除这条记录吗?此操作无法撤销。",
+    deleteProspectLabel: "删除这条记录",
+    noOppDateHint: "未记录日期",
     categoryFieldLabel: "顾客分类",
     categoryNew: "新顾客",
     categoryRegular: "一般",
@@ -1072,6 +1234,30 @@ const I18N = {
     noPhoneHint: "No phone number on file for this customer — WhatsApp isn't available",
     phoneFieldLabel: "Phone number (optional)",
     birthdayFieldLabel: "Birthday",
+    lastMeetingFieldLabel: "Last meeting (optional)",
+    sawDemoFieldLabel: "Seen the demo?",
+    sawDemoYes: "Yes",
+    sawDemoNo: "No",
+    sawDemoUnset: "Not sure",
+    lastMeetingRowLabel: (d) => `Last met ${d}`,
+    sawDemoBadge: "✅ Seen demo",
+    tabCustomers: "Customers",
+    tabProspects: "OPP List",
+    addProspectBtnLabel: "Add Prospect",
+    modalAddProspectTitle: "Add Prospect",
+    modalEditProspectTitle: "Edit Prospect",
+    prospectModalSubtitle: "Track people you've presented the opportunity to",
+    backgroundFieldLabel: "Background",
+    backgroundPlaceholder: "e.g. introduced by a friend, runs a business, interested in health…",
+    oppDateFieldLabel: "OPP presentation date",
+    prospectBirthdayFieldLabel: "Birthday (optional)",
+    prospectNotesPlaceholder: "Notes about this person, follow-up plans…",
+    prospectEmpty: "No records yet — add your first one",
+    prospectFooterCount: (n) => `${n} ${n === 1 ? "person" : "people"}`,
+    deleteProspectRowConfirm: (name) => `Delete "${name}"? This cannot be undone.`,
+    deleteProspectConfirm: "Delete this record? This cannot be undone.",
+    deleteProspectLabel: "Delete this record",
+    noOppDateHint: "No date recorded",
     categoryFieldLabel: "Category",
     categoryNew: "New",
     categoryRegular: "Regular",
@@ -1176,6 +1362,31 @@ function applyLanguage() {
   document.getElementById("categoryNewLabel").textContent = s.categoryNew;
   document.getElementById("categoryRegularLabel").textContent = s.categoryRegular;
   document.getElementById("categoryVipLabel").textContent = s.categoryVip;
+  document.getElementById("lastMeetingFieldLabel").textContent = s.lastMeetingFieldLabel;
+  document.getElementById("sawDemoFieldLabel").textContent = s.sawDemoFieldLabel;
+  document.getElementById("sawDemoYesLabel").textContent = s.sawDemoYes;
+  document.getElementById("sawDemoNoLabel").textContent = s.sawDemoNo;
+  document.getElementById("sawDemoUnsetLabel").textContent = s.sawDemoUnset;
+  document.getElementById("tabCustomersLabel").textContent = s.tabCustomers;
+  document.getElementById("tabProspectsLabel").textContent = s.tabProspects;
+  document.getElementById("prospectsLoadingLabel").textContent = s.loading;
+  document.getElementById("prospectNameInput").placeholder = s.namePlaceholder;
+  document.getElementById("prospectGenderFieldLabel").textContent = s.genderFieldLabel;
+  document.getElementById("prospectGenderMaleLabel").textContent = s.genderMale;
+  document.getElementById("prospectGenderFemaleLabel").textContent = s.genderFemale;
+  document.getElementById("prospectGenderUnsetLabel").textContent = s.genderUnset;
+  document.getElementById("backgroundFieldLabel").textContent = s.backgroundFieldLabel;
+  document.getElementById("backgroundInput").placeholder = s.backgroundPlaceholder;
+  document.getElementById("phoneFieldLabel2").textContent = s.phoneFieldLabel;
+  document.getElementById("prospectPhoneInput").placeholder = s.phonePlaceholder;
+  document.getElementById("oppDateFieldLabel").textContent = s.oppDateFieldLabel;
+  document.getElementById("prospectBirthdayFieldLabel").textContent = s.prospectBirthdayFieldLabel;
+  document.getElementById("prospectNotesFieldLabel").textContent = s.notesFieldLabel;
+  document.getElementById("prospectNotesInput").placeholder = s.prospectNotesPlaceholder;
+  document.getElementById("cancelProspectLabel").textContent = s.cancelLabel;
+  document.getElementById("saveProspectLabel").textContent = s.saveLabel;
+  document.getElementById("deleteProspectLabel").textContent = s.deleteProspectLabel;
+  document.getElementById("prospectModalSubtitle").textContent = s.prospectModalSubtitle;
   document.getElementById("purchasesFieldLabel").textContent = s.purchasesFieldLabel;
   document.getElementById("addPurchaseLabel").textContent = s.addPurchaseLabel;
   document.getElementById("notesFieldLabel").textContent = s.notesFieldLabel;
@@ -1192,9 +1403,11 @@ function applyLanguage() {
   document.getElementById("detailEditLabel").textContent = s.detailEditLabel;
   document.getElementById("detailNotesTitle").textContent = s.notesLabel;
   document.getElementById("detailHistoryTitle").textContent = s.purchasesFieldLabel;
+  document.getElementById("addBtnLabel").textContent = currentTab === "prospects" ? s.addProspectBtnLabel : s.addBtnLabel;
   document.documentElement.lang = prefs.lang === "zh" ? "zh-CN" : "en";
   renderPurchaseRows();
   render();
+  renderProspects();
 }
 
 function daysUntilNextBirthday(dateStr) {
@@ -1283,6 +1496,11 @@ function render() {
     }
     const warnLine = isInactive ? `<p class="cust-meta warn-line">${s.inactiveWarning}</p>` : "";
 
+    const extraBits = [];
+    if (c.lastMeeting) extraBits.push(escapeHtml(s.lastMeetingRowLabel(c.lastMeeting)));
+    if (c.sawDemo === "yes") extraBits.push(`<span class="demo-badge">${s.sawDemoBadge}</span>`);
+    const extraLine = extraBits.length > 0 ? `<p class="cust-meta">${extraBits.join(" · ")}</p>` : "";
+
     const whatsappIcon = c.phone
       ? `<button class="icon-btn whatsapp-icon" onclick="event.stopPropagation(); openWhatsAppChat('${c.id}')" aria-label="${s.whatsappChatLabel}">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38a9.9 9.9 0 0 0 4.74 1.21h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.86 9.86 0 0 0 12.04 2zm5.8 14.15c-.24.68-1.4 1.3-1.93 1.38-.5.08-1.11.11-1.79-.11a13 13 0 0 1-1.86-.7c-2.83-1.22-4.67-4.08-4.81-4.27-.14-.19-1.15-1.53-1.15-2.92 0-1.39.73-2.07.98-2.35.26-.28.56-.35.75-.35.19 0 .37 0 .53.01.17.01.4-.06.62.48.24.58.8 2 .87 2.14.07.14.12.31.02.5-.09.19-.14.31-.28.47-.14.16-.29.36-.42.48-.14.14-.28.29-.12.57.16.28.71 1.18 1.53 1.91 1.05.94 1.94 1.24 2.22 1.38.28.14.44.12.6-.07.16-.19.68-.79.87-1.06.19-.28.37-.23.62-.14.26.09 1.63.77 1.91.91.28.14.47.21.53.33.07.12.07.68-.17 1.36z"/></svg>
@@ -1301,6 +1519,7 @@ function render() {
             </div>
             <p class="cust-meta">${s.monthDay(mm, dd)} · ${s.willTurn(ageTurning(c.date))}${c.phone ? " · " + escapeHtml(c.phone) : ""}</p>
             ${purchaseLine}
+            ${extraLine}
             ${warnLine}
           </div>
         </div>
@@ -1342,6 +1561,274 @@ function openWhatsAppChat(id) {
   window.open(`https://wa.me/${digits}`, "_blank");
 }
 
+/* ============================================================
+   Tabs: 顾客 / OPP 名单
+   ============================================================ */
+let currentTab = "customers";
+
+function switchTab(tab) {
+  currentTab = tab;
+  const s = t();
+  document.getElementById("tabCustomersBtn").classList.toggle("active", tab === "customers");
+  document.getElementById("tabProspectsBtn").classList.toggle("active", tab === "prospects");
+  document.getElementById("customersView").style.display = tab === "customers" ? "block" : "none";
+  document.getElementById("prospectsView").style.display = tab === "prospects" ? "block" : "none";
+  document.getElementById("addBtnLabel").textContent = tab === "prospects" ? s.addProspectBtnLabel : s.addBtnLabel;
+}
+
+document.getElementById("openAddBtn").addEventListener("click", () => {
+  if (currentTab === "prospects") {
+    openAddProspectModal();
+  } else {
+    openAddModal();
+  }
+});
+
+/* ============================================================
+   OPP 名单 (prospects)
+   ============================================================ */
+const PROSPECTS_API = "/api/prospects";
+let prospects = [];
+const prospectsContentEl = document.getElementById("prospectsContent");
+const prospectsFooterEl = document.getElementById("prospectsFooterCount");
+
+async function loadProspects() {
+  try {
+    const res = await fetch(PROSPECTS_API);
+    prospects = await res.json();
+    renderProspects();
+  } catch (e) {
+    if (prospectsContentEl) prospectsContentEl.innerHTML = `<div class="empty-state">${t().loadFailed}</div>`;
+  }
+}
+
+function renderProspects() {
+  if (!prospectsContentEl) return;
+  const s = t();
+  if (prospects.length === 0) {
+    prospectsContentEl.innerHTML = `<div class="empty-state">${s.prospectEmpty}</div>`;
+    prospectsFooterEl.style.display = "none";
+    return;
+  }
+
+  const sorted = [...prospects].sort((a, b) => {
+    if (a.oppDate && b.oppDate) return b.oppDate.localeCompare(a.oppDate);
+    if (a.oppDate) return -1;
+    if (b.oppDate) return 1;
+    return 0;
+  });
+
+  const rows = sorted.map(p => {
+    const whatsappIcon = p.phone
+      ? `<button class="icon-btn whatsapp-icon" onclick="event.stopPropagation(); openWhatsAppChatProspect('${p.id}')" aria-label="${s.whatsappChatLabel}">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38a9.9 9.9 0 0 0 4.74 1.21h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.86 9.86 0 0 0 12.04 2zm5.8 14.15c-.24.68-1.4 1.3-1.93 1.38-.5.08-1.11.11-1.79-.11a13 13 0 0 1-1.86-.7c-2.83-1.22-4.67-4.08-4.81-4.27-.14-.19-1.15-1.53-1.15-2.92 0-1.39.73-2.07.98-2.35.26-.28.56-.35.75-.35.19 0 .37 0 .53.01.17.01.4-.06.62.48.24.58.8 2 .87 2.14.07.14.12.31.02.5-.09.19-.14.31-.28.47-.14.16-.29.36-.42.48-.14.14-.28.29-.12.57.16.28.71 1.18 1.53 1.91 1.05.94 1.94 1.24 2.22 1.38.28.14.44.12.6-.07.16-.19.68-.79.87-1.06.19-.28.37-.23.62-.14.26.09 1.63.77 1.91.91.28.14.47.21.53.33.07.12.07.68-.17 1.36z"/></svg>
+        </button>`
+      : "";
+    const oppDateText = p.oppDate ? escapeHtml(p.oppDate) : s.noOppDateHint;
+    return `
+      <div class="row" onclick="openEditProspectModal('${p.id}')">
+        <div class="row-left">
+          <div class="avatar">${genderAvatar(p)}</div>
+          <div class="info">
+            <div class="cust-name-row">
+              <p class="cust-name">${escapeHtml(p.name)}</p>
+              ${p.notes ? `<span class="notes-dot" title="${escapeAttr(p.notes)}">📝</span>` : ""}
+            </div>
+            <p class="cust-meta">${oppDateText}${p.phone ? " · " + escapeHtml(p.phone) : ""}</p>
+            ${p.background ? `<p class="background-line">${escapeHtml(p.background)}</p>` : ""}
+          </div>
+        </div>
+        <div class="row-right">
+          ${whatsappIcon}
+          <button class="icon-btn" onclick="event.stopPropagation(); deleteProspectFromRow('${p.id}')" aria-label="${s.deleteLabel}">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+          </button>
+        </div>
+      </div>`;
+  }).join("");
+
+  prospectsContentEl.innerHTML = `<div class="list">${rows}</div>`;
+  prospectsFooterEl.style.display = "block";
+  prospectsFooterEl.textContent = s.prospectFooterCount(sorted.length);
+}
+
+function openWhatsAppChatProspect(id) {
+  const p = prospects.find(x => x.id === id);
+  if (!p || !p.phone) return;
+  const digits = p.phone.replace(/[^\d+]/g, "").replace(/^\+/, "");
+  window.open(`https://wa.me/${digits}`, "_blank");
+}
+
+/* ---------- Add / Edit prospect modal ---------- */
+const prospectOverlay = document.getElementById("prospectOverlay");
+const prospectModalTitle = document.getElementById("prospectModalTitle");
+const prospectNameInput = document.getElementById("prospectNameInput");
+const prospectPhoneInput = document.getElementById("prospectPhoneInput");
+const prospectDateInput = document.getElementById("prospectDateInput");
+const oppDateInput = document.getElementById("oppDateInput");
+const backgroundInput = document.getElementById("backgroundInput");
+const prospectNotesInput = document.getElementById("prospectNotesInput");
+const prospectErrorMsg = document.getElementById("prospectErrorMsg");
+const deleteProspectBtn = document.getElementById("deleteProspectBtn");
+
+let pSelectedGender = "";
+let editingProspectId = null;
+
+function updateProspectAvatarPreview() {
+  const preview = document.getElementById("prospectAvatarPreview");
+  if (!preview) return;
+  if (pSelectedGender === "male") preview.textContent = "👨";
+  else if (pSelectedGender === "female") preview.textContent = "👩";
+  else preview.textContent = "👤";
+}
+
+function setProspectGender(gender) {
+  pSelectedGender = gender;
+  document.querySelectorAll("#prospectGenderToggle .gender-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.gender === gender);
+  });
+  updateProspectAvatarPreview();
+}
+
+document.querySelectorAll("#prospectGenderToggle .gender-btn").forEach(btn => {
+  btn.addEventListener("click", () => setProspectGender(btn.dataset.gender));
+});
+
+function resetProspectForm() {
+  prospectNameInput.value = "";
+  prospectPhoneInput.value = "";
+  prospectDateInput.value = "";
+  oppDateInput.value = "";
+  backgroundInput.value = "";
+  prospectNotesInput.value = "";
+  setProspectGender("");
+  prospectErrorMsg.style.display = "none";
+}
+
+function openAddProspectModal() {
+  const s = t();
+  editingProspectId = null;
+  resetProspectForm();
+  prospectModalTitle.textContent = s.modalAddProspectTitle;
+  deleteProspectBtn.style.display = "none";
+  prospectOverlay.classList.add("open");
+}
+
+function openEditProspectModal(id) {
+  const p = prospects.find(x => x.id === id);
+  if (!p) return;
+  const s = t();
+  editingProspectId = id;
+  prospectErrorMsg.style.display = "none";
+  prospectNameInput.value = p.name || "";
+  prospectPhoneInput.value = p.phone || "";
+  prospectDateInput.value = p.date || "";
+  oppDateInput.value = p.oppDate || "";
+  backgroundInput.value = p.background || "";
+  prospectNotesInput.value = p.notes || "";
+  setProspectGender(p.gender || "");
+  prospectModalTitle.textContent = s.modalEditProspectTitle;
+  deleteProspectBtn.style.display = "block";
+  prospectOverlay.classList.add("open");
+}
+
+function closeProspectModal() {
+  prospectOverlay.classList.remove("open");
+}
+
+document.getElementById("cancelProspectBtn").addEventListener("click", closeProspectModal);
+prospectOverlay.addEventListener("click", (e) => {
+  if (e.target === prospectOverlay) closeProspectModal();
+});
+
+function showProspectError(msg) {
+  prospectErrorMsg.textContent = msg;
+  prospectErrorMsg.style.display = "block";
+}
+
+async function saveProspect() {
+  const s = t();
+  const name = prospectNameInput.value.trim();
+  const phone = prospectPhoneInput.value.trim();
+  const date = prospectDateInput.value;
+  const oppDate = oppDateInput.value;
+  const background = backgroundInput.value.trim();
+  const notes = prospectNotesInput.value.trim();
+  prospectErrorMsg.style.display = "none";
+
+  if (!name) { showProspectError(s.errorName); return; }
+  if (phone && !/^[+\d][\d\s\-()]{4,}$/.test(phone)) { showProspectError(s.errorPhone); return; }
+
+  const payload = { name, gender: pSelectedGender, background, date, phone, oppDate, notes };
+
+  try {
+    let res, saved;
+    if (editingProspectId) {
+      res = await fetch(`${PROSPECTS_API}/${editingProspectId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+    } else {
+      res = await fetch(PROSPECTS_API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+    }
+    if (!res.ok) {
+      const data = await res.json();
+      showProspectError(data.error || s.errorAdd);
+      return;
+    }
+    saved = await res.json();
+    if (editingProspectId) {
+      prospects = prospects.map(p => p.id === editingProspectId ? saved : p);
+    } else {
+      prospects.push(saved);
+    }
+    closeProspectModal();
+    renderProspects();
+  } catch (e) {
+    showProspectError(s.errorNetwork);
+  }
+}
+
+document.getElementById("saveProspectBtn").addEventListener("click", saveProspect);
+
+async function deleteProspectById(id) {
+  const s = t();
+  try {
+    await fetch(`${PROSPECTS_API}/${id}`, { method: "DELETE" });
+    prospects = prospects.filter(p => p.id !== id);
+    renderProspects();
+    return true;
+  } catch (e) {
+    alert(s.deleteFailed);
+    return false;
+  }
+}
+
+async function deleteProspectFromRow(id) {
+  const s = t();
+  const p = prospects.find(x => x.id === id);
+  if (!p) return;
+  if (!confirm(s.deleteProspectRowConfirm(p.name))) return;
+  await deleteProspectById(id);
+}
+
+deleteProspectBtn.addEventListener("click", async () => {
+  const s = t();
+  if (!editingProspectId) return;
+  if (!confirm(s.deleteProspectConfirm)) return;
+  const ok = await deleteProspectById(editingProspectId);
+  if (ok) closeProspectModal();
+});
+
+[prospectNameInput, prospectPhoneInput, prospectDateInput, oppDateInput].forEach(el => {
+  el.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); saveProspect(); } });
+});
+
 /* ---------- Customer detail (view) modal ---------- */
 const detailOverlay = document.getElementById("detailOverlay");
 let detailCustomerId = null;
@@ -1368,6 +1855,18 @@ function openDetailModal(id) {
     phoneLine.textContent = `📞 ${c.phone}`;
   } else {
     phoneLine.style.display = "none";
+  }
+
+  const meetingLine = document.getElementById("detailMeetingLine");
+  const meetingBits = [];
+  if (c.lastMeeting) meetingBits.push(s.lastMeetingRowLabel(c.lastMeeting));
+  if (c.sawDemo === "yes") meetingBits.push(s.sawDemoBadge);
+  else if (c.sawDemo === "no") meetingBits.push(`❌ ${s.sawDemoNo}`);
+  if (meetingBits.length > 0) {
+    meetingLine.style.display = "flex";
+    meetingLine.textContent = meetingBits.join(" · ");
+  } else {
+    meetingLine.style.display = "none";
   }
 
   const purchases = Array.isArray(c.purchases) ? c.purchases : [];
@@ -1474,6 +1973,18 @@ document.querySelectorAll(".category-btn").forEach(btn => {
   btn.addEventListener("click", () => setCategory(btn.dataset.category));
 });
 
+let selectedSawDemo = "";
+function setSawDemo(val) {
+  selectedSawDemo = val;
+  document.querySelectorAll(".demo-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.demo === val);
+  });
+}
+
+document.querySelectorAll(".demo-btn").forEach(btn => {
+  btn.addEventListener("click", () => setSawDemo(btn.dataset.demo));
+});
+
 function syncPurchaseRowsFromDOM() {
   purchaseRows.forEach(row => {
     const dateEl = document.getElementById(`p-date-${row.key}`);
@@ -1548,10 +2059,12 @@ function resetCustomerForm() {
   phoneInput.value = "";
   dateInput.value = "";
   notesInput.value = "";
+  document.getElementById("lastMeetingInput").value = "";
   purchaseRows = [];
   renderPurchaseRows();
   setGender("");
   setCategory("new");
+  setSawDemo("");
   errorMsg.style.display = "none";
 }
 
@@ -1574,6 +2087,7 @@ function openEditModal(id) {
   phoneInput.value = c.phone || "";
   dateInput.value = c.date || "";
   notesInput.value = c.notes || "";
+  document.getElementById("lastMeetingInput").value = c.lastMeeting || "";
   purchaseRows = (Array.isArray(c.purchases) ? c.purchases : []).map(p => {
     purchaseKeyCounter += 1;
     return { key: purchaseKeyCounter, date: p.date || "", product: p.product || "", amount: p.amount || "", note: p.note || "" };
@@ -1581,6 +2095,7 @@ function openEditModal(id) {
   renderPurchaseRows();
   setGender(c.gender || "");
   setCategory(c.category || "new");
+  setSawDemo(c.sawDemo || "");
   customerModalTitle.textContent = s.modalEditTitle;
   deleteCustomerBtn.style.display = "block";
   customerOverlay.classList.add("open");
@@ -1590,7 +2105,6 @@ function closeCustomerModal() {
   customerOverlay.classList.remove("open");
 }
 
-document.getElementById("openAddBtn").addEventListener("click", openAddModal);
 document.getElementById("cancelCustomerBtn").addEventListener("click", closeCustomerModal);
 customerOverlay.addEventListener("click", (e) => {
   if (e.target === customerOverlay) closeCustomerModal();
@@ -1607,6 +2121,7 @@ async function saveCustomer() {
   const phone = phoneInput.value.trim();
   const date = dateInput.value;
   const notes = notesInput.value.trim();
+  const lastMeeting = document.getElementById("lastMeetingInput").value;
   errorMsg.style.display = "none";
 
   if (!name) { showError(s.errorName); return; }
@@ -1618,7 +2133,7 @@ async function saveCustomer() {
     .map(r => ({ date: r.date.trim(), product: r.product.trim(), amount: r.amount.trim(), note: r.note.trim() }))
     .filter(p => p.date || p.product || p.amount || p.note);
 
-  const payload = { name, date, phone, gender: selectedGender, purchases, notes, category: selectedCategory };
+  const payload = { name, date, phone, gender: selectedGender, purchases, notes, category: selectedCategory, lastMeeting, sawDemo: selectedSawDemo };
 
   try {
     let res, saved;
@@ -1799,6 +2314,7 @@ whatsappBtn.addEventListener("click", () => {
 setCategory("new");
 applyPrefs();
 loadCustomers();
+loadProspects();
 </script>
 </body>
 </html>
