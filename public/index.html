@@ -545,6 +545,17 @@
     font-size: 11px;
     color: var(--muted);
   }
+  .opp-stat-chip-editable {
+    position: relative;
+    cursor: pointer;
+  }
+  .opp-stat-chip-editable:hover { border-color: var(--accent); }
+  .opp-stat-edit-icon {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    color: var(--muted-light);
+  }
 
   .checklist-group {
     display: flex;
@@ -633,6 +644,7 @@
   .status-badge.not_interested { background: rgba(196,99,90,0.15); color: #C4635A; }
   .status-badge.joined { background: rgba(47,143,132,0.18); color: #2F8F84; }
   .status-badge.customer { background: rgba(91,95,199,0.15); color: #5B5FC7; }
+  .status-badge.other_member { background: rgba(138,109,59,0.18); color: #8A6D3B; }
   .status-badge.unreachable { background: rgba(138,122,114,0.2); color: var(--muted); }
 
   .opp-date-badge {
@@ -1125,9 +1137,10 @@
           <span class="opp-stat-number" id="oppStatsThisMonthNum">0</span>
           <span class="opp-stat-label" id="oppStatsThisMonthLabel"></span>
         </div>
-        <div class="opp-stat-chip">
+        <div class="opp-stat-chip opp-stat-chip-editable" id="oppStatsTotalChip" onclick="editOppGoal()">
           <span class="opp-stat-number" id="oppStatsTotalNum">0</span>
           <span class="opp-stat-label" id="oppStatsTotalLabel"></span>
+          <svg class="opp-stat-edit-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
         </div>
       </div>
       <div id="prospectsContent">
@@ -1329,11 +1342,11 @@
       </div>
 
       <label class="field-label" id="prospectGenderFieldLabel">性别</label>
-      <div class="gender-toggle" id="prospectGenderToggle">
-        <button class="gender-btn" data-gender="male" type="button"><span id="prospectGenderMaleLabel">男</span></button>
-        <button class="gender-btn" data-gender="female" type="button"><span id="prospectGenderFemaleLabel">女</span></button>
-        <button class="gender-btn active" data-gender="" type="button"><span id="prospectGenderUnsetLabel">不设置</span></button>
-      </div>
+      <select id="prospectGenderSelect">
+        <option value="" id="prospectGenderUnsetOpt">不设置</option>
+        <option value="male" id="prospectGenderMaleOpt">男</option>
+        <option value="female" id="prospectGenderFemaleOpt">女</option>
+      </select>
 
       <label class="field-label" id="backgroundFieldLabel">背景</label>
       <textarea id="backgroundInput"></textarea>
@@ -1362,22 +1375,24 @@
         <option value="not_interested" id="statusNotInterestedOpt">没兴趣</option>
         <option value="joined" id="statusJoinedOpt">已加入</option>
         <option value="customer" id="statusCustomerOpt">已成为顾客</option>
+        <option value="other_member" id="statusOtherMemberOpt">其他人的会员</option>
         <option value="unreachable" id="statusUnreachableOpt">联系不上</option>
       </select>
 
       <label class="field-label" id="interestedFieldLabel">对产品有兴趣吗</label>
-      <div class="category-toggle" id="interestedToggle">
-        <button class="demo-btn" data-interested="yes" type="button"><span id="interestedYesLabel">有兴趣</span></button>
-        <button class="demo-btn" data-interested="no" type="button"><span id="interestedNoLabel">没兴趣</span></button>
-        <button class="demo-btn active" data-interested="" type="button"><span id="interestedUnsetLabel">不确定</span></button>
-      </div>
+      <input id="interestedInput" type="text" />
 
-      <label class="field-label" id="relationshipFieldLabel">关系健康吗</label>
-      <div class="category-toggle" id="relationshipToggle">
-        <button class="demo-btn" data-relationship="yes" type="button"><span id="relationshipYesLabel">健康</span></button>
-        <button class="demo-btn" data-relationship="no" type="button"><span id="relationshipNoLabel">需要改善</span></button>
-        <button class="demo-btn active" data-relationship="" type="button"><span id="relationshipUnsetLabel">不确定</span></button>
-      </div>
+      <label class="field-label" id="rejectionReasonFieldLabel">拒绝的原因</label>
+      <select id="rejectionReasonSelect">
+        <option value="" id="rejectionReasonNoneOpt">-</option>
+        <option value="没有时间" id="rejectionReasonNoTimeOpt">没有时间</option>
+        <option value="没有资金" id="rejectionReasonNoMoneyOpt">没有资金</option>
+        <option value="不感兴趣" id="rejectionReasonNotInterestedOpt">不感兴趣</option>
+        <option value="对行业有负面印象" id="rejectionReasonNegativeOpt">对行业有负面印象</option>
+        <option value="家人反对" id="rejectionReasonFamilyOpt">家人反对</option>
+        <option value="other" id="rejectionReasonOtherOpt">其他(自己填写)</option>
+      </select>
+      <input id="rejectionReasonOtherInput" type="text" style="display:none; margin-top:8px;" />
 
       <div class="purchases-section">
         <label class="field-label" id="followUpsFieldLabel" style="margin-top:0;">跟进记录</label>
@@ -1702,6 +1717,7 @@ const I18N = {
     aboProgressLabel: (done, total) => `${done}/${total} 已完成`,
     oppStatsThisMonthLabel: "本月做了几场 OPP",
     oppStatsTotalLabel: "累计做了几场 OPP",
+    oppGoalPrompt: "设定你的累计 OPP 目标场数(留空表示不设定目标):",
     customerStatsMonthLabel: "本月顾客消费 (RM)",
     customerStatsTotalLabel: "累计顾客消费 (RM)",
     addBirthdayBtnLabel: "添加生日",
@@ -1736,12 +1752,15 @@ const I18N = {
     noOppDateHint: "未记录日期",
     statusFieldLabel: "讲 OPP 之后的反应",
     interestedFieldLabel: "对产品有兴趣吗",
-    interestedYes: "有兴趣",
-    interestedNo: "没兴趣",
-    relationshipFieldLabel: "关系健康吗",
-    relationshipYes: "健康",
-    relationshipNo: "需要改善",
-    yesNoUnset: "不确定",
+    rejectionReasonFieldLabel: "拒绝的原因",
+    rejectionReasonNone: "-",
+    rejectionReasonNoTime: "没有时间",
+    rejectionReasonNoMoney: "没有资金",
+    rejectionReasonNotInterested: "不感兴趣",
+    rejectionReasonNegative: "对行业有负面印象",
+    rejectionReasonFamily: "家人反对",
+    rejectionReasonOther: "其他(自己填写)",
+    statusOtherMember: "其他人的会员",
     followUpsFieldLabel: "跟进记录",
     followUpDateLabel: "日期",
     followUpNoteLabel: "事项",
@@ -1888,6 +1907,7 @@ const I18N = {
     aboProgressLabel: (done, total) => `${done}/${total} done`,
     oppStatsThisMonthLabel: "OPPs this month",
     oppStatsTotalLabel: "OPPs total",
+    oppGoalPrompt: "Set your total OPP goal (leave blank for no goal):",
     customerStatsMonthLabel: "Customer spending this month (RM)",
     customerStatsTotalLabel: "Total customer spending (RM)",
     addBirthdayBtnLabel: "Add Birthday",
@@ -1922,12 +1942,15 @@ const I18N = {
     noOppDateHint: "No date recorded",
     statusFieldLabel: "Reaction after OPP",
     interestedFieldLabel: "Interested in products?",
-    interestedYes: "Interested",
-    interestedNo: "Not interested",
-    relationshipFieldLabel: "Relationship healthy?",
-    relationshipYes: "Healthy",
-    relationshipNo: "Needs work",
-    yesNoUnset: "Not sure",
+    rejectionReasonFieldLabel: "Reason for rejection",
+    rejectionReasonNone: "-",
+    rejectionReasonNoTime: "No time",
+    rejectionReasonNoMoney: "No money",
+    rejectionReasonNotInterested: "Not interested",
+    rejectionReasonNegative: "Negative view of the industry",
+    rejectionReasonFamily: "Family objects",
+    rejectionReasonOther: "Other (type your own)",
+    statusOtherMember: "Someone else's member",
     followUpsFieldLabel: "Follow-up records",
     followUpDateLabel: "Date",
     followUpNoteLabel: "Note",
@@ -1992,7 +2015,7 @@ const I18N = {
 };
 
 const PREFS_KEY = "birthday-app-prefs";
-let prefs = { color: "#C4635A", dark: false, lang: "zh", appTitle: "", appSubtitle: "", customIcon: "" };
+let prefs = { color: "#C4635A", dark: false, lang: "zh", appTitle: "", appSubtitle: "", customIcon: "", oppGoal: 0 };
 try {
   const saved = JSON.parse(localStorage.getItem(PREFS_KEY) || "{}");
   prefs = { ...prefs, ...saved };
@@ -2039,6 +2062,7 @@ function statusLabel(status) {
     not_interested: s.statusNotInterested,
     joined: s.statusJoined,
     customer: s.statusCustomer,
+    other_member: s.statusOtherMember,
     unreachable: s.statusUnreachable,
   };
   return map[status] || s.statusPending;
@@ -2079,9 +2103,6 @@ function applyLanguage() {
   document.getElementById("prospectsLoadingLabel").textContent = s.loading;
   document.getElementById("prospectNameInput").placeholder = s.namePlaceholder;
   document.getElementById("prospectGenderFieldLabel").textContent = s.genderFieldLabel;
-  document.getElementById("prospectGenderMaleLabel").textContent = s.genderMale;
-  document.getElementById("prospectGenderFemaleLabel").textContent = s.genderFemale;
-  document.getElementById("prospectGenderUnsetLabel").textContent = s.genderUnset;
   document.getElementById("backgroundFieldLabel").textContent = s.backgroundFieldLabel;
   document.getElementById("backgroundInput").placeholder = s.backgroundPlaceholder;
   document.getElementById("phoneFieldLabel2").textContent = s.phoneFieldLabel;
@@ -2100,13 +2121,18 @@ function applyLanguage() {
   document.getElementById("prospectDetailNotesTitle").textContent = s.notesFieldLabel;
   document.getElementById("statusFieldLabel").textContent = s.statusFieldLabel;
   document.getElementById("interestedFieldLabel").textContent = s.interestedFieldLabel;
-  document.getElementById("interestedYesLabel").textContent = s.interestedYes;
-  document.getElementById("interestedNoLabel").textContent = s.interestedNo;
-  document.getElementById("interestedUnsetLabel").textContent = s.yesNoUnset;
-  document.getElementById("relationshipFieldLabel").textContent = s.relationshipFieldLabel;
-  document.getElementById("relationshipYesLabel").textContent = s.relationshipYes;
-  document.getElementById("relationshipNoLabel").textContent = s.relationshipNo;
-  document.getElementById("relationshipUnsetLabel").textContent = s.yesNoUnset;
+  document.getElementById("rejectionReasonFieldLabel").textContent = s.rejectionReasonFieldLabel;
+  document.getElementById("rejectionReasonNoneOpt").textContent = s.rejectionReasonNone;
+  document.getElementById("rejectionReasonNoTimeOpt").textContent = s.rejectionReasonNoTime;
+  document.getElementById("rejectionReasonNoMoneyOpt").textContent = s.rejectionReasonNoMoney;
+  document.getElementById("rejectionReasonNotInterestedOpt").textContent = s.rejectionReasonNotInterested;
+  document.getElementById("rejectionReasonNegativeOpt").textContent = s.rejectionReasonNegative;
+  document.getElementById("rejectionReasonFamilyOpt").textContent = s.rejectionReasonFamily;
+  document.getElementById("rejectionReasonOtherOpt").textContent = s.rejectionReasonOther;
+  document.getElementById("prospectGenderUnsetOpt").textContent = s.genderUnset;
+  document.getElementById("prospectGenderMaleOpt").textContent = s.genderMale;
+  document.getElementById("prospectGenderFemaleOpt").textContent = s.genderFemale;
+  document.getElementById("statusOtherMemberOpt").textContent = s.statusOtherMember;
   document.getElementById("followUpsFieldLabel").textContent = s.followUpsFieldLabel;
   document.getElementById("addFollowUpLabel").textContent = s.addFollowUpLabel;
   document.getElementById("prospectDetailFollowUpsTitle").textContent = s.followUpsFieldLabel;
@@ -2543,14 +2569,16 @@ function renderProspects() {
 
   const oppStatsBar = document.getElementById("oppStatsBar");
   const withOppDate = prospects.filter(p => p.oppDate);
-  if (withOppDate.length > 0) {
+  if (withOppDate.length > 0 || prefs.oppGoal > 0) {
     const now = new Date();
     const thisMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
     const thisMonthCount = withOppDate.filter(p => p.oppDate.startsWith(thisMonthKey)).length;
     oppStatsBar.style.display = "flex";
     document.getElementById("oppStatsThisMonthNum").textContent = thisMonthCount;
     document.getElementById("oppStatsThisMonthLabel").textContent = s.oppStatsThisMonthLabel;
-    document.getElementById("oppStatsTotalNum").textContent = withOppDate.length;
+    document.getElementById("oppStatsTotalNum").textContent = prefs.oppGoal > 0
+      ? `${withOppDate.length}/${prefs.oppGoal}`
+      : String(withOppDate.length);
     document.getElementById("oppStatsTotalLabel").textContent = s.oppStatsTotalLabel;
   } else {
     oppStatsBar.style.display = "none";
@@ -2606,6 +2634,23 @@ function renderProspects() {
   prospectsFooterEl.textContent = s.prospectFooterCount(sorted.length);
 }
 
+function editOppGoal() {
+  const s = t();
+  const val = prompt(s.oppGoalPrompt, prefs.oppGoal > 0 ? String(prefs.oppGoal) : "");
+  if (val === null) return;
+  const trimmed = val.trim();
+  if (trimmed === "") {
+    prefs.oppGoal = 0;
+  } else {
+    const n = parseInt(trimmed, 10);
+    if (!isNaN(n) && n >= 0) {
+      prefs.oppGoal = n;
+    }
+  }
+  savePrefs();
+  renderProspects();
+}
+
 function openWhatsAppChatProspect(id) {
   const p = prospects.find(x => x.id === id);
   if (!p || !p.phone) return;
@@ -2637,14 +2682,12 @@ function updateProspectAvatarPreview() {
 
 function setProspectGender(gender) {
   pSelectedGender = gender;
-  document.querySelectorAll("#prospectGenderToggle .gender-btn").forEach(btn => {
-    btn.classList.toggle("active", btn.dataset.gender === gender);
-  });
+  document.getElementById("prospectGenderSelect").value = gender;
   updateProspectAvatarPreview();
 }
 
-document.querySelectorAll("#prospectGenderToggle .gender-btn").forEach(btn => {
-  btn.addEventListener("click", () => setProspectGender(btn.dataset.gender));
+document.getElementById("prospectGenderSelect").addEventListener("change", (e) => {
+  setProspectGender(e.target.value);
 });
 
 let followUpRows = []; // { key, date, note }
@@ -2709,8 +2752,8 @@ function resetProspectForm() {
   backgroundInput.value = "";
   prospectNotesInput.value = "";
   document.getElementById("statusSelect").value = "pending";
-  setInterested("");
-  setRelationshipHealthy("");
+  document.getElementById("interestedInput").value = "";
+  setRejectionReasonValue("");
   followUpRows = [];
   renderFollowUpRows();
   setProspectGender("");
@@ -2766,13 +2809,11 @@ function openProspectDetailModal(id) {
 
   const flagsLine = document.getElementById("prospectDetailFlagsLine");
   const flagBits = [];
-  if (p.interested === "yes") flagBits.push(`👍 ${s.interestedYes}`);
-  else if (p.interested === "no") flagBits.push(`👎 ${s.interestedNo}`);
-  if (p.relationshipHealthy === "yes") flagBits.push(`💚 ${s.relationshipYes}`);
-  else if (p.relationshipHealthy === "no") flagBits.push(`⚠️ ${s.relationshipNo}`);
+  if (p.interested) flagBits.push(`💬 ${escapeHtml(p.interested)}`);
+  if (p.rejectionReason) flagBits.push(`❌ ${escapeHtml(p.rejectionReason)}`);
   if (flagBits.length > 0) {
     flagsLine.style.display = "flex";
-    flagsLine.textContent = flagBits.join(" · ");
+    flagsLine.innerHTML = flagBits.join(" · ");
   } else {
     flagsLine.style.display = "none";
   }
@@ -2843,8 +2884,8 @@ function openEditProspectModal(id) {
   backgroundInput.value = p.background || "";
   prospectNotesInput.value = p.notes || "";
   document.getElementById("statusSelect").value = p.status || "pending";
-  setInterested(p.interested || "");
-  setRelationshipHealthy(p.relationshipHealthy || "");
+  document.getElementById("interestedInput").value = p.interested || "";
+  setRejectionReasonValue(p.rejectionReason || "");
   followUpRows = (Array.isArray(p.followUps) ? p.followUps : []).map(f => {
     followUpKeyCounter += 1;
     return { key: followUpKeyCounter, date: f.date || "", note: f.note || "" };
@@ -2882,6 +2923,8 @@ async function saveProspect() {
   const background = backgroundInput.value.trim();
   const notes = prospectNotesInput.value.trim();
   const status = document.getElementById("statusSelect").value;
+  const interested = document.getElementById("interestedInput").value.trim();
+  const rejectionReason = getRejectionReasonValue();
   prospectErrorMsg.style.display = "none";
 
   if (!name) { showProspectError(s.errorName); return; }
@@ -2894,7 +2937,7 @@ async function saveProspect() {
     .map(r => ({ date: r.date.trim(), note: r.note.trim() }))
     .filter(f => f.date || f.note);
 
-  const payload = { name, gender: pSelectedGender, background, date, phone, oppDate, notes, status, followUps, interested: selectedInterested, relationshipHealthy: selectedRelationshipHealthy };
+  const payload = { name, gender: pSelectedGender, background, date, phone, oppDate, notes, status, followUps, interested, rejectionReason };
 
   try {
     let res, saved;
@@ -3795,27 +3838,34 @@ document.querySelectorAll("#sawDemoToggle .demo-btn").forEach(btn => {
   btn.addEventListener("click", () => setSawDemo(btn.dataset.demo));
 });
 
-let selectedInterested = "";
-function setInterested(val) {
-  selectedInterested = val;
-  document.querySelectorAll("#interestedToggle .demo-btn").forEach(btn => {
-    btn.classList.toggle("active", btn.dataset.interested === val);
-  });
-}
-document.querySelectorAll("#interestedToggle .demo-btn").forEach(btn => {
-  btn.addEventListener("click", () => setInterested(btn.dataset.interested));
+document.getElementById("rejectionReasonSelect").addEventListener("change", (e) => {
+  document.getElementById("rejectionReasonOtherInput").style.display = e.target.value === "other" ? "block" : "none";
 });
 
-let selectedRelationshipHealthy = "";
-function setRelationshipHealthy(val) {
-  selectedRelationshipHealthy = val;
-  document.querySelectorAll("#relationshipToggle .demo-btn").forEach(btn => {
-    btn.classList.toggle("active", btn.dataset.relationship === val);
-  });
+function getRejectionReasonValue() {
+  const sel = document.getElementById("rejectionReasonSelect").value;
+  if (sel === "other") return document.getElementById("rejectionReasonOtherInput").value.trim();
+  return sel;
 }
-document.querySelectorAll("#relationshipToggle .demo-btn").forEach(btn => {
-  btn.addEventListener("click", () => setRelationshipHealthy(btn.dataset.relationship));
-});
+
+function setRejectionReasonValue(val) {
+  const sel = document.getElementById("rejectionReasonSelect");
+  const otherInput = document.getElementById("rejectionReasonOtherInput");
+  const presetValues = Array.from(sel.options).map(o => o.value).filter(v => v !== "other");
+  if (!val) {
+    sel.value = "";
+    otherInput.style.display = "none";
+    otherInput.value = "";
+  } else if (presetValues.includes(val)) {
+    sel.value = val;
+    otherInput.style.display = "none";
+    otherInput.value = "";
+  } else {
+    sel.value = "other";
+    otherInput.style.display = "block";
+    otherInput.value = val;
+  }
+}
 
 function syncPurchaseRowsFromDOM() {
   purchaseRows.forEach(row => {
