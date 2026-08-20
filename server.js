@@ -8,6 +8,7 @@ const PORT = process.env.PORT || 3000;
 // 这样每次重新部署时数据不会丢失。本地开发不设置也没关系,默认存在项目目录下。
 const DATA_DIR = process.env.DATA_DIR || __dirname;
 const DATA_FILE = path.join(DATA_DIR, "data.json");
+const PROSPECTS_FILE = path.join(DATA_DIR, "prospects.json");
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
@@ -34,6 +35,15 @@ function sanitizeGender(gender) {
   return VALID_GENDERS.includes(gender) ? gender : "";
 }
 
+const VALID_SAW_DEMO = ["yes", "no"];
+function sanitizeSawDemo(val) {
+  return VALID_SAW_DEMO.includes(val) ? val : "";
+}
+
+function isValidDateOrEmpty(d) {
+  return !d || /^\d{4}-\d{2}-\d{2}$/.test(d);
+}
+
 function migrateCustomer(c) {
   let next = c;
   if (!Array.isArray(next.purchases)) {
@@ -49,6 +59,12 @@ function migrateCustomer(c) {
   }
   if (typeof next.gender !== "string") {
     next = { ...next, gender: "" };
+  }
+  if (typeof next.lastMeeting !== "string") {
+    next = { ...next, lastMeeting: "" };
+  }
+  if (typeof next.sawDemo !== "string") {
+    next = { ...next, sawDemo: "" };
   }
   return next;
 }
@@ -68,6 +84,51 @@ function writeData(customers) {
   fs.writeFileSync(DATA_FILE, JSON.stringify(customers, null, 2), "utf-8");
 }
 
+function readProspects() {
+  try {
+    const raw = fs.readFileSync(PROSPECTS_FILE, "utf-8");
+    const parsed = JSON.parse(raw);
+    return parsed.map((p) => ({
+      id: p.id,
+      name: p.name || "",
+      gender: sanitizeGender(p.gender),
+      background: p.background || "",
+      date: isValidDateOrEmpty(p.date) ? (p.date || "") : "",
+      phone: p.phone || "",
+      oppDate: isValidDateOrEmpty(p.oppDate) ? (p.oppDate || "") : "",
+      notes: p.notes || "",
+    }));
+  } catch (e) {
+    return [];
+  }
+}
+
+function writeProspects(prospects) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+  fs.writeFileSync(PROSPECTS_FILE, JSON.stringify(prospects, null, 2), "utf-8");
+}
+
+function prospectValidationError(body) {
+  const { name, date, oppDate } = body;
+  if (!name || !name.trim()) return "姓名不能为空";
+  if (!isValidDateOrEmpty(date)) return "生日日期格式不正确";
+  if (!isValidDateOrEmpty(oppDate)) return "日期格式不正确";
+  return null;
+}
+
+function buildProspectFields(body) {
+  const { name, gender, background, date, phone, oppDate, notes } = body;
+  return {
+    name: name.trim(),
+    gender: sanitizeGender(gender),
+    background: (background || "").toString().trim(),
+    date: isValidDateOrEmpty(date) ? (date || "") : "",
+    phone: (phone || "").toString().trim(),
+    oppDate: isValidDateOrEmpty(oppDate) ? (oppDate || "") : "",
+    notes: (notes || "").toString().trim(),
+  };
+}
+
 function validationError(body) {
   const { name, date } = body;
   if (!name || !name.trim()) return "姓名不能为空";
@@ -76,7 +137,7 @@ function validationError(body) {
 }
 
 function buildCustomerFields(body) {
-  const { name, date, phone, emoji, gender, purchases, notes, category } = body;
+  const { name, date, phone, emoji, gender, purchases, notes, category, lastMeeting, sawDemo } = body;
   return {
     name: name.trim(),
     date,
@@ -86,6 +147,8 @@ function buildCustomerFields(body) {
     purchases: sanitizePurchases(purchases),
     notes: (notes || "").toString().trim(),
     category: sanitizeCategory(category),
+    lastMeeting: isValidDateOrEmpty(lastMeeting) ? (lastMeeting || "") : "",
+    sawDemo: sanitizeSawDemo(sawDemo),
   };
 }
 
@@ -133,6 +196,55 @@ app.delete("/api/customers/:id", (req, res) => {
     return res.status(404).json({ error: "未找到该顾客" });
   }
   writeData(filtered);
+  res.status(204).end();
+});
+
+// ---------- OPP 名单(讲 OPP 后的联系人)----------
+
+// 获取所有 OPP 名单
+app.get("/api/prospects", (req, res) => {
+  res.json(readProspects());
+});
+
+// 新增 OPP 名单
+app.post("/api/prospects", (req, res) => {
+  const err = prospectValidationError(req.body);
+  if (err) return res.status(400).json({ error: err });
+  const prospects = readProspects();
+  const newProspect = {
+    id: Date.now().toString(),
+    ...buildProspectFields(req.body),
+  };
+  prospects.push(newProspect);
+  writeProspects(prospects);
+  res.status(201).json(newProspect);
+});
+
+// 更新 OPP 名单
+app.put("/api/prospects/:id", (req, res) => {
+  const err = prospectValidationError(req.body);
+  if (err) return res.status(400).json({ error: err });
+  const prospects = readProspects();
+  const idx = prospects.findIndex((p) => p.id === req.params.id);
+  if (idx === -1) {
+    return res.status(404).json({ error: "未找到该记录" });
+  }
+  prospects[idx] = {
+    id: prospects[idx].id,
+    ...buildProspectFields(req.body),
+  };
+  writeProspects(prospects);
+  res.json(prospects[idx]);
+});
+
+// 删除 OPP 名单
+app.delete("/api/prospects/:id", (req, res) => {
+  const prospects = readProspects();
+  const filtered = prospects.filter((p) => p.id !== req.params.id);
+  if (filtered.length === prospects.length) {
+    return res.status(404).json({ error: "未找到该记录" });
+  }
+  writeProspects(filtered);
   res.status(204).end();
 });
 
