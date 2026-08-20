@@ -376,4 +376,18 @@ app.delete("/api/birthdays/:id", (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`顾客记录系统已启动: http://localhost:${PORT}`);
+  console.log(`[诊断] DATA_DIR 环境变量原始值: ${process.env.DATA_DIR || "(未设置)"}`);
+  console.log(`[诊断] 实际使用的数据目录: ${DATA_DIR}`);
+  console.log(`[诊断] 顾客数据文件路径: ${DATA_FILE}`);
+  try {
+    const exists = fs.existsSync(DATA_FILE);
+    console.log(`[诊断] 该文件是否存在: ${exists}`);
+    if (exists) {
+      const raw = fs.readFileSync(DATA_FILE, "utf-8");
+      const parsed = JSON.parse(raw);
+      console.log(`[诊断] 该文件里的顾客数量: ${parsed.length}`);
+    }
+  } catch (e) {
+    console.log(`[诊断] 读取文件时出错: ${e.message}`);
+  }
 });
