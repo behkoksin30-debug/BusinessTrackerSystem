@@ -84,4 +84,9 @@ birthday-app/
 │   └── apple-touch-icon.png  # iPhone 专用图标
 ├── package.json
 └── data.json                # 顾客数据(运行后自动生成)
+└── prospects.json            # OPP 名单数据(运行后自动生成)
 ```
+
+## 关于 OPP 名单的持久化提醒
+
+OPP 名单的数据存在 `prospects.json`,和顾客数据 `data.json` 在同一个目录下。如果你已经按前面的步骤给 Railway 加了 Volume(持久化卷)并设置了 `DATA_DIR`,那么 OPP 名单的数据也会自动一起被保存,不用额外设置。
