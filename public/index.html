@@ -226,6 +226,21 @@
   }
   .add-btn:hover { filter: brightness(0.94); }
 
+  .list-controls {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .list-controls .search-input {
+    flex: 2;
+    min-width: 0;
+    padding: 10px 14px;
+  }
+  .list-controls .sort-select {
+    flex: 1;
+    min-width: 110px;
+  }
+
   .empty-state, .loading-state {
     text-align: center;
     padding: 60px 0;
@@ -423,7 +438,9 @@
   }
   input::placeholder, textarea::placeholder { color: var(--muted-light); }
 
-  .emoji-row { display: flex; align-items: center; gap: 10px; }
+  .emoji-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .emoji-row .name-input-wrap { flex: 2 1 140px; }
+  .emoji-row .inline-gender-wrap { flex: 1 1 100px; min-width: 90px; }
   .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
   .category-toggle {
@@ -1115,6 +1132,14 @@
     </button>
 
     <div id="customersView">
+      <div class="list-controls">
+        <input type="text" class="search-input" id="customerSearchInput" />
+        <select class="sort-select" id="customerSortSelect">
+          <option value="birthday" id="customerSortBirthdayOpt">按生日临近</option>
+          <option value="name" id="customerSortNameOpt">按姓名 A-Z</option>
+          <option value="recent" id="customerSortRecentOpt">最近新增</option>
+        </select>
+      </div>
       <div class="opp-stats-bar" id="customerStatsBar" style="display:none;">
         <div class="opp-stat-chip opp-stat-chip-editable" onclick="editCustomerGoal('month')">
           <span class="opp-stat-number" id="customerStatsMonthNum">0</span>
@@ -1134,6 +1159,14 @@
     </div>
 
     <div id="prospectsView" style="display:none;">
+      <div class="list-controls">
+        <input type="text" class="search-input" id="prospectSearchInput" />
+        <select class="sort-select" id="prospectSortSelect">
+          <option value="oppdate" id="prospectSortOppdateOpt">按讲OPP日期</option>
+          <option value="name" id="prospectSortNameOpt">按姓名 A-Z</option>
+          <option value="status" id="prospectSortStatusOpt">按反应状态</option>
+        </select>
+      </div>
       <div class="opp-stats-bar" id="oppStatsBar" style="display:none;">
         <div class="opp-stat-chip opp-stat-chip-editable" onclick="editOppGoal('month')">
           <span class="opp-stat-number" id="oppStatsThisMonthNum">0</span>
@@ -1153,6 +1186,13 @@
     </div>
 
     <div id="birthdaysView" style="display:none;">
+      <div class="list-controls">
+        <input type="text" class="search-input" id="birthdaySearchInput" />
+        <select class="sort-select" id="birthdaySortSelect">
+          <option value="birthday" id="birthdaySortBirthdayOpt">按生日临近</option>
+          <option value="name" id="birthdaySortNameOpt">按姓名 A-Z</option>
+        </select>
+      </div>
       <div class="opp-stats-bar" id="birthdaysStatsBar" style="display:none;">
         <div class="opp-stat-chip">
           <span class="opp-stat-number" id="birthdaysStatsMonthNum">0</span>
@@ -1171,6 +1211,14 @@
     </div>
 
     <div id="abosView" style="display:none;">
+      <div class="list-controls">
+        <input type="text" class="search-input" id="aboSearchInput" />
+        <select class="sort-select" id="aboSortSelect">
+          <option value="recent" id="aboSortRecentOpt">最近新增</option>
+          <option value="name" id="aboSortNameOpt">按姓名 A-Z</option>
+          <option value="progress" id="aboSortProgressOpt">按进度最多</option>
+        </select>
+      </div>
       <div class="opp-stats-bar" id="abosStatsBar" style="display:none;">
         <div class="opp-stat-chip">
           <span class="opp-stat-number" id="abosStatsMonthNum">0</span>
@@ -1242,17 +1290,17 @@
 
       <div class="emoji-row">
         <div class="avatar-preview" id="avatarPreview">👤</div>
-        <div style="flex:1;">
+        <div class="name-input-wrap">
           <input id="nameInput" type="text" />
         </div>
+        <div class="inline-gender-wrap">
+          <select id="genderSelect" aria-label="性别">
+            <option value="" id="genderUnsetOpt">不设置</option>
+            <option value="male" id="genderMaleOpt">男</option>
+            <option value="female" id="genderFemaleOpt">女</option>
+          </select>
+        </div>
       </div>
-
-      <label class="field-label" id="genderFieldLabel">性别</label>
-      <select id="genderSelect">
-        <option value="" id="genderUnsetOpt">不设置</option>
-        <option value="male" id="genderMaleOpt">男</option>
-        <option value="female" id="genderFemaleOpt">女</option>
-      </select>
 
       <label class="field-label" id="categoryFieldLabel">顾客分类</label>
       <select id="categorySelect">
@@ -1274,15 +1322,20 @@
         </div>
       </div>
 
-      <label class="field-label" id="lastMeetingFieldLabel">最后一次见面(选填)</label>
-      <input id="lastMeetingInput" type="date" />
-
-      <label class="field-label" id="sawDemoFieldLabel">看过示范吗</label>
-      <select id="sawDemoSelect">
-        <option value="" id="sawDemoUnsetOpt">不确定</option>
-        <option value="yes" id="sawDemoYesOpt">看过</option>
-        <option value="no" id="sawDemoNoOpt">没看过</option>
-      </select>
+      <div class="two-col">
+        <div>
+          <label class="field-label" id="lastMeetingFieldLabel" style="margin-top:0;">最后一次见面(选填)</label>
+          <input id="lastMeetingInput" type="date" />
+        </div>
+        <div>
+          <label class="field-label" id="sawDemoFieldLabel" style="margin-top:0;">看过示范吗</label>
+          <select id="sawDemoSelect">
+            <option value="" id="sawDemoUnsetOpt">不确定</option>
+            <option value="yes" id="sawDemoYesOpt">看过</option>
+            <option value="no" id="sawDemoNoOpt">没看过</option>
+          </select>
+        </div>
+      </div>
 
       <div class="purchases-section">
         <label class="field-label" id="purchasesFieldLabel" style="margin-top:0;">购买记录</label>
@@ -1362,17 +1415,17 @@
 
       <div class="emoji-row">
         <div class="avatar-preview" id="prospectAvatarPreview">👤</div>
-        <div style="flex:1;">
+        <div class="name-input-wrap">
           <input id="prospectNameInput" type="text" />
         </div>
+        <div class="inline-gender-wrap">
+          <select id="prospectGenderSelect" aria-label="性别">
+            <option value="" id="prospectGenderUnsetOpt">不设置</option>
+            <option value="male" id="prospectGenderMaleOpt">男</option>
+            <option value="female" id="prospectGenderFemaleOpt">女</option>
+          </select>
+        </div>
       </div>
-
-      <label class="field-label" id="prospectGenderFieldLabel">性别</label>
-      <select id="prospectGenderSelect">
-        <option value="" id="prospectGenderUnsetOpt">不设置</option>
-        <option value="male" id="prospectGenderMaleOpt">男</option>
-        <option value="female" id="prospectGenderFemaleOpt">女</option>
-      </select>
 
       <label class="field-label" id="backgroundFieldLabel">背景</label>
       <textarea id="backgroundInput"></textarea>
@@ -1394,19 +1447,24 @@
         </div>
       </div>
 
-      <label class="field-label" id="statusFieldLabel">讲 OPP 之后的反应</label>
-      <select id="statusSelect">
-        <option value="pending" id="statusPendingOpt">待跟进</option>
-        <option value="considering" id="statusConsideringOpt">在考虑</option>
-        <option value="not_interested" id="statusNotInterestedOpt">没兴趣</option>
-        <option value="joined" id="statusJoinedOpt">已加入</option>
-        <option value="customer" id="statusCustomerOpt">已成为顾客</option>
-        <option value="other_member" id="statusOtherMemberOpt">其他人的会员</option>
-        <option value="unreachable" id="statusUnreachableOpt">联系不上</option>
-      </select>
-
-      <label class="field-label" id="interestedFieldLabel">对产品有兴趣吗</label>
-      <input id="interestedInput" type="text" />
+      <div class="two-col">
+        <div>
+          <label class="field-label" id="statusFieldLabel">讲 OPP 之后的反应</label>
+          <select id="statusSelect">
+            <option value="pending" id="statusPendingOpt">待跟进</option>
+            <option value="considering" id="statusConsideringOpt">在考虑</option>
+            <option value="not_interested" id="statusNotInterestedOpt">没兴趣</option>
+            <option value="joined" id="statusJoinedOpt">已加入</option>
+            <option value="customer" id="statusCustomerOpt">已成为顾客</option>
+            <option value="other_member" id="statusOtherMemberOpt">其他人的会员</option>
+            <option value="unreachable" id="statusUnreachableOpt">联系不上</option>
+          </select>
+        </div>
+        <div>
+          <label class="field-label" id="interestedFieldLabel">对产品有兴趣吗</label>
+          <input id="interestedInput" type="text" />
+        </div>
+      </div>
 
       <label class="field-label" id="rejectionReasonFieldLabel">拒绝的原因</label>
       <select id="rejectionReasonSelect">
@@ -1484,16 +1542,16 @@
 
       <div class="emoji-row">
         <div class="avatar-preview" id="birthdayAvatarPreview">👤</div>
-        <div style="flex:1;">
+        <div class="name-input-wrap">
           <input id="birthdayNameInput" type="text" />
         </div>
-      </div>
-
-      <label class="field-label" id="birthdayGenderFieldLabel">性别</label>
-      <div class="gender-toggle" id="birthdayGenderToggle">
-        <button class="gender-btn" data-gender="male" type="button"><span id="birthdayGenderMaleLabel">男</span></button>
-        <button class="gender-btn" data-gender="female" type="button"><span id="birthdayGenderFemaleLabel">女</span></button>
-        <button class="gender-btn active" data-gender="" type="button"><span id="birthdayGenderUnsetLabel">不设置</span></button>
+        <div class="inline-gender-wrap">
+          <select id="birthdayGenderSelect" aria-label="性别">
+            <option value="" id="birthdayGenderUnsetOpt">不设置</option>
+            <option value="male" id="birthdayGenderMaleOpt">男</option>
+            <option value="female" id="birthdayGenderFemaleOpt">女</option>
+          </select>
+        </div>
       </div>
 
       <label class="field-label" id="birthdayDateFieldLabel">生日(不需要年份)</label>
@@ -1577,16 +1635,16 @@
 
       <div class="emoji-row">
         <div class="avatar-preview" id="aboAvatarPreview">👤</div>
-        <div style="flex:1;">
+        <div class="name-input-wrap">
           <input id="aboNameInput" type="text" />
         </div>
-      </div>
-
-      <label class="field-label" id="aboGenderFieldLabel">性别</label>
-      <div class="gender-toggle" id="aboGenderToggle">
-        <button class="gender-btn" data-gender="male" type="button"><span id="aboGenderMaleLabel">男</span></button>
-        <button class="gender-btn" data-gender="female" type="button"><span id="aboGenderFemaleLabel">女</span></button>
-        <button class="gender-btn active" data-gender="" type="button"><span id="aboGenderUnsetLabel">不设置</span></button>
+        <div class="inline-gender-wrap">
+          <select id="aboGenderSelect" aria-label="性别">
+            <option value="" id="aboGenderUnsetOpt">不设置</option>
+            <option value="male" id="aboGenderMaleOpt">男</option>
+            <option value="female" id="aboGenderFemaleOpt">女</option>
+          </select>
+        </div>
       </div>
 
       <label class="field-label" id="aboPhoneFieldLabel">电话号码(选填)</label>
@@ -1603,11 +1661,16 @@
         <label class="checklist-item"><input type="checkbox" id="aboAbcUplineCb" /><span id="aboAbcUplineLabel">ABC 上线</span></label>
       </div>
 
-      <label class="field-label" id="aboAudioFieldLabel">听了什么 Audio</label>
-      <input id="aboAudioInput" type="text" />
-
-      <label class="field-label" id="aboMeetingsFieldLabel">参加了什么会议</label>
-      <input id="aboMeetingsInput" type="text" />
+      <div class="two-col">
+        <div>
+          <label class="field-label" id="aboAudioFieldLabel">听了什么 Audio</label>
+          <input id="aboAudioInput" type="text" />
+        </div>
+        <div>
+          <label class="field-label" id="aboMeetingsFieldLabel">参加了什么会议</label>
+          <input id="aboMeetingsInput" type="text" />
+        </div>
+      </div>
 
       <label class="field-label" id="aboCurrentStatusFieldLabel">现在状况</label>
       <input id="aboCurrentStatusInput" type="text" />
@@ -1677,6 +1740,14 @@ const I18N = {
     langLabel: "语言",
     loading: "加载中…",
     empty: "还没有记录,添加第一位顾客吧",
+    noSearchResults: "没有找到符合的结果",
+    searchPlaceholder: "搜索姓名或电话…",
+    sortByBirthday: "按生日临近",
+    sortByName: "按姓名 A-Z",
+    sortByRecent: "最近新增",
+    sortByOppDate: "按讲OPP日期",
+    sortByStatus: "按反应状态",
+    sortByProgress: "按进度最多",
     loadFailed: "加载失败,请刷新重试",
     deleteFailed: "删除失败,请重试",
     errorName: "请输入顾客姓名",
@@ -1874,6 +1945,14 @@ const I18N = {
     langLabel: "Language",
     loading: "Loading…",
     empty: "No records yet — add your first customer",
+    noSearchResults: "No matching results found",
+    searchPlaceholder: "Search name or phone…",
+    sortByBirthday: "By upcoming birthday",
+    sortByName: "By name A-Z",
+    sortByRecent: "Recently added",
+    sortByOppDate: "By OPP date",
+    sortByStatus: "By status",
+    sortByProgress: "By most progress",
     loadFailed: "Failed to load. Please refresh.",
     deleteFailed: "Failed to delete. Please try again.",
     errorName: "Please enter a customer name",
@@ -2133,9 +2212,23 @@ function applyLanguage() {
   document.getElementById("darkModeLabel").textContent = s.darkModeLabel;
   document.getElementById("langLabel").textContent = s.langLabel;
   document.getElementById("loadingLabel").textContent = s.loading;
+  document.getElementById("customerSearchInput").placeholder = s.searchPlaceholder;
+  document.getElementById("customerSortBirthdayOpt").textContent = s.sortByBirthday;
+  document.getElementById("customerSortNameOpt").textContent = s.sortByName;
+  document.getElementById("customerSortRecentOpt").textContent = s.sortByRecent;
+  document.getElementById("prospectSearchInput").placeholder = s.searchPlaceholder;
+  document.getElementById("prospectSortOppdateOpt").textContent = s.sortByOppDate;
+  document.getElementById("prospectSortNameOpt").textContent = s.sortByName;
+  document.getElementById("prospectSortStatusOpt").textContent = s.sortByStatus;
+  document.getElementById("birthdaySearchInput").placeholder = s.searchPlaceholder;
+  document.getElementById("birthdaySortBirthdayOpt").textContent = s.sortByBirthday;
+  document.getElementById("birthdaySortNameOpt").textContent = s.sortByName;
+  document.getElementById("aboSearchInput").placeholder = s.searchPlaceholder;
+  document.getElementById("aboSortRecentOpt").textContent = s.sortByRecent;
+  document.getElementById("aboSortNameOpt").textContent = s.sortByName;
+  document.getElementById("aboSortProgressOpt").textContent = s.sortByProgress;
   document.getElementById("phoneFieldLabel").textContent = s.phoneFieldLabel;
   document.getElementById("birthdayFieldLabel").textContent = s.birthdayFieldLabel;
-  document.getElementById("genderFieldLabel").textContent = s.genderFieldLabel;
   document.getElementById("genderUnsetOpt").textContent = s.genderUnset;
   document.getElementById("genderMaleOpt").textContent = s.genderMale;
   document.getElementById("genderFemaleOpt").textContent = s.genderFemale;
@@ -2152,7 +2245,6 @@ function applyLanguage() {
   document.getElementById("tabProspectsLabel").textContent = s.tabProspects;
   document.getElementById("prospectsLoadingLabel").textContent = s.loading;
   document.getElementById("prospectNameInput").placeholder = s.namePlaceholder;
-  document.getElementById("prospectGenderFieldLabel").textContent = s.genderFieldLabel;
   document.getElementById("backgroundFieldLabel").textContent = s.backgroundFieldLabel;
   document.getElementById("backgroundInput").placeholder = s.backgroundPlaceholder;
   document.getElementById("phoneFieldLabel2").textContent = s.phoneFieldLabel;
@@ -2196,10 +2288,9 @@ function applyLanguage() {
   document.getElementById("tabBirthdaysLabel").textContent = s.tabBirthdays;
   document.getElementById("birthdaysLoadingLabel").textContent = s.loading;
   document.getElementById("birthdayNameInput").placeholder = s.namePlaceholder;
-  document.getElementById("birthdayGenderFieldLabel").textContent = s.genderFieldLabel;
-  document.getElementById("birthdayGenderMaleLabel").textContent = s.genderMale;
-  document.getElementById("birthdayGenderFemaleLabel").textContent = s.genderFemale;
-  document.getElementById("birthdayGenderUnsetLabel").textContent = s.genderUnset;
+  document.getElementById("birthdayGenderUnsetOpt").textContent = s.genderUnset;
+  document.getElementById("birthdayGenderMaleOpt").textContent = s.genderMale;
+  document.getElementById("birthdayGenderFemaleOpt").textContent = s.genderFemale;
   document.getElementById("birthdayDateFieldLabel").textContent = s.birthdayDateFieldLabel;
   document.getElementById("birthdayPhoneFieldLabel").textContent = s.phoneFieldLabel;
   document.getElementById("birthdayPhoneInput").placeholder = s.phonePlaceholder;
@@ -2215,10 +2306,9 @@ function applyLanguage() {
   document.getElementById("tabAbosLabel").textContent = s.tabAbos;
   document.getElementById("abosLoadingLabel").textContent = s.loading;
   document.getElementById("aboNameInput").placeholder = s.namePlaceholder;
-  document.getElementById("aboGenderFieldLabel").textContent = s.genderFieldLabel;
-  document.getElementById("aboGenderMaleLabel").textContent = s.genderMale;
-  document.getElementById("aboGenderFemaleLabel").textContent = s.genderFemale;
-  document.getElementById("aboGenderUnsetLabel").textContent = s.genderUnset;
+  document.getElementById("aboGenderUnsetOpt").textContent = s.genderUnset;
+  document.getElementById("aboGenderMaleOpt").textContent = s.genderMale;
+  document.getElementById("aboGenderFemaleOpt").textContent = s.genderFemale;
   document.getElementById("aboPhoneFieldLabel").textContent = s.phoneFieldLabel;
   document.getElementById("aboPhoneInput").placeholder = s.phonePlaceholder;
   document.getElementById("aboChecklistFieldLabel").textContent = s.aboChecklistFieldLabel;
@@ -2447,15 +2537,26 @@ function render() {
     customerStatsBar.style.display = "none";
   }
 
-  if (customers.length === 0) {
-    contentEl.innerHTML = `<div class="empty-state">${s.empty}</div>`;
+  const searchTerm = document.getElementById("customerSearchInput").value.trim().toLowerCase();
+  const sortBy = document.getElementById("customerSortSelect").value;
+  const filtered = customers.filter(c =>
+    !searchTerm || c.name.toLowerCase().includes(searchTerm) || (c.phone && c.phone.includes(searchTerm))
+  );
+
+  if (filtered.length === 0) {
+    contentEl.innerHTML = `<div class="empty-state">${customers.length === 0 ? s.empty : s.noSearchResults}</div>`;
     footerEl.style.display = "none";
     return;
   }
 
-  const sorted = [...customers]
-    .map(c => ({ ...c, days: daysUntilNextBirthday(c.date) }))
-    .sort((a, b) => a.days - b.days);
+  let sorted = filtered.map(c => ({ ...c, days: daysUntilNextBirthday(c.date) }));
+  if (sortBy === "name") {
+    sorted.sort((a, b) => a.name.localeCompare(b.name));
+  } else if (sortBy === "recent") {
+    sorted.sort((a, b) => parseInt(b.id, 10) - parseInt(a.id, 10));
+  } else {
+    sorted.sort((a, b) => a.days - b.days);
+  }
 
   const rows = sorted.map(c => {
     const hasBirthday = !!c.date;
@@ -2562,6 +2663,9 @@ async function loadCustomers() {
   }
 }
 
+document.getElementById("customerSearchInput").addEventListener("input", render);
+document.getElementById("customerSortSelect").addEventListener("change", render);
+
 function openWhatsAppChat(id) {
   const c = customers.find(x => x.id === id);
   if (!c || !c.phone) return;
@@ -2649,6 +2753,9 @@ async function loadProspects() {
   }
 }
 
+document.getElementById("prospectSearchInput").addEventListener("input", renderProspects);
+document.getElementById("prospectSortSelect").addEventListener("change", renderProspects);
+
 function renderProspects() {
   if (!prospectsContentEl) return;
   const s = t();
@@ -2672,18 +2779,31 @@ function renderProspects() {
     oppStatsBar.style.display = "none";
   }
 
-  if (prospects.length === 0) {
-    prospectsContentEl.innerHTML = `<div class="empty-state">${s.prospectEmpty}</div>`;
+  const searchTerm = document.getElementById("prospectSearchInput").value.trim().toLowerCase();
+  const sortBy = document.getElementById("prospectSortSelect").value;
+  const filtered = prospects.filter(p =>
+    !searchTerm || p.name.toLowerCase().includes(searchTerm) || (p.phone && p.phone.includes(searchTerm))
+  );
+
+  if (filtered.length === 0) {
+    prospectsContentEl.innerHTML = `<div class="empty-state">${prospects.length === 0 ? s.prospectEmpty : s.noSearchResults}</div>`;
     prospectsFooterEl.style.display = "none";
     return;
   }
 
-  const sorted = [...prospects].sort((a, b) => {
-    if (a.oppDate && b.oppDate) return b.oppDate.localeCompare(a.oppDate);
-    if (a.oppDate) return -1;
-    if (b.oppDate) return 1;
-    return 0;
-  });
+  let sorted = [...filtered];
+  if (sortBy === "name") {
+    sorted.sort((a, b) => a.name.localeCompare(b.name));
+  } else if (sortBy === "status") {
+    sorted.sort((a, b) => (a.status || "pending").localeCompare(b.status || "pending"));
+  } else {
+    sorted.sort((a, b) => {
+      if (a.oppDate && b.oppDate) return b.oppDate.localeCompare(a.oppDate);
+      if (a.oppDate) return -1;
+      if (b.oppDate) return 1;
+      return 0;
+    });
+  }
 
   const rows = sorted.map(p => {
     const whatsappIcon = p.phone
@@ -3118,6 +3238,9 @@ async function loadBirthdays() {
   }
 }
 
+document.getElementById("birthdaySearchInput").addEventListener("input", renderBirthdays);
+document.getElementById("birthdaySortSelect").addEventListener("change", renderBirthdays);
+
 function renderBirthdays() {
   if (!birthdaysContentEl) return;
   const s = t();
@@ -3138,15 +3261,24 @@ function renderBirthdays() {
     birthdaysStatsBar.style.display = "none";
   }
 
-  if (birthdays.length === 0) {
-    birthdaysContentEl.innerHTML = `<div class="empty-state">${s.birthdayEmpty}</div>`;
+  const searchTerm = document.getElementById("birthdaySearchInput").value.trim().toLowerCase();
+  const sortBy = document.getElementById("birthdaySortSelect").value;
+  const filtered = birthdays.filter(b =>
+    !searchTerm || b.name.toLowerCase().includes(searchTerm) || (b.phone && b.phone.includes(searchTerm))
+  );
+
+  if (filtered.length === 0) {
+    birthdaysContentEl.innerHTML = `<div class="empty-state">${birthdays.length === 0 ? s.birthdayEmpty : s.noSearchResults}</div>`;
     birthdaysFooterEl.style.display = "none";
     return;
   }
 
-  const sorted = [...birthdays]
-    .map(b => ({ ...b, days: daysUntilNextBirthday(b.date) }))
-    .sort((a, b) => a.days - b.days);
+  let sorted = filtered.map(b => ({ ...b, days: daysUntilNextBirthday(b.date) }));
+  if (sortBy === "name") {
+    sorted.sort((a, b) => a.name.localeCompare(b.name));
+  } else {
+    sorted.sort((a, b) => a.days - b.days);
+  }
 
   const rows = sorted.map(b => {
     const isToday = b.days === 0;
@@ -3282,14 +3414,13 @@ function updateBirthdayAvatarPreview() {
 
 function setBirthdayGender(gender) {
   bSelectedGender = gender;
-  document.querySelectorAll("#birthdayGenderToggle .gender-btn").forEach(btn => {
-    btn.classList.toggle("active", btn.dataset.gender === gender);
-  });
+  const sel = document.getElementById("birthdayGenderSelect");
+  if (sel) sel.value = gender;
   updateBirthdayAvatarPreview();
 }
 
-document.querySelectorAll("#birthdayGenderToggle .gender-btn").forEach(btn => {
-  btn.addEventListener("click", () => setBirthdayGender(btn.dataset.gender));
+document.getElementById("birthdayGenderSelect").addEventListener("change", (e) => {
+  setBirthdayGender(e.target.value);
 });
 
 function resetBirthdayForm() {
@@ -3458,6 +3589,9 @@ async function loadAbos() {
   }
 }
 
+document.getElementById("aboSearchInput").addEventListener("input", renderAbos);
+document.getElementById("aboSortSelect").addEventListener("change", renderAbos);
+
 function renderAbos() {
   if (!abosContentEl) return;
   const s = t();
@@ -3478,13 +3612,28 @@ function renderAbos() {
     abosStatsBar.style.display = "none";
   }
 
-  if (abos.length === 0) {
-    abosContentEl.innerHTML = `<div class="empty-state">${s.aboEmpty}</div>`;
+  const searchTerm = document.getElementById("aboSearchInput").value.trim().toLowerCase();
+  const sortBy = document.getElementById("aboSortSelect").value;
+  const filtered = abos.filter(a =>
+    !searchTerm || a.name.toLowerCase().includes(searchTerm) || (a.phone && a.phone.includes(searchTerm))
+  );
+
+  if (filtered.length === 0) {
+    abosContentEl.innerHTML = `<div class="empty-state">${abos.length === 0 ? s.aboEmpty : s.noSearchResults}</div>`;
     abosFooterEl.style.display = "none";
     return;
   }
 
-  const rows = abos.map(a => {
+  let sortedAbos = [...filtered];
+  if (sortBy === "name") {
+    sortedAbos.sort((a, b) => a.name.localeCompare(b.name));
+  } else if (sortBy === "progress") {
+    sortedAbos.sort((a, b) => aboProgressCount(b).done - aboProgressCount(a).done);
+  } else {
+    sortedAbos.sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+  }
+
+  const rows = sortedAbos.map(a => {
     const { done, total } = aboProgressCount(a);
     const whatsappIcon = a.phone
       ? `<button class="icon-btn whatsapp-icon" onclick="event.stopPropagation(); openWhatsAppChatAbo('${a.id}')" aria-label="${s.whatsappChatLabel}">
@@ -3654,14 +3803,13 @@ function updateAboAvatarPreview() {
 
 function setAboGender(gender) {
   aSelectedGender = gender;
-  document.querySelectorAll("#aboGenderToggle .gender-btn").forEach(btn => {
-    btn.classList.toggle("active", btn.dataset.gender === gender);
-  });
+  const sel = document.getElementById("aboGenderSelect");
+  if (sel) sel.value = gender;
   updateAboAvatarPreview();
 }
 
-document.querySelectorAll("#aboGenderToggle .gender-btn").forEach(btn => {
-  btn.addEventListener("click", () => setAboGender(btn.dataset.gender));
+document.getElementById("aboGenderSelect").addEventListener("change", (e) => {
+  setAboGender(e.target.value);
 });
 
 const ABO_CHECKBOX_IDS = {
