@@ -512,6 +512,39 @@
     cursor: pointer;
   }
   .tab-btn.active { background: var(--accent); color: var(--accent-text); }
+  .tab-count {
+    font-size: 11px;
+    font-weight: 700;
+    margin-left: 4px;
+    opacity: 0.75;
+  }
+
+  .opp-stats-bar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .opp-stat-chip {
+    flex: 1;
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .opp-stat-number {
+    font-family: 'Fraunces', serif;
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--accent);
+    line-height: 1.1;
+  }
+  .opp-stat-label {
+    font-size: 11px;
+    color: var(--muted);
+  }
 
   .demo-badge {
     font-size: 11px;
@@ -999,13 +1032,13 @@
 
     <div class="tab-switcher">
       <button class="tab-btn active" id="tabCustomersBtn" type="button" onclick="switchTab('customers')">
-        <span id="tabCustomersLabel">顾客</span>
+        <span id="tabCustomersLabel">顾客</span><span class="tab-count" id="tabCustomersCount"></span>
       </button>
       <button class="tab-btn" id="tabProspectsBtn" type="button" onclick="switchTab('prospects')">
-        <span id="tabProspectsLabel">OPP 名单</span>
+        <span id="tabProspectsLabel">OPP 名单</span><span class="tab-count" id="tabProspectsCount"></span>
       </button>
       <button class="tab-btn" id="tabBirthdaysBtn" type="button" onclick="switchTab('birthdays')">
-        <span id="tabBirthdaysLabel">生日</span>
+        <span id="tabBirthdaysLabel">生日</span><span class="tab-count" id="tabBirthdaysCount"></span>
       </button>
     </div>
 
@@ -1022,6 +1055,16 @@
     </div>
 
     <div id="prospectsView" style="display:none;">
+      <div class="opp-stats-bar" id="oppStatsBar" style="display:none;">
+        <div class="opp-stat-chip">
+          <span class="opp-stat-number" id="oppStatsThisMonthNum">0</span>
+          <span class="opp-stat-label" id="oppStatsThisMonthLabel"></span>
+        </div>
+        <div class="opp-stat-chip">
+          <span class="opp-stat-number" id="oppStatsTotalNum">0</span>
+          <span class="opp-stat-label" id="oppStatsTotalLabel"></span>
+        </div>
+      </div>
       <div id="prospectsContent">
         <div class="loading-state" id="prospectsLoadingLabel">加载中…</div>
       </div>
@@ -1166,6 +1209,9 @@
         <p class="detail-notes-box" id="prospectDetailBackgroundBox"></p>
       </div>
 
+      <p class="detail-section-title" id="prospectDetailFollowUpsTitle">跟进记录</p>
+      <div id="prospectDetailFollowUpsList"></div>
+
       <div id="prospectDetailNotesWrap" style="display:none;">
         <p class="detail-section-title" id="prospectDetailNotesTitle">备注</p>
         <p class="detail-notes-box" id="prospectDetailNotesBox"></p>
@@ -1227,6 +1273,15 @@
         <option value="customer" id="statusCustomerOpt">已成为顾客</option>
         <option value="unreachable" id="statusUnreachableOpt">联系不上</option>
       </select>
+
+      <div class="purchases-section">
+        <label class="field-label" id="followUpsFieldLabel" style="margin-top:0;">跟进记录</label>
+        <div id="followUpsList"></div>
+        <button class="add-purchase-btn" id="addFollowUpBtn" type="button">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+          <span id="addFollowUpLabel">添加跟进记录</span>
+        </button>
+      </div>
 
       <label class="field-label" id="prospectNotesFieldLabel">备注</label>
       <textarea id="prospectNotesInput"></textarea>
@@ -1403,6 +1458,8 @@ const I18N = {
     tabCustomers: "顾客",
     tabProspects: "OPP 名单",
     tabBirthdays: "生日",
+    oppStatsThisMonthLabel: "本月做了几场 OPP",
+    oppStatsTotalLabel: "累计做了几场 OPP",
     addBirthdayBtnLabel: "添加生日",
     modalAddBirthdayTitle: "添加生日",
     modalEditBirthdayTitle: "编辑生日",
@@ -1434,6 +1491,13 @@ const I18N = {
     deleteProspectLabel: "删除这条记录",
     noOppDateHint: "未记录日期",
     statusFieldLabel: "讲 OPP 之后的反应",
+    followUpsFieldLabel: "跟进记录",
+    followUpDateLabel: "日期",
+    followUpNoteLabel: "事项",
+    followUpNotePlaceholder: "记录这次跟进的内容…",
+    addFollowUpLabel: "添加跟进记录",
+    removeFollowUpLabel: "删除这条记录",
+    noFollowUpsHint: "还没有跟进记录",
     statusPending: "待跟进",
     statusConsidering: "在考虑",
     statusNotInterested: "没兴趣",
@@ -1450,7 +1514,7 @@ const I18N = {
     categoryNew: "新顾客",
     categoryRegular: "一般",
     categoryVip: "VIP",
-    purchasesFieldLabel: "购买记录",
+    purchasesFieldLabel: "订单",
     purchaseDateLabel: "购买日期",
     purchaseProductLabel: "购买产品",
     purchaseAmountLabel: "金额",
@@ -1458,10 +1522,10 @@ const I18N = {
     productPlaceholder: "例如 Nutrilite 蛋白粉,可以写详细一点",
     amountPlaceholder: "150",
     purchaseNotePlaceholder: "记录这次购买的情况…",
-    addPurchaseLabel: "添加购买记录",
+    addPurchaseLabel: "添加订单",
     removePurchaseLabel: "删除这笔记录",
-    noPurchasesHint: "还没有购买记录",
-    purchasesSummary: (count, total) => `🛍 ${count} 笔购买 · 共 RM${total}`,
+    noPurchasesHint: "还没有订单",
+    purchasesSummary: (count, total) => `🛍 ${count} 笔订单 · 共 RM${total}`,
     inactiveWarning: "⚠️ 已超过 2 个月未购买",
     notesFieldLabel: "备注(选填)",
     cancelLabel: "取消",
@@ -1541,6 +1605,8 @@ const I18N = {
     tabCustomers: "Customers",
     tabProspects: "OPP List",
     tabBirthdays: "Birthdays",
+    oppStatsThisMonthLabel: "OPPs this month",
+    oppStatsTotalLabel: "OPPs total",
     addBirthdayBtnLabel: "Add Birthday",
     modalAddBirthdayTitle: "Add Birthday",
     modalEditBirthdayTitle: "Edit Birthday",
@@ -1572,6 +1638,13 @@ const I18N = {
     deleteProspectLabel: "Delete this record",
     noOppDateHint: "No date recorded",
     statusFieldLabel: "Reaction after OPP",
+    followUpsFieldLabel: "Follow-up records",
+    followUpDateLabel: "Date",
+    followUpNoteLabel: "Note",
+    followUpNotePlaceholder: "What happened in this follow-up…",
+    addFollowUpLabel: "Add follow-up record",
+    removeFollowUpLabel: "Remove this record",
+    noFollowUpsHint: "No follow-ups recorded yet",
     statusPending: "Follow up",
     statusConsidering: "Considering",
     statusNotInterested: "Not interested",
@@ -1588,7 +1661,7 @@ const I18N = {
     categoryNew: "New",
     categoryRegular: "Regular",
     categoryVip: "VIP",
-    purchasesFieldLabel: "Purchase records",
+    purchasesFieldLabel: "Orders",
     purchaseDateLabel: "Purchase date",
     purchaseProductLabel: "Product",
     purchaseAmountLabel: "Amount",
@@ -1728,6 +1801,10 @@ function applyLanguage() {
   document.getElementById("prospectDetailBackgroundTitle").textContent = s.backgroundFieldLabel;
   document.getElementById("prospectDetailNotesTitle").textContent = s.notesFieldLabel;
   document.getElementById("statusFieldLabel").textContent = s.statusFieldLabel;
+  document.getElementById("followUpsFieldLabel").textContent = s.followUpsFieldLabel;
+  document.getElementById("addFollowUpLabel").textContent = s.addFollowUpLabel;
+  document.getElementById("prospectDetailFollowUpsTitle").textContent = s.followUpsFieldLabel;
+  renderFollowUpRows();
   document.getElementById("statusPendingOpt").textContent = s.statusPending;
   document.getElementById("statusConsideringOpt").textContent = s.statusConsidering;
   document.getElementById("statusNotInterestedOpt").textContent = s.statusNotInterested;
@@ -1853,6 +1930,7 @@ function escapeAttr(str) {
 
 function render() {
   const s = t();
+  document.getElementById("tabCustomersCount").textContent = customers.length > 0 ? `(${customers.length})` : "";
   if (customers.length === 0) {
     contentEl.innerHTML = `<div class="empty-state">${s.empty}</div>`;
     footerEl.style.display = "none";
@@ -2029,6 +2107,23 @@ async function loadProspects() {
 function renderProspects() {
   if (!prospectsContentEl) return;
   const s = t();
+  document.getElementById("tabProspectsCount").textContent = prospects.length > 0 ? `(${prospects.length})` : "";
+
+  const oppStatsBar = document.getElementById("oppStatsBar");
+  const withOppDate = prospects.filter(p => p.oppDate);
+  if (withOppDate.length > 0) {
+    const now = new Date();
+    const thisMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const thisMonthCount = withOppDate.filter(p => p.oppDate.startsWith(thisMonthKey)).length;
+    oppStatsBar.style.display = "flex";
+    document.getElementById("oppStatsThisMonthNum").textContent = thisMonthCount;
+    document.getElementById("oppStatsThisMonthLabel").textContent = s.oppStatsThisMonthLabel;
+    document.getElementById("oppStatsTotalNum").textContent = withOppDate.length;
+    document.getElementById("oppStatsTotalLabel").textContent = s.oppStatsTotalLabel;
+  } else {
+    oppStatsBar.style.display = "none";
+  }
+
   if (prospects.length === 0) {
     prospectsContentEl.innerHTML = `<div class="empty-state">${s.prospectEmpty}</div>`;
     prospectsFooterEl.style.display = "none";
@@ -2121,6 +2216,60 @@ document.querySelectorAll("#prospectGenderToggle .gender-btn").forEach(btn => {
   btn.addEventListener("click", () => setProspectGender(btn.dataset.gender));
 });
 
+let followUpRows = []; // { key, date, note }
+let followUpKeyCounter = 0;
+const followUpsList = document.getElementById("followUpsList");
+
+function syncFollowUpRowsFromDOM() {
+  followUpRows.forEach(row => {
+    const dateEl = document.getElementById(`f-date-${row.key}`);
+    const noteEl = document.getElementById(`f-note-${row.key}`);
+    if (dateEl) row.date = dateEl.value;
+    if (noteEl) row.note = noteEl.value;
+  });
+}
+
+function renderFollowUpRows() {
+  if (!followUpsList) return;
+  syncFollowUpRowsFromDOM();
+  const s = t();
+  if (followUpRows.length === 0) {
+    followUpsList.innerHTML = `<p class="no-purchases-hint">${s.noFollowUpsHint}</p>`;
+    return;
+  }
+  followUpsList.innerHTML = followUpRows.map(row => `
+    <div class="purchase-row" data-key="${row.key}">
+      <button type="button" class="purchase-remove" onclick="removeFollowUpRow(${row.key})" aria-label="${s.removeFollowUpLabel}">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="M6 6l12 12"/></svg>
+      </button>
+      <label class="field-label" style="margin-top:0;">${s.followUpDateLabel}</label>
+      <input type="date" id="f-date-${row.key}" value="${escapeAttr(row.date)}" />
+      <label class="field-label">${s.followUpNoteLabel}</label>
+      <textarea class="product-textarea" id="f-note-${row.key}" placeholder="${escapeAttr(s.followUpNotePlaceholder)}">${escapeHtml(row.note)}</textarea>
+    </div>
+  `).join("");
+}
+
+function addFollowUpRow(initial) {
+  initial = initial || {};
+  syncFollowUpRowsFromDOM();
+  followUpKeyCounter += 1;
+  followUpRows.push({
+    key: followUpKeyCounter,
+    date: initial.date || "",
+    note: initial.note || "",
+  });
+  renderFollowUpRows();
+}
+
+function removeFollowUpRow(key) {
+  syncFollowUpRowsFromDOM();
+  followUpRows = followUpRows.filter(r => r.key !== key);
+  renderFollowUpRows();
+}
+
+document.getElementById("addFollowUpBtn").addEventListener("click", () => addFollowUpRow());
+
 function resetProspectForm() {
   prospectNameInput.value = "";
   prospectPhoneInput.value = "";
@@ -2129,6 +2278,8 @@ function resetProspectForm() {
   backgroundInput.value = "";
   prospectNotesInput.value = "";
   document.getElementById("statusSelect").value = "pending";
+  followUpRows = [];
+  renderFollowUpRows();
   setProspectGender("");
   prospectErrorMsg.style.display = "none";
 }
@@ -2196,6 +2347,25 @@ function openProspectDetailModal(id) {
     notesWrap.style.display = "none";
   }
 
+  const followUps = Array.isArray(p.followUps) ? p.followUps : [];
+  const followUpsListEl = document.getElementById("prospectDetailFollowUpsList");
+  if (followUps.length === 0) {
+    followUpsListEl.innerHTML = `<p class="no-purchases-hint">${s.noFollowUpsHint}</p>`;
+  } else {
+    const sortedFollowUps = [...followUps].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+    followUpsListEl.innerHTML = sortedFollowUps.map(f => {
+      const dateLabel = f.date ? (() => {
+        const [, m, d] = f.date.split("-").map(Number);
+        return s.monthDay(m, d);
+      })() : "";
+      return `
+        <div class="history-item">
+          ${dateLabel ? `<p class="history-date">${dateLabel}</p>` : ""}
+          ${f.note ? `<p class="history-note">${escapeHtml(f.note)}</p>` : ""}
+        </div>`;
+    }).join("");
+  }
+
   prospectDetailOverlay.classList.add("open");
   ensureHistoryPushed();
 }
@@ -2227,6 +2397,11 @@ function openEditProspectModal(id) {
   backgroundInput.value = p.background || "";
   prospectNotesInput.value = p.notes || "";
   document.getElementById("statusSelect").value = p.status || "pending";
+  followUpRows = (Array.isArray(p.followUps) ? p.followUps : []).map(f => {
+    followUpKeyCounter += 1;
+    return { key: followUpKeyCounter, date: f.date || "", note: f.note || "" };
+  });
+  renderFollowUpRows();
   setProspectGender(p.gender || "");
   prospectModalTitle.textContent = s.modalEditProspectTitle;
   deleteProspectBtn.style.display = "block";
@@ -2263,7 +2438,12 @@ async function saveProspect() {
   if (!name) { showProspectError(s.errorName); return; }
   if (phone && !/^[+\d][\d\s\-()]{4,}$/.test(phone)) { showProspectError(s.errorPhone); return; }
 
-  const payload = { name, gender: pSelectedGender, background, date, phone, oppDate, notes, status };
+  syncFollowUpRowsFromDOM();
+  const followUps = followUpRows
+    .map(r => ({ date: r.date.trim(), note: r.note.trim() }))
+    .filter(f => f.date || f.note);
+
+  const payload = { name, gender: pSelectedGender, background, date, phone, oppDate, notes, status, followUps };
 
   try {
     let res, saved;
@@ -2354,6 +2534,7 @@ async function loadBirthdays() {
 function renderBirthdays() {
   if (!birthdaysContentEl) return;
   const s = t();
+  document.getElementById("tabBirthdaysCount").textContent = birthdays.length > 0 ? `(${birthdays.length})` : "";
   if (birthdays.length === 0) {
     birthdaysContentEl.innerHTML = `<div class="empty-state">${s.birthdayEmpty}</div>`;
     birthdaysFooterEl.style.display = "none";
