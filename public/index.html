@@ -190,7 +190,4625 @@
   .switch.on::after { left: 18px; }
   .lang-toggle { display: flex; gap: 6px; }
   .lang-btn {
+    flex: 1;<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>顾客记录</title>
+
+<!-- PWA: 让网页可以像 App 一样添加到手机主屏幕 -->
+<link rel="manifest" href="manifest.json" />
+<meta name="theme-color" content="#C4635A" />
+<link rel="icon" href="icon-192.png" />
+<link rel="apple-touch-icon" href="apple-touch-icon.png" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="顾客记录" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #FBF7F0;
+    --text: #3A2E2A;
+    --muted: #8A7A72;
+    --muted-light: #B3A69B;
+    --card: #FFFFFF;
+    --card-border: #EDE4D8;
+    --input-bg: #FDFBF7;
+    --input-border: #E5DACB;
+    --accent: #C4635A;
+    --accent-text: #FBF7F0;
+    --warn: #C97A2B;
+  }
+  html[data-theme="dark"] {
+    --bg: #211D1A;
+    --text: #F1EAE3;
+    --muted: #B3A69B;
+    --muted-light: #8A7A72;
+    --card: #2B2622;
+    --card-border: #3D362F;
+    --input-bg: #26221E;
+    --input-border: #3D362F;
+    --accent-text: #211D1A;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Manrope', sans-serif;
+    min-height: 100vh;
+    transition: background 0.2s, color 0.2s;
+  }
+  .font-display { font-family: 'Fraunces', serif; }
+  .wrap {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: calc(48px + env(safe-area-inset-top)) 24px calc(24px + env(safe-area-inset-bottom));
+  }
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 4px;
+  }
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .icon-badge {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  h1 {
+    font-size: 30px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin: 0;
+  }
+  .subtitle {
+    font-size: 14px;
+    color: var(--muted);
+    margin: 0 0 28px 52px;
+  }
+
+  /* settings */
+  .settings-wrap { position: relative; }
+  .settings-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .settings-btn:hover { color: var(--text); border-color: var(--accent); }
+  .settings-panel {
+    position: absolute;
+    right: 0;
+    top: 46px;
+    width: 240px;
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+    padding: 16px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    z-index: 20;
+    display: none;
+  }
+  .settings-panel.open { display: block; }
+  .settings-section { margin-bottom: 16px; }
+  .settings-section:last-child { margin-bottom: 0; }
+  .settings-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted-light);
+    margin: 0 0 8px;
+  }
+  .swatches { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .swatch {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid transparent;
+    padding: 0;
+    flex-shrink: 0;
+  }
+  .swatch.active { border-color: var(--text); }
+  .color-input-wrap {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    overflow: hidden;
+    position: relative;
+    border: 1px dashed var(--muted-light);
+    flex-shrink: 0;
+  }
+  .color-input-wrap input[type="color"] {
+    position: absolute;
+    top: -4px; left: -4px;
+    width: 32px; height: 32px;
+    border: none;
+    cursor: pointer;
+    background: none;
+    padding: 0;
+  }
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .toggle-row span { font-size: 13px; }
+  .switch {
+    width: 36px;
+    height: 20px;
+    border-radius: 999px;
+    background: var(--input-border);
+    position: relative;
+    cursor: pointer;
+    border: none;
+    padding: 0;
+    flex-shrink: 0;
+  }
+  .switch::after {
+    content: "";
+    position: absolute;
+    top: 2px; left: 2px;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: white;
+    transition: left 0.15s;
+  }
+  .switch.on { background: var(--accent); }
+  .switch.on::after { left: 18px; }
+  .lang-toggle { display: flex; gap: 6px; }
+  .lang-btn {
     flex: 1;
+    padding: 6px 0;
+    border-radius: 8px;
+    border: 1px solid var(--input-border);
+    background: var(--input-bg);
+    color: var(--muted);
+    font-size: 12px;
+    font-family: inherit;
+    cursor: pointer;
+  }
+  .lang-btn.active {
+    background: var(--accent);
+    color: var(--accent-text);
+    border-color: var(--accent);
+  }
+
+  .add-btn {
+    width: 100%;
+    padding: 13px 0;
+    border-radius: 14px;
+    background: var(--accent);
+    color: var(--accent-text);
+    border: none;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 28px;
+    transition: filter 0.15s;
+  }
+  .add-btn:hover { filter: brightness(0.94); }
+
+  .list-controls {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .list-controls .search-input {
+    flex: 2;
+    min-width: 0;
+    padding: 10px 14px;
+  }
+  .list-controls .sort-select {
+    flex: 1;
+    min-width: 110px;
+  }
+
+  .empty-state, .loading-state {
+    text-align: center;
+    padding: 60px 0;
+    color: var(--muted-light);
+    font-size: 14px;
+  }
+  .list { display: flex; flex-direction: column; gap: 8px; }
+  .row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 16px 18px;
+    border-radius: 14px;
+    border: 1px solid var(--card-border);
+    background: var(--card);
+    transition: border-color 0.15s;
+    cursor: pointer;
+  }
+  .row:hover { border-color: color-mix(in srgb, var(--accent) 30%, var(--card-border)); }
+  .row.today {
+    background: color-mix(in srgb, var(--accent) 12%, var(--bg));
+    border-color: color-mix(in srgb, var(--accent) 40%, var(--card-border));
+  }
+  .row.inactive {
+    background: color-mix(in srgb, var(--warn) 8%, var(--bg));
+    border-color: color-mix(in srgb, var(--warn) 30%, var(--card-border));
+  }
+  .row-left {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    min-width: 0;
+    flex: 1 1 220px;
+  }
+  .avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--accent) 14%, var(--card));
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+  .row.today .avatar {
+    background: var(--accent);
+    color: var(--accent-text);
+  }
+  .info { min-width: 0; flex: 1; }
+  .cust-name-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .cust-name {
+    font-weight: 600;
+    font-size: 14px;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .notes-dot {
+    color: var(--muted-light);
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+  .category-badge {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 999px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    flex-shrink: 0;
+  }
+  .category-badge.new { background: color-mix(in srgb, #5B5FC7 18%, var(--card)); color: #5B5FC7; }
+  .category-badge.regular { background: color-mix(in srgb, var(--muted) 16%, var(--card)); color: var(--muted); }
+  .category-badge.vip { background: color-mix(in srgb, #C08A2E 22%, var(--card)); color: #C08A2E; }
+  .cust-meta {
+    font-size: 12px;
+    color: var(--muted);
+    margin: 3px 0 0;
+    line-height: 1.5;
+  }
+  .cust-meta.product-line {
+    color: var(--text);
+    opacity: 0.75;
+  }
+  .cust-meta.warn-line {
+    color: var(--warn);
+    font-weight: 600;
+    opacity: 1;
+  }
+  .row-right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+  .days-left {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--muted-light);
+    margin-right: 4px;
+    white-space: nowrap;
+  }
+  .row.today .days-left { color: var(--accent); }
+  .icon-btn {
+    background: none;
+    border: none;
+    color: var(--muted-light);
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    transition: color 0.15s, background 0.15s;
+  }
+  .icon-btn:hover { color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+  .icon-btn.whatsapp-icon:hover { color: #25D366; }
+
+  .footer-count {
+    text-align: center;
+    font-size: 12px;
+    color: var(--muted-light);
+    margin-top: 32px;
+  }
+
+  /* modal shared */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.35);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 100;
+    overflow-y: auto;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-box {
+    background: var(--card);
+    border-radius: 18px;
+    padding: 24px;
+    max-width: 420px;
+    width: 100%;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.2);
+    margin: auto;
+  }
+  .modal-title {
+    font-size: 17px;
+    font-weight: 600;
+    margin: 0 0 4px;
+    font-family: 'Fraunces', serif;
+  }
+  .modal-subtitle {
+    font-size: 12px;
+    color: var(--muted);
+    margin: 0 0 16px;
+  }
+  .field-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--muted-light);
+    margin: 14px 0 6px;
+    display: block;
+  }
+  .field-label:first-of-type { margin-top: 4px; }
+  input[type="text"], input[type="date"], input[type="tel"], textarea {
+    width: 100%;
+    padding: 10px 14px;
+    border-radius: 12px;
+    border: 1px solid var(--input-border);
+    background: var(--input-bg);
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--text);
+    outline: none;
+  }
+  textarea { resize: vertical; min-height: 70px; line-height: 1.5; }
+  input:focus, textarea:focus {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+  }
+  input::placeholder, textarea::placeholder { color: var(--muted-light); }
+
+  .emoji-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .emoji-row .name-input-wrap { flex: 2 1 140px; }
+  .emoji-row .inline-gender-wrap { flex: 1 1 100px; min-width: 90px; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  .category-toggle {
+    display: flex;
+    gap: 6px;
+  }
+  .category-btn {
+    flex: 1;
+    padding: 8px 0;
+    border-radius: 10px;
+    border: 1px solid var(--input-border);
+    background: var(--input-bg);
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+  }
+  .category-btn.active.new { background: color-mix(in srgb, #5B5FC7 18%, var(--input-bg)); color: #5B5FC7; border-color: #5B5FC7; }
+  .category-btn.active.regular { background: color-mix(in srgb, var(--muted) 20%, var(--input-bg)); color: var(--text); border-color: var(--muted); }
+  .category-btn.active.vip { background: color-mix(in srgb, #C08A2E 20%, var(--input-bg)); color: #C08A2E; border-color: #C08A2E; }
+
+  .avatar-preview {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 19px;
+    flex-shrink: 0;
+  }
+  .gender-toggle {
+    display: flex;
+    gap: 6px;
+  }
+  .gender-btn {
+    flex: 1;
+    padding: 8px 0;
+    border-radius: 10px;
+    border: 1px solid var(--input-border);
+    background: var(--input-bg);
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+  }
+  .gender-btn.active { background: color-mix(in srgb, var(--accent) 18%, var(--input-bg)); color: var(--accent); border-color: var(--accent); }
+
+  .demo-btn {
+    flex: 1;
+    padding: 8px 0;
+    border-radius: 10px;
+    border: 1px solid var(--input-border);
+    background: var(--input-bg);
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+  }
+  .demo-btn.active { background: color-mix(in srgb, var(--accent) 18%, var(--input-bg)); color: var(--accent); border-color: var(--accent); }
+
+  .tab-switcher {
+    display: flex;
+    gap: 4px;
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+    padding: 4px;
+    margin-bottom: 20px;
+  }
+  .tab-btn {
+    flex: 1;
+    padding: 10px 0;
+    border-radius: 10px;
+    border: none;
+    background: none;
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+  }
+  .tab-btn.active { background: var(--accent); color: var(--accent-text); }
+  .tab-count {
+    font-size: 11px;
+    font-weight: 700;
+    margin-left: 4px;
+    opacity: 0.75;
+  }
+
+  .opp-stats-bar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .opp-stat-chip {
+    flex: 1;
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .opp-stat-number {
+    font-family: 'Fraunces', serif;
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--accent);
+    line-height: 1.1;
+  }
+  .opp-stat-label {
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .opp-stat-chip-editable {
+    position: relative;
+    cursor: pointer;
+  }
+  .opp-stat-chip-editable:hover { border-color: var(--accent); }
+  .opp-stat-edit-icon {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    color: var(--muted-light);
+  }
+
+  .checklist-group {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: 12px;
+    padding: 6px 4px;
+  }
+  .checklist-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--text);
+  }
+  .checklist-item:hover { background: color-mix(in srgb, var(--accent) 8%, transparent); }
+  .checklist-item input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--accent);
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+  .progress-badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--accent) 15%, transparent);
+    color: var(--accent);
+    white-space: nowrap;
+  }
+  .abo-checklist-detail {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .abo-checklist-detail-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text);
+  }
+  .abo-checklist-detail-item .check-icon { flex-shrink: 0; }
+  .abo-checklist-detail-item.unchecked { color: var(--muted-light); }
+
+
+  .demo-badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: color-mix(in srgb, #2F8F84 15%, transparent);
+    color: #2F8F84;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+  }
+  .background-line {
+    font-size: 12px;
+    color: var(--muted);
+    margin: 3px 0 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .status-badge {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 999px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    flex-shrink: 0;
+  }
+  .status-badge.pending { background: rgba(138,122,114,0.15); color: var(--muted); }
+  .status-badge.considering { background: rgba(192,138,46,0.18); color: #C08A2E; }
+  .status-badge.not_interested { background: rgba(196,99,90,0.15); color: #C4635A; }
+  .status-badge.joined { background: rgba(47,143,132,0.18); color: #2F8F84; }
+  .status-badge.customer { background: rgba(91,95,199,0.15); color: #5B5FC7; }
+  .status-badge.other_member { background: rgba(138,109,59,0.18); color: #8A6D3B; }
+  .status-badge.unreachable { background: rgba(138,122,114,0.2); color: var(--muted); }
+
+  .opp-date-badge {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--muted-light);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  select {
+    width: 100%;
+    padding: 10px 14px;
+    border-radius: 12px;
+    border: 1px solid var(--input-border);
+    background: var(--input-bg);
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--text);
+    outline: none;
+  }
+  select:focus {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+  }
+
+  .app-title-input {
+    width: 100%;
+    padding: 8px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--input-border);
+    background: var(--input-bg);
+    font-size: 13px;
+    font-family: inherit;
+    color: var(--text);
+    outline: none;
+  }
+  .app-title-input:focus {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+  }
+
+  .icon-upload-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .icon-upload-preview {
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+    background: var(--accent);
+    color: var(--accent-text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .icon-upload-preview img { width: 100%; height: 100%; object-fit: cover; }
+  .icon-upload-btn {
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--input-border);
+    background: var(--input-bg);
+    color: var(--text);
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .icon-upload-btn:hover { border-color: var(--accent); }
+  .icon-upload-reset {
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: none;
+    background: none;
+    color: var(--muted-light);
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .icon-upload-reset:hover { color: var(--accent); }
+
+  .error-msg {
+    font-size: 12px;
+    color: var(--accent);
+    margin: 10px 0 0;
+  }
+
+  .modal-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 20px;
+  }
+  .modal-actions button {
+    flex: 1;
+    padding: 10px 0;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+    border: 1px solid var(--input-border);
+    background: var(--input-bg);
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .modal-actions button.primary-btn {
+    background: var(--accent);
+    color: var(--accent-text);
+    border-color: var(--accent);
+  }
+  .modal-actions button:hover { filter: brightness(0.96); }
+  .delete-row-btn {
+    width: 100%;
+    margin-top: 10px;
+    padding: 9px 0;
+    border-radius: 12px;
+    font-size: 12px;
+    font-family: inherit;
+    cursor: pointer;
+    border: none;
+    background: none;
+    color: var(--muted-light);
+    text-align: center;
+  }
+  .delete-row-btn:hover { color: var(--accent); }
+
+  .modal-textarea {
+    width: 100%;
+    min-height: 110px;
+    resize: vertical;
+    padding: 14px;
+    border-radius: 12px;
+    border: 1px solid var(--input-border);
+    background: var(--input-bg);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 14px;
+    line-height: 1.6;
+    outline: none;
+  }
+  .whatsapp-btn {
+    width: 100%;
+    margin-top: 12px;
+    padding: 10px 0;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+    border: none;
+    background: #25D366;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .whatsapp-btn:hover { filter: brightness(0.95); }
+  .no-phone-hint {
+    font-size: 12px;
+    color: var(--muted-light);
+    text-align: center;
+    margin: 10px 0 0;
+  }
+  .modal-close {
+    display: block;
+    margin: 12px auto 0;
+    background: none;
+    border: none;
+    color: var(--muted-light);
+    font-size: 12px;
+    cursor: pointer;
+    padding: 4px;
+  }
+  .modal-back-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    border: 1px solid var(--card-border);
+    background: var(--input-bg);
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    margin-bottom: 14px;
+  }
+  .modal-back-btn:hover { color: var(--accent); border-color: var(--accent); }
+  .modal-close:hover { color: var(--muted); }
+
+  /* purchases section (edit modal) */
+  .purchases-section {
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid var(--card-border);
+  }
+  .purchase-row {
+    position: relative;
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: 14px;
+    padding: 14px;
+    margin-bottom: 10px;
+  }
+  .purchase-remove {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: none;
+    border: none;
+    color: var(--muted-light);
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    border-radius: 6px;
+  }
+  .purchase-remove:hover { color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+  .purchase-row textarea.product-textarea {
+    min-height: 70px;
+  }
+  .purchase-row textarea.purchase-note-textarea {
+    min-height: 50px;
+  }
+  .amount-wrap {
+    display: flex;
+    align-items: stretch;
+    border: 1px solid var(--input-border);
+    border-radius: 12px;
+    background: var(--input-bg);
+    overflow: hidden;
+  }
+  .amount-wrap .rm-prefix {
+    display: flex;
+    align-items: center;
+    padding: 0 4px 0 14px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--muted);
+    white-space: nowrap;
+    background: color-mix(in srgb, var(--accent) 8%, var(--input-bg));
+  }
+  .amount-wrap input {
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    padding-left: 6px;
+  }
+  .add-purchase-btn {
+    width: 100%;
+    padding: 10px 0;
+    border-radius: 12px;
+    border: 1px dashed var(--input-border);
+    background: none;
+    color: var(--muted);
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 4px;
+  }
+  .add-purchase-btn:hover { color: var(--accent); border-color: var(--accent); }
+  .no-purchases-hint {
+    font-size: 12px;
+    color: var(--muted-light);
+    text-align: center;
+    padding: 10px 0;
+  }
+
+  /* customer detail (view) modal */
+  .detail-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .detail-avatar {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--accent) 14%, var(--card));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+  .detail-name-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .detail-name { font-size: 17px; font-weight: 600; margin: 0; font-family: 'Fraunces', serif; }
+  .detail-info-line {
+    font-size: 13px;
+    color: var(--muted);
+    margin: 2px 0 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .detail-warn-banner {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--warn);
+    background: color-mix(in srgb, var(--warn) 12%, var(--card));
+    border-radius: 10px;
+    padding: 8px 12px;
+    margin: 12px 0;
+  }
+  .detail-notes-box {
+    font-size: 13px;
+    color: var(--text);
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: 12px;
+    padding: 10px 12px;
+    margin: 6px 0 0;
+    white-space: pre-wrap;
+    line-height: 1.5;
+  }
+  .detail-section-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin: 18px 0 8px;
+  }
+  .history-item {
+    border-left: 2px solid var(--card-border);
+    padding: 2px 0 14px 14px;
+    margin-left: 4px;
+    position: relative;
+  }
+  .history-item::before {
+    content: "";
+    position: absolute;
+    left: -5px;
+    top: 4px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+  .history-item:last-child { padding-bottom: 0; }
+  .history-date {
+    font-size: 11px;
+    color: var(--muted-light);
+    font-weight: 600;
+  }
+  .history-product {
+    font-size: 14px;
+    color: var(--text);
+    margin: 2px 0 0;
+    line-height: 1.5;
+    white-space: pre-wrap;
+  }
+  .history-amount {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--accent);
+    margin-top: 2px;
+  }
+  .history-note {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 4px;
+    background: var(--input-bg);
+    border-radius: 8px;
+    padding: 6px 10px;
+    white-space: pre-wrap;
+  }
+
+  @media (max-width: 480px) {
+    .two-col { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="header">
+      <div class="header-left">
+        <div class="icon-badge" id="iconBadge">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-text)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+        <h1 class="font-display" id="title">顾客记录</h1>
+      </div>
+      <div class="settings-wrap">
+        <button class="settings-btn" id="settingsBtn" aria-label="设置">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </button>
+        <div class="settings-panel" id="settingsPanel">
+          <div class="settings-section">
+            <p class="settings-label" id="colorLabel">颜色</p>
+            <div class="swatches" id="swatches">
+              <button class="swatch active" data-color="#C4635A" style="background:#C4635A"></button>
+              <button class="swatch" data-color="#2F8F84" style="background:#2F8F84"></button>
+              <button class="swatch" data-color="#5B5FC7" style="background:#5B5FC7"></button>
+              <button class="swatch" data-color="#C74B7A" style="background:#C74B7A"></button>
+              <button class="swatch" data-color="#C08A2E" style="background:#C08A2E"></button>
+              <button class="swatch" data-color="#4C7A3D" style="background:#4C7A3D"></button>
+              <div class="color-input-wrap" title="自定义颜色">
+                <input type="color" id="customColor" value="#C4635A" />
+              </div>
+            </div>
+          </div>
+          <div class="settings-section">
+            <div class="toggle-row">
+              <span id="darkModeLabel">深色模式</span>
+              <button class="switch" id="darkToggle" aria-label="深色模式"></button>
+            </div>
+          </div>
+          <div class="settings-section">
+            <p class="settings-label" id="langLabel">语言</p>
+            <div class="lang-toggle">
+              <button class="lang-btn" data-lang="zh">中文</button>
+              <button class="lang-btn" data-lang="en">English</button>
+            </div>
+          </div>
+          <div class="settings-section">
+            <p class="settings-label" id="appTitleLabel">标题</p>
+            <input type="text" class="app-title-input" id="appTitleInput" maxlength="60" />
+          </div>
+          <div class="settings-section">
+            <p class="settings-label" id="subtitleFieldSettingsLabel">副标题</p>
+            <input type="text" class="app-title-input" id="appSubtitleInput" maxlength="120" />
+          </div>
+          <div class="settings-section">
+            <p class="settings-label" id="iconUploadLabel">图标</p>
+            <div class="icon-upload-row">
+              <div class="icon-upload-preview" id="iconUploadPreview">👤</div>
+              <label class="icon-upload-btn" id="iconUploadBtnLabel">
+                <span id="iconUploadBtnText">上传</span>
+                <input type="file" accept="image/*" id="iconUploadInput" style="display:none;" />
+              </label>
+              <button class="icon-upload-reset" id="iconResetBtn" type="button">重置</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="subtitle" id="subtitle">记录顾客资料、购买记录与生日,轻松跟进每一位顾客</p>
+
+    <div class="tab-switcher">
+      <button class="tab-btn active" id="tabCustomersBtn" type="button" onclick="switchTab('customers')">
+        <span id="tabCustomersLabel">顾客</span>
+      </button>
+      <button class="tab-btn" id="tabProspectsBtn" type="button" onclick="switchTab('prospects')">
+        <span id="tabProspectsLabel">OPP 名单</span>
+      </button>
+      <button class="tab-btn" id="tabBirthdaysBtn" type="button" onclick="switchTab('birthdays')">
+        <span id="tabBirthdaysLabel">生日</span>
+      </button>
+      <button class="tab-btn" id="tabAbosBtn" type="button" onclick="switchTab('abos')">
+        <span id="tabAbosLabel">跟进对象</span>
+      </button>
+    </div>
+
+    <button class="add-btn" id="openAddBtn" type="button">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+      <span id="addBtnLabel">添加顾客</span>
+    </button>
+
+    <div id="customersView">
+      <div class="list-controls">
+        <input type="text" class="search-input" id="customerSearchInput" />
+        <select class="sort-select" id="customerSortSelect">
+          <option value="birthday" id="customerSortBirthdayOpt">按生日临近</option>
+          <option value="name" id="customerSortNameOpt">按姓名 A-Z</option>
+          <option value="recent" id="customerSortRecentOpt">最近新增</option>
+        </select>
+      </div>
+      <div class="opp-stats-bar" id="customerStatsBar" style="display:none;">
+        <div class="opp-stat-chip opp-stat-chip-editable" onclick="editCustomerGoal('month')">
+          <span class="opp-stat-number" id="customerStatsMonthNum">0</span>
+          <span class="opp-stat-label" id="customerStatsMonthLabel"></span>
+          <svg class="opp-stat-edit-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+        </div>
+        <div class="opp-stat-chip opp-stat-chip-editable" onclick="editCustomerGoal('total')">
+          <span class="opp-stat-number" id="customerStatsTotalNum">0</span>
+          <span class="opp-stat-label" id="customerStatsTotalLabel"></span>
+          <svg class="opp-stat-edit-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+        </div>
+      </div>
+      <div id="content">
+        <div class="loading-state" id="loadingLabel">加载中…</div>
+      </div>
+      <p class="footer-count" id="footerCount" style="display:none;"></p>
+    </div>
+
+    <div id="prospectsView" style="display:none;">
+      <div class="list-controls">
+        <input type="text" class="search-input" id="prospectSearchInput" />
+        <select class="sort-select" id="prospectSortSelect">
+          <option value="oppdate" id="prospectSortOppdateOpt">按讲OPP日期</option>
+          <option value="name" id="prospectSortNameOpt">按姓名 A-Z</option>
+          <option value="status" id="prospectSortStatusOpt">按反应状态</option>
+        </select>
+      </div>
+      <div class="opp-stats-bar" id="oppStatsBar" style="display:none;">
+        <div class="opp-stat-chip opp-stat-chip-editable" onclick="editOppGoal('month')">
+          <span class="opp-stat-number" id="oppStatsThisMonthNum">0</span>
+          <span class="opp-stat-label" id="oppStatsThisMonthLabel"></span>
+          <svg class="opp-stat-edit-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+        </div>
+        <div class="opp-stat-chip opp-stat-chip-editable" id="oppStatsTotalChip" onclick="editOppGoal('total')">
+          <span class="opp-stat-number" id="oppStatsTotalNum">0</span>
+          <span class="opp-stat-label" id="oppStatsTotalLabel"></span>
+          <svg class="opp-stat-edit-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+        </div>
+      </div>
+      <div id="prospectsContent">
+        <div class="loading-state" id="prospectsLoadingLabel">加载中…</div>
+      </div>
+      <p class="footer-count" id="prospectsFooterCount" style="display:none;"></p>
+    </div>
+
+    <div id="birthdaysView" style="display:none;">
+      <div class="list-controls">
+        <input type="text" class="search-input" id="birthdaySearchInput" />
+        <select class="sort-select" id="birthdaySortSelect">
+          <option value="birthday" id="birthdaySortBirthdayOpt">按生日临近</option>
+          <option value="name" id="birthdaySortNameOpt">按姓名 A-Z</option>
+        </select>
+      </div>
+      <div class="opp-stats-bar" id="birthdaysStatsBar" style="display:none;">
+        <div class="opp-stat-chip">
+          <span class="opp-stat-number" id="birthdaysStatsMonthNum">0</span>
+          <span class="opp-stat-label" id="birthdaysStatsMonthLabel"></span>
+        </div>
+        <div class="opp-stat-chip opp-stat-chip-editable" onclick="editBirthdaysGoal()">
+          <span class="opp-stat-number" id="birthdaysStatsTotalNum">0</span>
+          <span class="opp-stat-label" id="birthdaysStatsTotalLabel"></span>
+          <svg class="opp-stat-edit-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+        </div>
+      </div>
+      <div id="birthdaysContent">
+        <div class="loading-state" id="birthdaysLoadingLabel">加载中…</div>
+      </div>
+      <p class="footer-count" id="birthdaysFooterCount" style="display:none;"></p>
+    </div>
+
+    <div id="abosView" style="display:none;">
+      <div class="list-controls">
+        <input type="text" class="search-input" id="aboSearchInput" />
+        <select class="sort-select" id="aboSortSelect">
+          <option value="recent" id="aboSortRecentOpt">最近新增</option>
+          <option value="name" id="aboSortNameOpt">按姓名 A-Z</option>
+          <option value="progress" id="aboSortProgressOpt">按进度最多</option>
+        </select>
+      </div>
+      <div class="opp-stats-bar" id="abosStatsBar" style="display:none;">
+        <div class="opp-stat-chip">
+          <span class="opp-stat-number" id="abosStatsMonthNum">0</span>
+          <span class="opp-stat-label" id="abosStatsMonthLabel"></span>
+        </div>
+        <div class="opp-stat-chip opp-stat-chip-editable" onclick="editAbosGoal()">
+          <span class="opp-stat-number" id="abosStatsTotalNum">0</span>
+          <span class="opp-stat-label" id="abosStatsTotalLabel"></span>
+          <svg class="opp-stat-edit-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+        </div>
+      </div>
+      <div id="abosContent">
+        <div class="loading-state" id="abosLoadingLabel">加载中…</div>
+      </div>
+      <p class="footer-count" id="abosFooterCount" style="display:none;"></p>
+    </div>
+  </div>
+
+  <!-- Customer detail (view) modal -->
+  <div class="modal-overlay" id="detailOverlay">
+    <div class="modal-box">
+      <button class="modal-back-btn" onclick="closeDetailModal()" aria-label="Back">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+      </button>
+      <div class="detail-header">
+        <div class="detail-avatar" id="detailAvatar">👤</div>
+        <div>
+          <div class="detail-name-row">
+            <p class="detail-name" id="detailName"></p>
+            <span class="category-badge" id="detailCategoryBadge"></span>
+          </div>
+          <p class="detail-info-line" id="detailBirthdayLine"></p>
+          <p class="detail-info-line" id="detailPhoneLine" style="display:none;"></p>
+          <p class="detail-info-line" id="detailMeetingLine" style="display:none;"></p>
+        </div>
+      </div>
+
+      <p class="detail-warn-banner" id="detailWarnBanner" style="display:none;"></p>
+      <p class="detail-warn-banner" id="detailEspringBanner" style="display:none;"></p>
+
+      <div id="detailPreferenceWrap" style="display:none;">
+        <p class="detail-section-title" id="detailPreferenceTitle">喜好</p>
+        <p class="detail-notes-box" id="detailPreferenceBox"></p>
+      </div>
+
+      <div id="detailNotesWrap" style="display:none;">
+        <p class="detail-section-title" id="detailNotesTitle">备注</p>
+        <p class="detail-notes-box" id="detailNotesBox"></p>
+      </div>
+
+      <p class="detail-section-title" id="detailHistoryTitle">购买记录</p>
+      <div id="detailHistoryList"></div>
+
+      <div class="modal-actions">
+        <button id="detailCloseBtn" type="button"><span id="detailCloseLabel">关闭</span></button>
+        <button class="primary-btn" id="detailEditBtn" type="button"><span id="detailEditLabel">编辑资料</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add / Edit customer modal -->
+  <div class="modal-overlay" id="customerOverlay">
+    <div class="modal-box">
+      <button class="modal-back-btn" onclick="closeCustomerModal()" aria-label="Back">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+      </button>
+      <p class="modal-title" id="customerModalTitle">添加顾客</p>
+      <p class="modal-subtitle" id="customerModalSubtitle">记录顾客的资料,之后随时可以修改</p>
+
+      <div class="emoji-row">
+        <div class="avatar-preview" id="avatarPreview">👤</div>
+        <div class="name-input-wrap">
+          <input id="nameInput" type="text" />
+        </div>
+        <div class="inline-gender-wrap">
+          <select id="genderSelect" aria-label="性别">
+            <option value="" id="genderUnsetOpt">不设置</option>
+            <option value="male" id="genderMaleOpt">男</option>
+            <option value="female" id="genderFemaleOpt">女</option>
+          </select>
+        </div>
+      </div>
+
+      <label class="field-label" id="categoryFieldLabel">顾客分类</label>
+      <select id="categorySelect">
+        <option value="new" id="categoryNewOpt">新顾客</option>
+        <option value="regular" id="categoryRegularOpt">一般</option>
+        <option value="vip" id="categoryVipOpt">VIP</option>
+      </select>
+
+      <label class="field-label" id="phoneFieldLabel">电话号码</label>
+      <input id="phoneInput" type="tel" />
+
+      <label class="field-label" id="birthdayFieldLabel">生日(选填,不需要年份)</label>
+      <div class="two-col">
+        <div>
+          <select id="dateMonthSelect"></select>
+        </div>
+        <div>
+          <select id="dateDaySelect"></select>
+        </div>
+      </div>
+
+      <div class="two-col">
+        <div>
+          <label class="field-label" id="lastMeetingFieldLabel" style="margin-top:0;">最后一次见面(选填)</label>
+          <input id="lastMeetingInput" type="date" />
+        </div>
+        <div>
+          <label class="field-label" id="sawDemoFieldLabel" style="margin-top:0;">看过示范吗</label>
+          <select id="sawDemoSelect">
+            <option value="" id="sawDemoUnsetOpt">不确定</option>
+            <option value="yes" id="sawDemoYesOpt">看过</option>
+            <option value="no" id="sawDemoNoOpt">没看过</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="purchases-section">
+        <label class="field-label" id="purchasesFieldLabel" style="margin-top:0;">购买记录</label>
+        <div id="purchasesList"></div>
+        <button class="add-purchase-btn" id="addPurchaseBtn" type="button">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+          <span id="addPurchaseLabel">添加购买记录</span>
+        </button>
+      </div>
+
+      <label class="field-label" id="preferenceFieldLabel">喜好</label>
+      <textarea id="preferenceInput"></textarea>
+
+      <label class="field-label" id="notesFieldLabel">备注</label>
+      <textarea id="notesInput"></textarea>
+
+      <p class="error-msg" id="errorMsg" style="display:none;"></p>
+
+      <div class="modal-actions">
+        <button id="cancelCustomerBtn" type="button"><span id="cancelLabel">取消</span></button>
+        <button class="primary-btn" id="saveCustomerBtn" type="button"><span id="saveLabel">保存</span></button>
+      </div>
+      <button class="delete-row-btn" id="deleteCustomerBtn" type="button" style="display:none;">
+        <span id="deleteCustomerLabel">删除这位顾客</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Prospect detail (view) modal -->
+  <div class="modal-overlay" id="prospectDetailOverlay">
+    <div class="modal-box">
+      <button class="modal-back-btn" onclick="closeProspectDetailModal()" aria-label="Back">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+      </button>
+      <div class="detail-header">
+        <div class="detail-avatar" id="prospectDetailAvatar">👤</div>
+        <div>
+          <div class="detail-name-row">
+            <p class="detail-name" id="prospectDetailName"></p>
+            <span class="status-badge" id="prospectDetailStatusBadge"></span>
+          </div>
+          <p class="detail-info-line" id="prospectDetailOppDateLine"></p>
+          <p class="detail-info-line" id="prospectDetailBirthdayLine" style="display:none;"></p>
+          <p class="detail-info-line" id="prospectDetailPhoneLine" style="display:none;"></p>
+          <p class="detail-info-line" id="prospectDetailFlagsLine" style="display:none;"></p>
+        </div>
+      </div>
+
+      <div id="prospectDetailBackgroundWrap" style="display:none;">
+        <p class="detail-section-title" id="prospectDetailBackgroundTitle">背景</p>
+        <p class="detail-notes-box" id="prospectDetailBackgroundBox"></p>
+      </div>
+
+      <p class="detail-section-title" id="prospectDetailFollowUpsTitle">跟进记录</p>
+      <div id="prospectDetailFollowUpsList"></div>
+
+      <div id="prospectDetailNotesWrap" style="display:none;">
+        <p class="detail-section-title" id="prospectDetailNotesTitle">备注</p>
+        <p class="detail-notes-box" id="prospectDetailNotesBox"></p>
+      </div>
+
+      <div class="modal-actions">
+        <button id="prospectDetailCloseBtn" type="button"><span id="prospectDetailCloseLabel">关闭</span></button>
+        <button class="primary-btn" id="prospectDetailEditBtn" type="button"><span id="prospectDetailEditLabel">编辑资料</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add / Edit prospect (OPP list) modal -->
+  <div class="modal-overlay" id="prospectOverlay">
+    <div class="modal-box">
+      <button class="modal-back-btn" onclick="closeProspectModal()" aria-label="Back">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+      </button>
+      <p class="modal-title" id="prospectModalTitle">添加 OPP 名单</p>
+      <p class="modal-subtitle" id="prospectModalSubtitle">记录讲 OPP 后的联系人资料</p>
+
+      <div class="emoji-row">
+        <div class="avatar-preview" id="prospectAvatarPreview">👤</div>
+        <div class="name-input-wrap">
+          <input id="prospectNameInput" type="text" />
+        </div>
+        <div class="inline-gender-wrap">
+          <select id="prospectGenderSelect" aria-label="性别">
+            <option value="" id="prospectGenderUnsetOpt">不设置</option>
+            <option value="male" id="prospectGenderMaleOpt">男</option>
+            <option value="female" id="prospectGenderFemaleOpt">女</option>
+          </select>
+        </div>
+      </div>
+
+      <label class="field-label" id="backgroundFieldLabel">背景</label>
+      <textarea id="backgroundInput"></textarea>
+
+      <label class="field-label" id="phoneFieldLabel2">电话号码(选填)</label>
+      <input id="prospectPhoneInput" type="tel" />
+
+      <div class="two-col">
+        <div>
+          <label class="field-label" id="oppDateFieldLabel">讲 OPP 的日期</label>
+          <input id="oppDateInput" type="date" />
+        </div>
+        <div>
+          <label class="field-label" id="prospectBirthdayFieldLabel">生日(选填)</label>
+          <div class="two-col">
+            <select id="prospectDateMonthSelect"></select>
+            <select id="prospectDateDaySelect"></select>
+          </div>
+        </div>
+      </div>
+
+      <div class="two-col">
+        <div>
+          <label class="field-label" id="statusFieldLabel">讲 OPP 之后的反应</label>
+          <select id="statusSelect">
+            <option value="pending" id="statusPendingOpt">待跟进</option>
+            <option value="considering" id="statusConsideringOpt">在考虑</option>
+            <option value="not_interested" id="statusNotInterestedOpt">没兴趣</option>
+            <option value="joined" id="statusJoinedOpt">已加入</option>
+            <option value="customer" id="statusCustomerOpt">已成为顾客</option>
+            <option value="other_member" id="statusOtherMemberOpt">其他人的会员</option>
+            <option value="unreachable" id="statusUnreachableOpt">联系不上</option>
+          </select>
+        </div>
+        <div>
+          <label class="field-label" id="interestedFieldLabel">对产品有兴趣吗</label>
+          <input id="interestedInput" type="text" />
+        </div>
+      </div>
+
+      <label class="field-label" id="rejectionReasonFieldLabel">拒绝的原因</label>
+      <select id="rejectionReasonSelect">
+        <option value="" id="rejectionReasonNoneOpt">-</option>
+        <option value="没有时间" id="rejectionReasonNoTimeOpt">没有时间</option>
+        <option value="没有资金" id="rejectionReasonNoMoneyOpt">没有资金</option>
+        <option value="不感兴趣" id="rejectionReasonNotInterestedOpt">不感兴趣</option>
+        <option value="对行业有负面印象" id="rejectionReasonNegativeOpt">对行业有负面印象</option>
+        <option value="家人反对" id="rejectionReasonFamilyOpt">家人反对</option>
+        <option value="other" id="rejectionReasonOtherOpt">其他(自己填写)</option>
+      </select>
+      <input id="rejectionReasonOtherInput" type="text" style="display:none; margin-top:8px;" />
+
+      <div class="purchases-section">
+        <label class="field-label" id="followUpsFieldLabel" style="margin-top:0;">跟进记录</label>
+        <div id="followUpsList"></div>
+        <button class="add-purchase-btn" id="addFollowUpBtn" type="button">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+          <span id="addFollowUpLabel">添加跟进记录</span>
+        </button>
+      </div>
+
+      <label class="field-label" id="prospectNotesFieldLabel">备注</label>
+      <textarea id="prospectNotesInput"></textarea>
+
+      <p class="error-msg" id="prospectErrorMsg" style="display:none;"></p>
+
+      <div class="modal-actions">
+        <button id="cancelProspectBtn" type="button"><span id="cancelProspectLabel">取消</span></button>
+        <button class="primary-btn" id="saveProspectBtn" type="button"><span id="saveProspectLabel">保存</span></button>
+      </div>
+      <button class="delete-row-btn" id="deleteProspectBtn" type="button" style="display:none;">
+        <span id="deleteProspectLabel">删除这条记录</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Birthday detail (view) modal -->
+  <div class="modal-overlay" id="birthdayDetailOverlay">
+    <div class="modal-box">
+      <button class="modal-back-btn" onclick="closeBirthdayDetailModal()" aria-label="Back">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+      </button>
+      <div class="detail-header">
+        <div class="detail-avatar" id="birthdayDetailAvatar">👤</div>
+        <div>
+          <div class="detail-name-row">
+            <p class="detail-name" id="birthdayDetailName"></p>
+          </div>
+          <p class="detail-info-line" id="birthdayDetailBirthdayLine"></p>
+          <p class="detail-info-line" id="birthdayDetailPhoneLine" style="display:none;"></p>
+        </div>
+      </div>
+
+      <div id="birthdayDetailNotesWrap" style="display:none;">
+        <p class="detail-section-title" id="birthdayDetailNotesTitle">备注</p>
+        <p class="detail-notes-box" id="birthdayDetailNotesBox"></p>
+      </div>
+
+      <div class="modal-actions">
+        <button id="birthdayDetailCloseBtn" type="button"><span id="birthdayDetailCloseLabel">关闭</span></button>
+        <button class="primary-btn" id="birthdayDetailEditBtn" type="button"><span id="birthdayDetailEditLabel">编辑资料</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add / Edit birthday modal -->
+  <div class="modal-overlay" id="birthdayOverlay">
+    <div class="modal-box">
+      <button class="modal-back-btn" onclick="closeBirthdayModal()" aria-label="Back">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+      </button>
+      <p class="modal-title" id="birthdayModalTitle">添加生日</p>
+      <p class="modal-subtitle" id="birthdayModalSubtitle">记录任何人的生日,不一定要是顾客</p>
+
+      <div class="emoji-row">
+        <div class="avatar-preview" id="birthdayAvatarPreview">👤</div>
+        <div class="name-input-wrap">
+          <input id="birthdayNameInput" type="text" />
+        </div>
+        <div class="inline-gender-wrap">
+          <select id="birthdayGenderSelect" aria-label="性别">
+            <option value="" id="birthdayGenderUnsetOpt">不设置</option>
+            <option value="male" id="birthdayGenderMaleOpt">男</option>
+            <option value="female" id="birthdayGenderFemaleOpt">女</option>
+          </select>
+        </div>
+      </div>
+
+      <label class="field-label" id="birthdayDateFieldLabel">生日(不需要年份)</label>
+      <div class="two-col">
+        <select id="birthdayDateMonthSelect"></select>
+        <select id="birthdayDateDaySelect"></select>
+      </div>
+
+      <label class="field-label" id="birthdayPhoneFieldLabel">电话号码(选填)</label>
+      <input id="birthdayPhoneInput" type="tel" />
+
+      <label class="field-label" id="birthdayNotesFieldLabel">备注</label>
+      <textarea id="birthdayNotesInput"></textarea>
+
+      <p class="error-msg" id="birthdayErrorMsg" style="display:none;"></p>
+
+      <div class="modal-actions">
+        <button id="cancelBirthdayBtn" type="button"><span id="cancelBirthdayLabel">取消</span></button>
+        <button class="primary-btn" id="saveBirthdayBtn" type="button"><span id="saveBirthdayLabel">保存</span></button>
+      </div>
+      <button class="delete-row-btn" id="deleteBirthdayBtn" type="button" style="display:none;">
+        <span id="deleteBirthdayLabel">删除这条记录</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ABO (跟进对象) detail modal -->
+  <div class="modal-overlay" id="aboDetailOverlay">
+    <div class="modal-box">
+      <button class="modal-back-btn" onclick="closeAboDetailModal()" aria-label="Back">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+      </button>
+      <div class="detail-header">
+        <div class="detail-avatar" id="aboDetailAvatar">👤</div>
+        <div>
+          <div class="detail-name-row">
+            <p class="detail-name" id="aboDetailName"></p>
+          </div>
+          <p class="detail-info-line" id="aboDetailPhoneLine" style="display:none;"></p>
+        </div>
+      </div>
+
+      <p class="detail-section-title" id="aboDetailChecklistTitle">进度清单</p>
+      <div class="abo-checklist-detail" id="aboDetailChecklist"></div>
+
+      <div id="aboDetailAudioWrap" style="display:none; margin-top:14px;">
+        <p class="detail-section-title" id="aboDetailAudioTitle">听了什么 Audio</p>
+        <p class="detail-notes-box" id="aboDetailAudioBox"></p>
+      </div>
+
+      <div id="aboDetailMeetingsWrap" style="display:none;">
+        <p class="detail-section-title" id="aboDetailMeetingsTitle">参加了什么会议</p>
+        <p class="detail-notes-box" id="aboDetailMeetingsBox"></p>
+      </div>
+
+      <div id="aboDetailStatusWrap" style="display:none;">
+        <p class="detail-section-title" id="aboDetailStatusTitle">现在状况</p>
+        <p class="detail-notes-box" id="aboDetailStatusBox"></p>
+      </div>
+
+      <div id="aboDetailNotesWrap" style="display:none;">
+        <p class="detail-section-title" id="aboDetailNotesTitle">备注</p>
+        <p class="detail-notes-box" id="aboDetailNotesBox"></p>
+      </div>
+
+      <div class="modal-actions">
+        <button id="aboDetailCloseBtn" type="button"><span id="aboDetailCloseLabel">关闭</span></button>
+        <button class="primary-btn" id="aboDetailEditBtn" type="button"><span id="aboDetailEditLabel">编辑资料</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ABO (跟进对象) add/edit modal -->
+  <div class="modal-overlay" id="aboOverlay">
+    <div class="modal-box">
+      <button class="modal-back-btn" onclick="closeAboModal()" aria-label="Back">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+      </button>
+      <p class="modal-title" id="aboModalTitle">添加跟进对象</p>
+      <p class="modal-subtitle" id="aboModalSubtitle">记录新ABO或刚讲完OPP伙伴的跟进进度</p>
+
+      <div class="emoji-row">
+        <div class="avatar-preview" id="aboAvatarPreview">👤</div>
+        <div class="name-input-wrap">
+          <input id="aboNameInput" type="text" />
+        </div>
+        <div class="inline-gender-wrap">
+          <select id="aboGenderSelect" aria-label="性别">
+            <option value="" id="aboGenderUnsetOpt">不设置</option>
+            <option value="male" id="aboGenderMaleOpt">男</option>
+            <option value="female" id="aboGenderFemaleOpt">女</option>
+          </select>
+        </div>
+      </div>
+
+      <label class="field-label" id="aboPhoneFieldLabel">电话号码(选填)</label>
+      <input id="aboPhoneInput" type="tel" />
+
+      <label class="field-label" id="aboChecklistFieldLabel" style="margin-top:0;">进度清单</label>
+      <div class="checklist-group">
+        <label class="checklist-item"><input type="checkbox" id="aboClass2Cb" /><span id="aboClass2Label">Class 2: Why Amway</span></label>
+        <label class="checklist-item"><input type="checkbox" id="aboHasListCb" /><span id="aboHasListLabel">名单 List</span></label>
+        <label class="checklist-item"><input type="checkbox" id="aboWatchedDemoCb" /><span id="aboWatchedDemoLabel">看了 Demo</span></label>
+        <label class="checklist-item"><input type="checkbox" id="aboVisitedHQCb" /><span id="aboVisitedHQLabel">Visit HQ</span></label>
+        <label class="checklist-item"><input type="checkbox" id="aboCenterMeetingCb" /><span id="aboCenterMeetingLabel">Center Meeting</span></label>
+        <label class="checklist-item"><input type="checkbox" id="aboHouseMeetingCb" /><span id="aboHouseMeetingLabel">House Meeting</span></label>
+        <label class="checklist-item"><input type="checkbox" id="aboAbcUplineCb" /><span id="aboAbcUplineLabel">ABC 上线</span></label>
+      </div>
+
+      <div class="two-col">
+        <div>
+          <label class="field-label" id="aboAudioFieldLabel">听了什么 Audio</label>
+          <input id="aboAudioInput" type="text" />
+        </div>
+        <div>
+          <label class="field-label" id="aboMeetingsFieldLabel">参加了什么会议</label>
+          <input id="aboMeetingsInput" type="text" />
+        </div>
+      </div>
+
+      <label class="field-label" id="aboCurrentStatusFieldLabel">现在状况</label>
+      <input id="aboCurrentStatusInput" type="text" />
+
+      <label class="field-label" id="aboNotesFieldLabel">备注</label>
+      <textarea id="aboNotesInput"></textarea>
+
+      <p class="error-msg" id="aboErrorMsg" style="display:none;"></p>
+
+      <div class="modal-actions">
+        <button id="cancelAboBtn" type="button"><span id="cancelAboLabel">取消</span></button>
+        <button class="primary-btn" id="saveAboBtn" type="button"><span id="saveAboLabel">保存</span></button>
+      </div>
+      <button class="delete-row-btn" id="deleteAboBtn" type="button" style="display:none;">
+        <span id="deleteAboLabel">删除这条记录</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Birthday wish modal -->
+  <div class="modal-overlay" id="wishOverlay">
+    <div class="modal-box">
+      <button class="modal-back-btn" onclick="closeWishModal()" aria-label="Back">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+      </button>
+      <p class="modal-title" id="wishTitle">送祝福语</p>
+      <p class="modal-subtitle" id="wishSubtitle"></p>
+      <div class="lang-toggle" id="wishLangToggle" style="margin-bottom:10px;">
+        <button class="lang-btn" data-wishlang="zh" type="button">中文</button>
+        <button class="lang-btn" data-wishlang="en" type="button">English</button>
+      </div>
+      <textarea class="modal-textarea" id="wishTextarea" readonly></textarea>
+      <button class="whatsapp-btn" id="whatsappBtn" type="button" style="display:none;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38a9.9 9.9 0 0 0 4.74 1.21h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.86 9.86 0 0 0 12.04 2zm5.8 14.15c-.24.68-1.4 1.3-1.93 1.38-.5.08-1.11.11-1.79-.11a13 13 0 0 1-1.86-.7c-2.83-1.22-4.67-4.08-4.81-4.27-.14-.19-1.15-1.53-1.15-2.92 0-1.39.73-2.07.98-2.35.26-.28.56-.35.75-.35.19 0 .37 0 .53.01.17.01.4-.06.62.48.24.58.8 2 .87 2.14.07.14.12.31.02.5-.09.19-.14.31-.28.47-.14.16-.29.36-.42.48-.14.14-.28.29-.12.57.16.28.71 1.18 1.53 1.91 1.05.94 1.94 1.24 2.22 1.38.28.14.44.12.6-.07.16-.19.68-.79.87-1.06.19-.28.37-.23.62-.14.26.09 1.63.77 1.91.91.28.14.47.21.53.33.07.12.07.68-.17 1.36z"/></svg>
+        <span id="whatsappLabel">WhatsApp 发送</span>
+      </button>
+      <p class="no-phone-hint" id="noPhoneHint" style="display:none;"></p>
+      <div class="modal-actions">
+        <button id="shuffleBtn" type="button">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>
+          <span id="shuffleLabel">换一个</span>
+        </button>
+        <button id="copyBtn" class="primary-btn" type="button">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          <span id="copyLabel">复制</span>
+        </button>
+      </div>
+      <button class="modal-close" id="wishCloseBtn">关闭</button>
+    </div>
+  </div>
+
+<script>
+const API = "/api/customers";
+let customers = [];
+const INACTIVE_DAYS_THRESHOLD = 60; // 约 2 个月
+
+const I18N = {
+  zh: {
+    title: "顾客记录",
+    subtitle: "记录顾客资料、购买记录与生日,轻松跟进每一位顾客",
+    addBtnLabel: "添加顾客",
+    namePlaceholder: "顾客姓名",
+    phonePlaceholder: "例如 +60123456789",
+    notesPlaceholder: "记录一些关于这位顾客的备注…",
+    colorLabel: "颜色",
+    darkModeLabel: "深色模式",
+    langLabel: "语言",
+    loading: "加载中…",
+    empty: "还没有记录,添加第一位顾客吧",
+    noSearchResults: "没有找到符合的结果",
+    searchPlaceholder: "搜索姓名或电话…",
+    sortByBirthday: "按生日临近",
+    sortByName: "按姓名 A-Z",
+    sortByRecent: "最近新增",
+    sortByOppDate: "按讲OPP日期",
+    sortByStatus: "按反应状态",
+    sortByProgress: "按进度最多",
+    loadFailed: "加载失败,请刷新重试",
+    deleteFailed: "删除失败,请重试",
+    errorName: "请输入顾客姓名",
+    errorDate: "请选择生日日期",
+    errorIncompleteDate: "请把生日的月和日都选好,或者两个都留空",
+    errorPhone: "电话号码格式不正确",
+    errorAdd: "保存失败",
+    errorNetwork: "网络错误,请重试",
+    todayBirthday: "今天生日!",
+    daysAfter: (n) => `${n} 天后`,
+    monthPlaceholder: "月",
+    dayPlaceholder: "日",
+    monthOptionLabel: (m) => `${m}月`,
+    dayOptionLabel: (d) => `${d}日`,
+    noBirthdayHint: "未设置生日",
+    monthDay: (m, d) => `${m}月${d}日`,
+    footerCount: (n) => `共 ${n} 位顾客 · 按生日临近顺序排列`,
+    deleteLabel: "删除",
+    editLabel: "编辑",
+    whatsappChatLabel: "打开 WhatsApp 聊天",
+    genderFieldLabel: "性别",
+    genderMale: "男",
+    genderFemale: "女",
+    genderUnset: "不设置",
+    deleteRowConfirm: (name) => `确定要删除顾客「${name}」吗?此操作无法撤销。`,
+    sendWishLabel: "送祝福语",
+    wishTitle: "送祝福语",
+    wishSubtitle: (name) => `给 ${name} 的生日祝福,可以直接复制发送`,
+    shuffle: "换一个",
+    copy: "复制",
+    copied: "已复制!",
+    close: "关闭",
+    whatsappSend: "WhatsApp 发送",
+    noPhoneHint: "该顾客未填写电话号码,无法通过 WhatsApp 发送",
+    phoneFieldLabel: "电话号码(选填)",
+    birthdayFieldLabel: "生日(选填,不需要年份)",
+    lastMeetingFieldLabel: "最后一次见面(选填)",
+    sawDemoFieldLabel: "看过示范吗",
+    sawDemoYes: "看过",
+    sawDemoNo: "没看过",
+    sawDemoUnset: "不确定",
+    lastMeetingRowLabel: (d) => `上次见面 ${d}`,
+    sawDemoBadge: "✅ 已看示范",
+    tabCustomers: "顾客",
+    tabProspects: "OPP 名单",
+    tabBirthdays: "生日",
+    tabAbos: "跟进对象",
+    addAboBtnLabel: "添加跟进对象",
+    modalAddAboTitle: "添加跟进对象",
+    modalEditAboTitle: "编辑跟进对象",
+    aboModalSubtitle: "记录新ABO或刚讲完OPP伙伴的跟进进度",
+    aboChecklistFieldLabel: "进度清单",
+    aboClass2Label: "Class 2: Why Amway",
+    aboHasListLabel: "名单 List",
+    aboWatchedDemoLabel: "看了 Demo",
+    aboVisitedHQLabel: "Visit HQ",
+    aboCenterMeetingLabel: "Center Meeting",
+    aboHouseMeetingLabel: "House Meeting",
+    aboAbcUplineLabel: "ABC 上线",
+    aboAudioFieldLabel: "听了什么 Audio",
+    aboMeetingsFieldLabel: "参加了什么会议",
+    aboCurrentStatusFieldLabel: "现在状况",
+    aboEmpty: "还没有记录,添加第一位吧",
+    aboFooterCount: (n) => `共 ${n} 位`,
+    deleteAboRowConfirm: (name) => `确定要删除「${name}」吗?此操作无法撤销。`,
+    deleteAboConfirm: "确定要删除这条记录吗?此操作无法撤销。",
+    deleteAboLabel: "删除这条记录",
+    aboProgressLabel: (done, total) => `${done}/${total} 已完成`,
+    oppStatsThisMonthLabel: "本月做了几场 OPP",
+    oppStatsTotalLabel: "累计做了几场 OPP",
+    oppGoalPrompt: "设定你的累计 OPP 目标场数(留空表示不设定目标):",
+    oppMonthGoalPrompt: "设定本月 OPP 目标场数(留空表示不设定目标):",
+    customerMonthGoalPrompt: "设定本月顾客消费目标 (RM,留空表示不设定目标):",
+    customerTotalGoalPrompt: "设定累计顾客消费目标 (RM,留空表示不设定目标):",
+    birthdaysStatsMonthLabel: "本月生日人数",
+    birthdaysStatsTotalLabel: "累计生日人数",
+    birthdaysGoalPrompt: "设定累计生日人数目标(留空表示不设定目标):",
+    abosStatsMonthLabel: "本月新增跟进对象",
+    abosStatsTotalLabel: "累计跟进对象",
+    abosGoalPrompt: "设定累计跟进对象目标(留空表示不设定目标):",
+    customerStatsMonthLabel: "本月顾客消费 (RM)",
+    customerStatsTotalLabel: "累计顾客消费 (RM)",
+    addBirthdayBtnLabel: "添加生日",
+    modalAddBirthdayTitle: "添加生日",
+    modalEditBirthdayTitle: "编辑生日",
+    birthdayModalSubtitle: "记录任何人的生日,不一定要是顾客",
+    birthdayDateFieldLabel: "生日",
+    birthdayEmpty: "还没有记录,添加第一位吧",
+    birthdayFooterCount: (n) => `共 ${n} 位`,
+    deleteBirthdayRowConfirm: (name) => `确定要删除「${name}」吗?此操作无法撤销。`,
+    deleteBirthdayConfirm: "确定要删除这条记录吗?此操作无法撤销。",
+    deleteBirthdayLabel: "删除这条记录",
+    birthdayDetailCloseLabel: "关闭",
+    birthdayDetailEditLabel: "编辑资料",
+    addProspectBtnLabel: "添加 OPP 名单",
+    modalAddProspectTitle: "添加 OPP 名单",
+    modalEditProspectTitle: "编辑 OPP 名单",
+    prospectModalSubtitle: "记录讲 OPP 后的联系人资料",
+    backgroundFieldLabel: "背景",
+    prospectDetailCloseLabel: "关闭",
+    prospectDetailEditLabel: "编辑资料",
+    prospectDetailOppDateLabel: (d) => `📅 讲 OPP 日期: ${d}`,
+    backgroundPlaceholder: "例如:朋友介绍、做生意的、对健康有兴趣…",
+    oppDateFieldLabel: "讲 OPP 的日期",
+    prospectBirthdayFieldLabel: "生日(选填)",
+    prospectNotesPlaceholder: "记录关于这个人的想法、跟进计划…",
+    prospectEmpty: "还没有记录,添加第一位吧",
+    prospectFooterCount: (n) => `共 ${n} 位`,
+    deleteProspectRowConfirm: (name) => `确定要删除「${name}」吗?此操作无法撤销。`,
+    deleteProspectConfirm: "确定要删除这条记录吗?此操作无法撤销。",
+    deleteProspectLabel: "删除这条记录",
+    noOppDateHint: "未记录日期",
+    statusFieldLabel: "讲 OPP 之后的反应",
+    interestedFieldLabel: "对产品有兴趣吗",
+    rejectionReasonFieldLabel: "拒绝的原因",
+    rejectionReasonNone: "-",
+    rejectionReasonNoTime: "没有时间",
+    rejectionReasonNoMoney: "没有资金",
+    rejectionReasonNotInterested: "不感兴趣",
+    rejectionReasonNegative: "对行业有负面印象",
+    rejectionReasonFamily: "家人反对",
+    rejectionReasonOther: "其他(自己填写)",
+    statusOtherMember: "其他人的会员",
+    followUpsFieldLabel: "跟进记录",
+    followUpDateLabel: "日期",
+    followUpNoteLabel: "事项",
+    followUpNotePlaceholder: "记录这次跟进的内容…",
+    addFollowUpLabel: "添加跟进记录",
+    removeFollowUpLabel: "删除这条记录",
+    noFollowUpsHint: "还没有跟进记录",
+    statusPending: "待跟进",
+    statusConsidering: "在考虑",
+    statusNotInterested: "没兴趣",
+    statusJoined: "已加入",
+    statusCustomer: "已成为顾客",
+    statusUnreachable: "联系不上",
+    appTitleLabel: "标题",
+    subtitleFieldSettingsLabel: "副标题",
+    iconUploadLabel: "图标",
+    iconUploadBtn: "上传",
+    iconResetBtn: "重置",
+    iconTooLargeError: "图片太大,请选择小一点的图片",
+    categoryFieldLabel: "顾客分类",
+    categoryNew: "新顾客",
+    categoryRegular: "一般",
+    categoryVip: "VIP",
+    purchasesFieldLabel: "订单",
+    purchaseDateLabel: "购买日期",
+    purchaseProductLabel: "购买产品",
+    purchaseAmountLabel: "金额",
+    purchaseNoteLabel: "备注(选填)",
+    productPlaceholder: "例如 Nutrilite 蛋白粉,可以写详细一点",
+    amountPlaceholder: "150",
+    purchaseNotePlaceholder: "记录这次购买的情况…",
+    addPurchaseLabel: "添加订单",
+    removePurchaseLabel: "删除这笔记录",
+    noPurchasesHint: "还没有订单",
+    purchasesSummary: (count, total) => `🛍 ${count} 笔订单 · 共 RM${total}`,
+    inactiveWarning: "⚠️ 已超过 2 个月未购买",
+    espringReminder: "💧 Espring 滤芯该更换了(购买已满一年)",
+    notesFieldLabel: "备注(选填)",
+    preferenceFieldLabel: "喜好(选填)",
+    preferencePlaceholder: "记录顾客喜欢的产品、口味、颜色…",
+    cancelLabel: "取消",
+    saveLabel: "保存",
+    deleteCustomerLabel: "删除这位顾客",
+    modalAddTitle: "添加顾客",
+    modalEditTitle: "编辑顾客",
+    modalSubtitle: "记录顾客的资料,之后随时可以修改",
+    deleteConfirm: "确定要删除这位顾客吗?此操作无法撤销。",
+    notesLabel: "备注",
+    preferenceLabel: "喜好",
+    phoneLabel: "电话",
+    detailCloseLabel: "关闭",
+    detailEditLabel: "编辑资料",
+    noHistoryHint: "暂无购买记录",
+    wishes: [
+      (name) => `祝${name}生日快乐,愿你的每一天都充满阳光与好运!🎂`,
+      (name) => `亲爱的${name},生日快乐!感谢一直以来的支持,祝你新的一岁心想事成、笑口常开!🎉`,
+      (name) => `${name},生日快乐!愿你被爱包围,岁岁常欢愉,年年皆胜意。🎈`,
+      (name) => `祝${name}生日快乐!感恩相遇,愿未来的日子里,一切美好如期而至。🌟`,
+      (name) => `生日快乐,${name}!愿你在新的一岁里健康平安,梦想成真。🎁`,
+      (name) => `${name},又长大一岁啦!祝你生日快乐,永远年轻,永远热爱生活。✨`,
+    ],
+  },
+  en: {
+    title: "Customer Records",
+    subtitle: "Track customer details, purchases, and birthdays in one place",
+    addBtnLabel: "Add Customer",
+    namePlaceholder: "Customer name",
+    phonePlaceholder: "e.g. +60123456789",
+    notesPlaceholder: "Any notes about this customer…",
+    colorLabel: "Color",
+    darkModeLabel: "Dark mode",
+    langLabel: "Language",
+    loading: "Loading…",
+    empty: "No records yet — add your first customer",
+    noSearchResults: "No matching results found",
+    searchPlaceholder: "Search name or phone…",
+    sortByBirthday: "By upcoming birthday",
+    sortByName: "By name A-Z",
+    sortByRecent: "Recently added",
+    sortByOppDate: "By OPP date",
+    sortByStatus: "By status",
+    sortByProgress: "By most progress",
+    loadFailed: "Failed to load. Please refresh.",
+    deleteFailed: "Failed to delete. Please try again.",
+    errorName: "Please enter a customer name",
+    errorDate: "Please select a birthday",
+    errorIncompleteDate: "Please pick both month and day, or leave both blank",
+    errorPhone: "Please enter a valid phone number",
+    errorAdd: "Failed to save",
+    errorNetwork: "Network error, please try again",
+    todayBirthday: "Birthday today!",
+    daysAfter: (n) => `in ${n} day${n === 1 ? "" : "s"}`,
+    monthPlaceholder: "Month",
+    dayPlaceholder: "Day",
+    monthOptionLabel: (m) => ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][m-1],
+    dayOptionLabel: (d) => String(d),
+    noBirthdayHint: "No birthday set",
+    monthDay: (m, d) => {
+      const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+      return `${months[m-1]} ${d}`;
+    },
+    footerCount: (n) => `${n} customer${n === 1 ? "" : "s"} · sorted by upcoming birthday`,
+    deleteLabel: "Delete",
+    editLabel: "Edit",
+    whatsappChatLabel: "Open WhatsApp chat",
+    genderFieldLabel: "Gender",
+    genderMale: "Male",
+    genderFemale: "Female",
+    genderUnset: "Not set",
+    deleteRowConfirm: (name) => `Delete customer "${name}"? This cannot be undone.`,
+    sendWishLabel: "Send wishes",
+    wishTitle: "Send a birthday wish",
+    wishSubtitle: (name) => `A birthday message for ${name} — ready to copy and send`,
+    shuffle: "Shuffle",
+    copy: "Copy",
+    copied: "Copied!",
+    close: "Close",
+    whatsappSend: "Send via WhatsApp",
+    noPhoneHint: "No phone number on file for this customer — WhatsApp isn't available",
+    phoneFieldLabel: "Phone number (optional)",
+    birthdayFieldLabel: "Birthday (optional, no year needed)",
+    lastMeetingFieldLabel: "Last meeting (optional)",
+    sawDemoFieldLabel: "Seen the demo?",
+    sawDemoYes: "Yes",
+    sawDemoNo: "No",
+    sawDemoUnset: "Not sure",
+    lastMeetingRowLabel: (d) => `Last met ${d}`,
+    sawDemoBadge: "✅ Seen demo",
+    tabCustomers: "Customers",
+    tabProspects: "OPP List",
+    tabBirthdays: "Birthdays",
+    tabAbos: "Follow-ups",
+    addAboBtnLabel: "Add Follow-up",
+    modalAddAboTitle: "Add Follow-up",
+    modalEditAboTitle: "Edit Follow-up",
+    aboModalSubtitle: "Track a new ABO or someone who just had their OPP",
+    aboChecklistFieldLabel: "Progress checklist",
+    aboClass2Label: "Class 2: Why Amway",
+    aboHasListLabel: "Name list",
+    aboWatchedDemoLabel: "Watched Demo",
+    aboVisitedHQLabel: "Visited HQ",
+    aboCenterMeetingLabel: "Center Meeting",
+    aboHouseMeetingLabel: "House Meeting",
+    aboAbcUplineLabel: "ABC with upline",
+    aboAudioFieldLabel: "Audio listened to",
+    aboMeetingsFieldLabel: "Meetings attended",
+    aboCurrentStatusFieldLabel: "Current status",
+    aboEmpty: "No records yet — add your first one",
+    aboFooterCount: (n) => `${n} ${n === 1 ? "person" : "people"}`,
+    deleteAboRowConfirm: (name) => `Delete "${name}"? This cannot be undone.`,
+    deleteAboConfirm: "Delete this record? This cannot be undone.",
+    deleteAboLabel: "Delete this record",
+    aboProgressLabel: (done, total) => `${done}/${total} done`,
+    oppStatsThisMonthLabel: "OPPs this month",
+    oppStatsTotalLabel: "OPPs total",
+    oppGoalPrompt: "Set your total OPP goal (leave blank for no goal):",
+    oppMonthGoalPrompt: "Set this month's OPP goal (leave blank for no goal):",
+    customerMonthGoalPrompt: "Set this month's customer spending goal (RM, leave blank for no goal):",
+    customerTotalGoalPrompt: "Set total customer spending goal (RM, leave blank for no goal):",
+    birthdaysStatsMonthLabel: "Birthdays this month",
+    birthdaysStatsTotalLabel: "Total birthdays",
+    birthdaysGoalPrompt: "Set your total birthdays goal (leave blank for no goal):",
+    abosStatsMonthLabel: "New follow-ups this month",
+    abosStatsTotalLabel: "Total follow-ups",
+    abosGoalPrompt: "Set your total follow-ups goal (leave blank for no goal):",
+    customerStatsMonthLabel: "Customer spending this month (RM)",
+    customerStatsTotalLabel: "Total customer spending (RM)",
+    addBirthdayBtnLabel: "Add Birthday",
+    modalAddBirthdayTitle: "Add Birthday",
+    modalEditBirthdayTitle: "Edit Birthday",
+    birthdayModalSubtitle: "Track anyone's birthday — they don't have to be a customer",
+    birthdayDateFieldLabel: "Birthday",
+    birthdayEmpty: "No records yet — add your first one",
+    birthdayFooterCount: (n) => `${n} ${n === 1 ? "person" : "people"}`,
+    deleteBirthdayRowConfirm: (name) => `Delete "${name}"? This cannot be undone.`,
+    deleteBirthdayConfirm: "Delete this record? This cannot be undone.",
+    deleteBirthdayLabel: "Delete this record",
+    birthdayDetailCloseLabel: "Close",
+    birthdayDetailEditLabel: "Edit details",
+    addProspectBtnLabel: "Add Prospect",
+    modalAddProspectTitle: "Add Prospect",
+    modalEditProspectTitle: "Edit Prospect",
+    prospectModalSubtitle: "Track people you've presented the opportunity to",
+    backgroundFieldLabel: "Background",
+    prospectDetailCloseLabel: "Close",
+    prospectDetailEditLabel: "Edit details",
+    prospectDetailOppDateLabel: (d) => `📅 OPP presented: ${d}`,
+    backgroundPlaceholder: "e.g. introduced by a friend, runs a business, interested in health…",
+    oppDateFieldLabel: "OPP presentation date",
+    prospectBirthdayFieldLabel: "Birthday (optional)",
+    prospectNotesPlaceholder: "Notes about this person, follow-up plans…",
+    prospectEmpty: "No records yet — add your first one",
+    prospectFooterCount: (n) => `${n} ${n === 1 ? "person" : "people"}`,
+    deleteProspectRowConfirm: (name) => `Delete "${name}"? This cannot be undone.`,
+    deleteProspectConfirm: "Delete this record? This cannot be undone.",
+    deleteProspectLabel: "Delete this record",
+    noOppDateHint: "No date recorded",
+    statusFieldLabel: "Reaction after OPP",
+    interestedFieldLabel: "Interested in products?",
+    rejectionReasonFieldLabel: "Reason for rejection",
+    rejectionReasonNone: "-",
+    rejectionReasonNoTime: "No time",
+    rejectionReasonNoMoney: "No money",
+    rejectionReasonNotInterested: "Not interested",
+    rejectionReasonNegative: "Negative view of the industry",
+    rejectionReasonFamily: "Family objects",
+    rejectionReasonOther: "Other (type your own)",
+    statusOtherMember: "Someone else's member",
+    followUpsFieldLabel: "Follow-up records",
+    followUpDateLabel: "Date",
+    followUpNoteLabel: "Note",
+    followUpNotePlaceholder: "What happened in this follow-up…",
+    addFollowUpLabel: "Add follow-up record",
+    removeFollowUpLabel: "Remove this record",
+    noFollowUpsHint: "No follow-ups recorded yet",
+    statusPending: "Follow up",
+    statusConsidering: "Considering",
+    statusNotInterested: "Not interested",
+    statusJoined: "Joined",
+    statusCustomer: "Became customer",
+    statusUnreachable: "Unreachable",
+    appTitleLabel: "Title",
+    subtitleFieldSettingsLabel: "Subtitle",
+    iconUploadLabel: "Icon",
+    iconUploadBtn: "Upload",
+    iconResetBtn: "Reset",
+    iconTooLargeError: "Image too large, please pick a smaller one",
+    categoryFieldLabel: "Category",
+    categoryNew: "New",
+    categoryRegular: "Regular",
+    categoryVip: "VIP",
+    purchasesFieldLabel: "Orders",
+    purchaseDateLabel: "Purchase date",
+    purchaseProductLabel: "Product",
+    purchaseAmountLabel: "Amount",
+    purchaseNoteLabel: "Note (optional)",
+    productPlaceholder: "e.g. Nutrilite Protein — feel free to add detail",
+    amountPlaceholder: "150",
+    purchaseNotePlaceholder: "Any notes about this purchase…",
+    addPurchaseLabel: "Add purchase record",
+    removePurchaseLabel: "Remove this record",
+    noPurchasesHint: "No purchases recorded yet",
+    purchasesSummary: (count, total) => `🛍 ${count} purchase${count === 1 ? "" : "s"} · RM${total} total`,
+    inactiveWarning: "⚠️ No purchase in over 2 months",
+    espringReminder: "💧 Espring cartridge due for replacement (1 year since purchase)",
+    notesFieldLabel: "Notes (optional)",
+    preferenceFieldLabel: "Preferences (optional)",
+    preferencePlaceholder: "Products, flavors, colors this customer likes…",
+    cancelLabel: "Cancel",
+    saveLabel: "Save",
+    deleteCustomerLabel: "Delete this customer",
+    modalAddTitle: "Add Customer",
+    modalEditTitle: "Edit Customer",
+    modalSubtitle: "Save this customer's details — you can edit them anytime",
+    deleteConfirm: "Delete this customer? This cannot be undone.",
+    notesLabel: "Notes",
+    preferenceLabel: "Preferences",
+    phoneLabel: "Phone",
+    detailCloseLabel: "Close",
+    detailEditLabel: "Edit details",
+    noHistoryHint: "No purchases yet",
+    wishes: [
+      (name) => `Happy Birthday, ${name}! Wishing you a day filled with joy and a year full of good things. 🎂`,
+      (name) => `Dear ${name}, happy birthday! Thank you for your support — here's to a wonderful new year ahead. 🎉`,
+      (name) => `${name}, happy birthday! May you be surrounded by love and good fortune, today and always. 🎈`,
+      (name) => `Wishing you a very happy birthday, ${name}! May all your wishes come true. 🌟`,
+      (name) => `Happy birthday, ${name}! Health, happiness, and success in the year ahead. 🎁`,
+      (name) => `Another year older, ${name}! Stay young at heart and keep shining. ✨`,
+    ],
+  },
+};
+
+const PREFS_KEY = "birthday-app-prefs";
+let prefs = { color: "#C4635A", dark: false, lang: "zh", appTitle: "", appSubtitle: "", customIcon: "", oppMonthGoal: 0, oppGoal: 0, customerMonthGoal: 0, customerTotalGoal: 0, abosGoal: 0, birthdaysGoal: 0 };
+try {
+  const saved = JSON.parse(localStorage.getItem(PREFS_KEY) || "{}");
+  prefs = { ...prefs, ...saved };
+} catch (e) {}
+
+function savePrefs() {
+  localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
+}
+
+function applyPrefs() {
+  document.documentElement.setAttribute("data-theme", prefs.dark ? "dark" : "light");
+  document.documentElement.style.setProperty("--accent", prefs.color);
+  document.getElementById("darkToggle").classList.toggle("on", prefs.dark);
+  document.querySelectorAll(".swatch").forEach(sw => {
+    sw.classList.toggle("active", sw.dataset.color.toLowerCase() === prefs.color.toLowerCase());
+  });
+  document.getElementById("customColor").value = prefs.color;
+  document.querySelectorAll(".lang-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.lang === prefs.lang);
+  });
+  applyLanguage();
+}
+
+function t() { return I18N[prefs.lang]; }
+
+function categoryLabel(cat) {
+  const s = t();
+  if (cat === "vip") return s.categoryVip;
+  if (cat === "regular") return s.categoryRegular;
+  return s.categoryNew;
+}
+
+function genderAvatar(c) {
+  if (c.gender === "male") return "👨";
+  if (c.gender === "female") return "👩";
+  return c.emoji || "👤";
+}
+
+function statusLabel(status) {
+  const s = t();
+  const map = {
+    pending: s.statusPending,
+    considering: s.statusConsidering,
+    not_interested: s.statusNotInterested,
+    joined: s.statusJoined,
+    customer: s.statusCustomer,
+    other_member: s.statusOtherMember,
+    unreachable: s.statusUnreachable,
+  };
+  return map[status] || s.statusPending;
+}
+
+function applyLanguage() {
+  const s = t();
+  populateMonthDaySelect("dateMonthSelect", "dateDaySelect", true);
+  populateMonthDaySelect("prospectDateMonthSelect", "prospectDateDaySelect", true);
+  populateMonthDaySelect("birthdayDateMonthSelect", "birthdayDateDaySelect", true);
+  document.getElementById("addBtnLabel").textContent = s.addBtnLabel;
+  document.getElementById("nameInput").placeholder = s.namePlaceholder;
+  document.getElementById("phoneInput").placeholder = s.phonePlaceholder;
+  document.getElementById("notesInput").placeholder = s.notesPlaceholder;
+  document.getElementById("preferenceFieldLabel").textContent = s.preferenceFieldLabel;
+  document.getElementById("preferenceInput").placeholder = s.preferencePlaceholder;
+  document.getElementById("colorLabel").textContent = s.colorLabel;
+  document.getElementById("darkModeLabel").textContent = s.darkModeLabel;
+  document.getElementById("langLabel").textContent = s.langLabel;
+  document.getElementById("loadingLabel").textContent = s.loading;
+  document.getElementById("customerSearchInput").placeholder = s.searchPlaceholder;
+  document.getElementById("customerSortBirthdayOpt").textContent = s.sortByBirthday;
+  document.getElementById("customerSortNameOpt").textContent = s.sortByName;
+  document.getElementById("customerSortRecentOpt").textContent = s.sortByRecent;
+  document.getElementById("prospectSearchInput").placeholder = s.searchPlaceholder;
+  document.getElementById("prospectSortOppdateOpt").textContent = s.sortByOppDate;
+  document.getElementById("prospectSortNameOpt").textContent = s.sortByName;
+  document.getElementById("prospectSortStatusOpt").textContent = s.sortByStatus;
+  document.getElementById("birthdaySearchInput").placeholder = s.searchPlaceholder;
+  document.getElementById("birthdaySortBirthdayOpt").textContent = s.sortByBirthday;
+  document.getElementById("birthdaySortNameOpt").textContent = s.sortByName;
+  document.getElementById("aboSearchInput").placeholder = s.searchPlaceholder;
+  document.getElementById("aboSortRecentOpt").textContent = s.sortByRecent;
+  document.getElementById("aboSortNameOpt").textContent = s.sortByName;
+  document.getElementById("aboSortProgressOpt").textContent = s.sortByProgress;
+  document.getElementById("phoneFieldLabel").textContent = s.phoneFieldLabel;
+  document.getElementById("birthdayFieldLabel").textContent = s.birthdayFieldLabel;
+  document.getElementById("genderUnsetOpt").textContent = s.genderUnset;
+  document.getElementById("genderMaleOpt").textContent = s.genderMale;
+  document.getElementById("genderFemaleOpt").textContent = s.genderFemale;
+  document.getElementById("categoryFieldLabel").textContent = s.categoryFieldLabel;
+  document.getElementById("categoryNewOpt").textContent = s.categoryNew;
+  document.getElementById("categoryRegularOpt").textContent = s.categoryRegular;
+  document.getElementById("categoryVipOpt").textContent = s.categoryVip;
+  document.getElementById("lastMeetingFieldLabel").textContent = s.lastMeetingFieldLabel;
+  document.getElementById("sawDemoFieldLabel").textContent = s.sawDemoFieldLabel;
+  document.getElementById("sawDemoUnsetOpt").textContent = s.sawDemoUnset;
+  document.getElementById("sawDemoYesOpt").textContent = s.sawDemoYes;
+  document.getElementById("sawDemoNoOpt").textContent = s.sawDemoNo;
+  document.getElementById("tabCustomersLabel").textContent = s.tabCustomers;
+  document.getElementById("tabProspectsLabel").textContent = s.tabProspects;
+  document.getElementById("prospectsLoadingLabel").textContent = s.loading;
+  document.getElementById("prospectNameInput").placeholder = s.namePlaceholder;
+  document.getElementById("backgroundFieldLabel").textContent = s.backgroundFieldLabel;
+  document.getElementById("backgroundInput").placeholder = s.backgroundPlaceholder;
+  document.getElementById("phoneFieldLabel2").textContent = s.phoneFieldLabel;
+  document.getElementById("prospectPhoneInput").placeholder = s.phonePlaceholder;
+  document.getElementById("oppDateFieldLabel").textContent = s.oppDateFieldLabel;
+  document.getElementById("prospectBirthdayFieldLabel").textContent = s.prospectBirthdayFieldLabel;
+  document.getElementById("prospectNotesFieldLabel").textContent = s.notesFieldLabel;
+  document.getElementById("prospectNotesInput").placeholder = s.prospectNotesPlaceholder;
+  document.getElementById("cancelProspectLabel").textContent = s.cancelLabel;
+  document.getElementById("saveProspectLabel").textContent = s.saveLabel;
+  document.getElementById("deleteProspectLabel").textContent = s.deleteProspectLabel;
+  document.getElementById("prospectModalSubtitle").textContent = s.prospectModalSubtitle;
+  document.getElementById("prospectDetailCloseLabel").textContent = s.prospectDetailCloseLabel;
+  document.getElementById("prospectDetailEditLabel").textContent = s.prospectDetailEditLabel;
+  document.getElementById("prospectDetailBackgroundTitle").textContent = s.backgroundFieldLabel;
+  document.getElementById("prospectDetailNotesTitle").textContent = s.notesFieldLabel;
+  document.getElementById("statusFieldLabel").textContent = s.statusFieldLabel;
+  document.getElementById("interestedFieldLabel").textContent = s.interestedFieldLabel;
+  document.getElementById("rejectionReasonFieldLabel").textContent = s.rejectionReasonFieldLabel;
+  document.getElementById("rejectionReasonNoneOpt").textContent = s.rejectionReasonNone;
+  document.getElementById("rejectionReasonNoTimeOpt").textContent = s.rejectionReasonNoTime;
+  document.getElementById("rejectionReasonNoMoneyOpt").textContent = s.rejectionReasonNoMoney;
+  document.getElementById("rejectionReasonNotInterestedOpt").textContent = s.rejectionReasonNotInterested;
+  document.getElementById("rejectionReasonNegativeOpt").textContent = s.rejectionReasonNegative;
+  document.getElementById("rejectionReasonFamilyOpt").textContent = s.rejectionReasonFamily;
+  document.getElementById("rejectionReasonOtherOpt").textContent = s.rejectionReasonOther;
+  document.getElementById("prospectGenderUnsetOpt").textContent = s.genderUnset;
+  document.getElementById("prospectGenderMaleOpt").textContent = s.genderMale;
+  document.getElementById("prospectGenderFemaleOpt").textContent = s.genderFemale;
+  document.getElementById("statusOtherMemberOpt").textContent = s.statusOtherMember;
+  document.getElementById("followUpsFieldLabel").textContent = s.followUpsFieldLabel;
+  document.getElementById("addFollowUpLabel").textContent = s.addFollowUpLabel;
+  document.getElementById("prospectDetailFollowUpsTitle").textContent = s.followUpsFieldLabel;
+  renderFollowUpRows();
+  document.getElementById("statusPendingOpt").textContent = s.statusPending;
+  document.getElementById("statusConsideringOpt").textContent = s.statusConsidering;
+  document.getElementById("statusNotInterestedOpt").textContent = s.statusNotInterested;
+  document.getElementById("statusJoinedOpt").textContent = s.statusJoined;
+  document.getElementById("statusCustomerOpt").textContent = s.statusCustomer;
+  document.getElementById("statusUnreachableOpt").textContent = s.statusUnreachable;
+  document.getElementById("tabBirthdaysLabel").textContent = s.tabBirthdays;
+  document.getElementById("birthdaysLoadingLabel").textContent = s.loading;
+  document.getElementById("birthdayNameInput").placeholder = s.namePlaceholder;
+  document.getElementById("birthdayGenderUnsetOpt").textContent = s.genderUnset;
+  document.getElementById("birthdayGenderMaleOpt").textContent = s.genderMale;
+  document.getElementById("birthdayGenderFemaleOpt").textContent = s.genderFemale;
+  document.getElementById("birthdayDateFieldLabel").textContent = s.birthdayDateFieldLabel;
+  document.getElementById("birthdayPhoneFieldLabel").textContent = s.phoneFieldLabel;
+  document.getElementById("birthdayPhoneInput").placeholder = s.phonePlaceholder;
+  document.getElementById("birthdayNotesFieldLabel").textContent = s.notesFieldLabel;
+  document.getElementById("birthdayNotesInput").placeholder = s.notesPlaceholder;
+  document.getElementById("cancelBirthdayLabel").textContent = s.cancelLabel;
+  document.getElementById("saveBirthdayLabel").textContent = s.saveLabel;
+  document.getElementById("deleteBirthdayLabel").textContent = s.deleteBirthdayLabel;
+  document.getElementById("birthdayModalSubtitle").textContent = s.birthdayModalSubtitle;
+  document.getElementById("birthdayDetailCloseLabel").textContent = s.birthdayDetailCloseLabel;
+  document.getElementById("birthdayDetailEditLabel").textContent = s.birthdayDetailEditLabel;
+  document.getElementById("birthdayDetailNotesTitle").textContent = s.notesFieldLabel;
+  document.getElementById("tabAbosLabel").textContent = s.tabAbos;
+  document.getElementById("abosLoadingLabel").textContent = s.loading;
+  document.getElementById("aboNameInput").placeholder = s.namePlaceholder;
+  document.getElementById("aboGenderUnsetOpt").textContent = s.genderUnset;
+  document.getElementById("aboGenderMaleOpt").textContent = s.genderMale;
+  document.getElementById("aboGenderFemaleOpt").textContent = s.genderFemale;
+  document.getElementById("aboPhoneFieldLabel").textContent = s.phoneFieldLabel;
+  document.getElementById("aboPhoneInput").placeholder = s.phonePlaceholder;
+  document.getElementById("aboChecklistFieldLabel").textContent = s.aboChecklistFieldLabel;
+  document.getElementById("aboClass2Label").textContent = s.aboClass2Label;
+  document.getElementById("aboHasListLabel").textContent = s.aboHasListLabel;
+  document.getElementById("aboWatchedDemoLabel").textContent = s.aboWatchedDemoLabel;
+  document.getElementById("aboVisitedHQLabel").textContent = s.aboVisitedHQLabel;
+  document.getElementById("aboCenterMeetingLabel").textContent = s.aboCenterMeetingLabel;
+  document.getElementById("aboHouseMeetingLabel").textContent = s.aboHouseMeetingLabel;
+  document.getElementById("aboAbcUplineLabel").textContent = s.aboAbcUplineLabel;
+  document.getElementById("aboAudioFieldLabel").textContent = s.aboAudioFieldLabel;
+  document.getElementById("aboMeetingsFieldLabel").textContent = s.aboMeetingsFieldLabel;
+  document.getElementById("aboCurrentStatusFieldLabel").textContent = s.aboCurrentStatusFieldLabel;
+  document.getElementById("aboNotesFieldLabel").textContent = s.notesFieldLabel;
+  document.getElementById("aboNotesInput").placeholder = s.notesPlaceholder;
+  document.getElementById("cancelAboLabel").textContent = s.cancelLabel;
+  document.getElementById("saveAboLabel").textContent = s.saveLabel;
+  document.getElementById("deleteAboLabel").textContent = s.deleteAboLabel;
+  document.getElementById("aboModalSubtitle").textContent = s.aboModalSubtitle;
+  document.getElementById("aboDetailCloseLabel").textContent = s.detailCloseLabel;
+  document.getElementById("aboDetailEditLabel").textContent = s.detailEditLabel;
+  document.getElementById("aboDetailChecklistTitle").textContent = s.aboChecklistFieldLabel;
+  document.getElementById("aboDetailAudioTitle").textContent = s.aboAudioFieldLabel;
+  document.getElementById("aboDetailMeetingsTitle").textContent = s.aboMeetingsFieldLabel;
+  document.getElementById("aboDetailStatusTitle").textContent = s.aboCurrentStatusFieldLabel;
+  document.getElementById("aboDetailNotesTitle").textContent = s.notesFieldLabel;
+  renderAbos();
+  document.getElementById("appTitleLabel").textContent = s.appTitleLabel;
+  const appTitleInput = document.getElementById("appTitleInput");
+  appTitleInput.placeholder = s.title;
+  if (document.activeElement !== appTitleInput) {
+    appTitleInput.value = prefs.appTitle || "";
+  }
+  const displayTitle = (prefs.appTitle && prefs.appTitle.trim()) || s.title;
+  document.title = displayTitle;
+  document.getElementById("title").textContent = displayTitle;
+  document.getElementById("subtitleFieldSettingsLabel").textContent = s.subtitleFieldSettingsLabel;
+  const appSubtitleInput = document.getElementById("appSubtitleInput");
+  appSubtitleInput.placeholder = s.subtitle;
+  if (document.activeElement !== appSubtitleInput) {
+    appSubtitleInput.value = prefs.appSubtitle || "";
+  }
+  document.getElementById("subtitle").textContent = (prefs.appSubtitle && prefs.appSubtitle.trim()) || s.subtitle;
+  document.getElementById("iconUploadLabel").textContent = s.iconUploadLabel;
+  document.getElementById("iconUploadBtnText").textContent = s.iconUploadBtn;
+  document.getElementById("iconResetBtn").textContent = s.iconResetBtn;
+  updateIconBadge();
+  document.getElementById("purchasesFieldLabel").textContent = s.purchasesFieldLabel;
+  document.getElementById("addPurchaseLabel").textContent = s.addPurchaseLabel;
+  document.getElementById("notesFieldLabel").textContent = s.notesFieldLabel;
+  document.getElementById("cancelLabel").textContent = s.cancelLabel;
+  document.getElementById("saveLabel").textContent = s.saveLabel;
+  document.getElementById("deleteCustomerLabel").textContent = s.deleteCustomerLabel;
+  document.getElementById("customerModalSubtitle").textContent = s.modalSubtitle;
+  document.getElementById("wishTitle").textContent = s.wishTitle;
+  document.getElementById("shuffleLabel").textContent = s.shuffle;
+  document.getElementById("copyLabel").textContent = s.copy;
+  document.getElementById("wishCloseBtn").textContent = s.close;
+  document.getElementById("whatsappLabel").textContent = s.whatsappSend;
+  document.getElementById("detailCloseLabel").textContent = s.detailCloseLabel;
+  document.getElementById("detailEditLabel").textContent = s.detailEditLabel;
+  document.getElementById("detailNotesTitle").textContent = s.notesLabel;
+  document.getElementById("detailPreferenceTitle").textContent = s.preferenceLabel;
+  document.getElementById("detailHistoryTitle").textContent = s.purchasesFieldLabel;
+  document.getElementById("addBtnLabel").textContent =
+    currentTab === "prospects" ? s.addProspectBtnLabel :
+    currentTab === "birthdays" ? s.addBirthdayBtnLabel :
+    s.addBtnLabel;
+  document.documentElement.lang = prefs.lang === "zh" ? "zh-CN" : "en";
+  renderPurchaseRows();
+  render();
+  renderProspects();
+  renderBirthdays();
+}
+
+function daysUntilNextBirthday(dateStr) {
+  if (!dateStr) return Infinity;
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const [m, d] = dateStr.split("-").map(Number);
+  let next = new Date(today.getFullYear(), m - 1, d);
+  if (next < today) next = new Date(today.getFullYear() + 1, m - 1, d);
+  return Math.round((next - today) / 86400000);
+}
+
+function parseMonthDay(dateStr) {
+  const [m, d] = dateStr.split("-").map(Number);
+  return [m, d];
+}
+
+function populateMonthDaySelect(monthId, dayId, allowEmpty) {
+  const monthSel = document.getElementById(monthId);
+  const daySel = document.getElementById(dayId);
+  if (!monthSel || !daySel) return;
+  const s = t();
+  const prevMonth = monthSel.value;
+  const prevDay = daySel.value;
+  monthSel.innerHTML = "";
+  daySel.innerHTML = "";
+  if (allowEmpty) {
+    const opt = document.createElement("option");
+    opt.value = "";
+    opt.textContent = s.monthPlaceholder;
+    monthSel.appendChild(opt);
+    const opt2 = document.createElement("option");
+    opt2.value = "";
+    opt2.textContent = s.dayPlaceholder;
+    daySel.appendChild(opt2);
+  }
+  for (let m = 1; m <= 12; m++) {
+    const opt = document.createElement("option");
+    opt.value = String(m).padStart(2, "0");
+    opt.textContent = s.monthOptionLabel(m);
+    monthSel.appendChild(opt);
+  }
+  for (let d = 1; d <= 31; d++) {
+    const opt = document.createElement("option");
+    opt.value = String(d).padStart(2, "0");
+    opt.textContent = s.dayOptionLabel(d);
+    daySel.appendChild(opt);
+  }
+  monthSel.value = prevMonth;
+  daySel.value = prevDay;
+}
+
+function getMonthDayValue(monthId, dayId) {
+  const monthSel = document.getElementById(monthId);
+  const daySel = document.getElementById(dayId);
+  if (!monthSel || !daySel) return "";
+  const m = monthSel.value;
+  const d = daySel.value;
+  if (!m || !d) return "";
+  return `${m}-${d}`;
+}
+
+function setMonthDayValue(monthId, dayId, mmdd) {
+  const monthSel = document.getElementById(monthId);
+  const daySel = document.getElementById(dayId);
+  if (!monthSel || !daySel) return;
+  if (!mmdd) {
+    monthSel.value = "";
+    daySel.value = "";
+    return;
+  }
+  let md = mmdd;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(mmdd)) md = mmdd.slice(5);
+  const [m, d] = md.split("-");
+  monthSel.value = m;
+  daySel.value = d;
+}
+
+function lastPurchaseDate(purchases) {
+  const dates = (purchases || [])
+    .map(p => p.date)
+    .filter(d => d && /^\d{4}-\d{2}-\d{2}$/.test(d))
+    .map(d => new Date(d));
+  if (dates.length === 0) return null;
+  return new Date(Math.max(...dates.map(d => d.getTime())));
+}
+
+function daysSince(date) {
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const d = new Date(date);
+  d.setHours(0,0,0,0);
+  return Math.round((today - d) / 86400000);
+}
+
+const ESPRING_REMINDER_DAYS = 365;
+function getEspringReminder(purchases) {
+  if (!Array.isArray(purchases)) return null;
+  const matches = purchases.filter(p => p.product && /espring/i.test(p.product) && p.date && /^\d{4}-\d{2}-\d{2}$/.test(p.date));
+  if (matches.length === 0) return null;
+  const sorted = [...matches].sort((a, b) => b.date.localeCompare(a.date));
+  const lastDate = sorted[0].date;
+  const days = daysSince(lastDate);
+  return { lastDate, days, overdue: days >= ESPRING_REMINDER_DAYS };
+}
+
+const contentEl = document.getElementById("content");
+const footerEl = document.getElementById("footerCount");
+
+function escapeHtml(str) {
+  const div = document.createElement("div");
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function escapeAttr(str) {
+  return String(str || "")
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+function render() {
+  const s = t();
+
+  const customerStatsBar = document.getElementById("customerStatsBar");
+  let allPurchases = [];
+  customers.forEach(c => {
+    if (Array.isArray(c.purchases)) c.purchases.forEach(p => allPurchases.push(p));
+  });
+  const withAmount = allPurchases.filter(p => p.amount);
+  if (withAmount.length > 0 || prefs.customerMonthGoal > 0 || prefs.customerTotalGoal > 0) {
+    const now = new Date();
+    const thisMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const sumAmount = (list) => list.reduce((sum, p) => {
+      const n = parseFloat(String(p.amount).replace(/[^\d.]/g, ""));
+      return sum + (isNaN(n) ? 0 : n);
+    }, 0);
+    const fmt = (n) => (Number.isInteger(n) ? String(n) : n.toFixed(2));
+    const thisMonthTotal = sumAmount(withAmount.filter(p => p.date && p.date.startsWith(thisMonthKey)));
+    const grandTotal = sumAmount(withAmount);
+    customerStatsBar.style.display = "flex";
+    document.getElementById("customerStatsMonthNum").textContent = prefs.customerMonthGoal > 0
+      ? `${fmt(thisMonthTotal)}/${prefs.customerMonthGoal}`
+      : fmt(thisMonthTotal);
+    document.getElementById("customerStatsMonthLabel").textContent = s.customerStatsMonthLabel;
+    document.getElementById("customerStatsTotalNum").textContent = prefs.customerTotalGoal > 0
+      ? `${fmt(grandTotal)}/${prefs.customerTotalGoal}`
+      : fmt(grandTotal);
+    document.getElementById("customerStatsTotalLabel").textContent = s.customerStatsTotalLabel;
+  } else {
+    customerStatsBar.style.display = "none";
+  }
+
+  const searchTerm = document.getElementById("customerSearchInput").value.trim().toLowerCase();
+  const sortBy = document.getElementById("customerSortSelect").value;
+  const filtered = customers.filter(c =>
+    !searchTerm || c.name.toLowerCase().includes(searchTerm) || (c.phone && c.phone.includes(searchTerm))
+  );
+
+  if (filtered.length === 0) {
+    contentEl.innerHTML = `<div class="empty-state">${customers.length === 0 ? s.empty : s.noSearchResults}</div>`;
+    footerEl.style.display = "none";
+    return;
+  }
+
+  let sorted = filtered.map(c => ({ ...c, days: daysUntilNextBirthday(c.date) }));
+  if (sortBy === "name") {
+    sorted.sort((a, b) => a.name.localeCompare(b.name));
+  } else if (sortBy === "recent") {
+    sorted.sort((a, b) => parseInt(b.id, 10) - parseInt(a.id, 10));
+  } else {
+    sorted.sort((a, b) => a.days - b.days);
+  }
+
+  const rows = sorted.map(c => {
+    const hasBirthday = !!c.date;
+    const isToday = hasBirthday && c.days === 0;
+    const [mm, dd] = hasBirthday ? parseMonthDay(c.date) : [0, 0];
+    const purchases = Array.isArray(c.purchases) ? c.purchases : [];
+    const category = c.category || "new";
+
+    let purchaseLine = "";
+    if (purchases.length > 0) {
+      const total = purchases.reduce((sum, p) => {
+        const n = parseFloat(String(p.amount).replace(/[^\d.]/g, ""));
+        return sum + (isNaN(n) ? 0 : n);
+      }, 0);
+      const totalStr = Number.isInteger(total) ? String(total) : total.toFixed(2);
+      purchaseLine = `<p class="cust-meta product-line">${s.purchasesSummary(purchases.length, totalStr)}</p>`;
+    }
+
+    let isInactive = false;
+    const lastDate = lastPurchaseDate(purchases);
+    if (lastDate && daysSince(lastDate) >= INACTIVE_DAYS_THRESHOLD) {
+      isInactive = true;
+    }
+    const warnLine = isInactive ? `<p class="cust-meta warn-line">${s.inactiveWarning}</p>` : "";
+
+    const espring = getEspringReminder(purchases);
+    const espringLine = espring && espring.overdue ? `<p class="cust-meta warn-line">${s.espringReminder}</p>` : "";
+
+    const extraBits = [];
+    if (c.lastMeeting) extraBits.push(escapeHtml(s.lastMeetingRowLabel(c.lastMeeting)));
+    if (c.sawDemo === "yes") extraBits.push(`<span class="demo-badge">${s.sawDemoBadge}</span>`);
+    const extraLine = extraBits.length > 0 ? `<p class="cust-meta">${extraBits.join(" · ")}</p>` : "";
+
+    const whatsappIcon = c.phone
+      ? `<button class="icon-btn whatsapp-icon" onclick="event.stopPropagation(); openWhatsAppChat('${c.id}')" aria-label="${s.whatsappChatLabel}">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38a9.9 9.9 0 0 0 4.74 1.21h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.86 9.86 0 0 0 12.04 2zm5.8 14.15c-.24.68-1.4 1.3-1.93 1.38-.5.08-1.11.11-1.79-.11a13 13 0 0 1-1.86-.7c-2.83-1.22-4.67-4.08-4.81-4.27-.14-.19-1.15-1.53-1.15-2.92 0-1.39.73-2.07.98-2.35.26-.28.56-.35.75-.35.19 0 .37 0 .53.01.17.01.4-.06.62.48.24.58.8 2 .87 2.14.07.14.12.31.02.5-.09.19-.14.31-.28.47-.14.16-.29.36-.42.48-.14.14-.28.29-.12.57.16.28.71 1.18 1.53 1.91 1.05.94 1.94 1.24 2.22 1.38.28.14.44.12.6-.07.16-.19.68-.79.87-1.06.19-.28.37-.23.62-.14.26.09 1.63.77 1.91.91.28.14.47.21.53.33.07.12.07.68-.17 1.36z"/></svg>
+        </button>`
+      : "";
+
+    return `
+      <div class="row ${isToday ? "today" : ""} ${isInactive ? "inactive" : ""}" onclick="openDetailModal('${c.id}')">
+        <div class="row-left">
+          <div class="avatar">${genderAvatar(c)}</div>
+          <div class="info">
+            <div class="cust-name-row">
+              <p class="cust-name">${escapeHtml(c.name)}</p>
+              <span class="category-badge ${category}">${categoryLabel(category)}</span>
+              ${c.notes ? `<span class="notes-dot" title="${escapeAttr(c.notes)}">📝</span>` : ""}
+            </div>
+            <p class="cust-meta">${hasBirthday ? s.monthDay(mm, dd) + (c.phone ? " · " + escapeHtml(c.phone) : "") : (c.phone ? escapeHtml(c.phone) : s.noBirthdayHint)}</p>
+            ${purchaseLine}
+            ${extraLine}
+            ${warnLine}
+            ${espringLine}
+          </div>
+        </div>
+        <div class="row-right">
+          ${hasBirthday ? `<span class="days-left">${isToday ? s.todayBirthday : s.daysAfter(c.days)}</span>` : ""}
+          ${whatsappIcon}
+          <button class="icon-btn" onclick="event.stopPropagation(); openWishModal('${c.id}')" aria-label="${s.sendWishLabel}">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+          </button>
+          <button class="icon-btn" onclick="event.stopPropagation(); openEditModal('${c.id}')" aria-label="${s.editLabel}">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+          </button>
+          <button class="icon-btn" onclick="event.stopPropagation(); deleteCustomerFromRow('${c.id}')" aria-label="${s.deleteLabel}">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+          </button>
+        </div>
+      </div>`;
+  }).join("");
+
+  contentEl.innerHTML = `<div class="list">${rows}</div>`;
+  footerEl.style.display = "block";
+  footerEl.textContent = s.footerCount(sorted.length);
+}
+
+function editCustomerGoal(which) {
+  const s = t();
+  const key = which === "month" ? "customerMonthGoal" : "customerTotalGoal";
+  const promptText = which === "month" ? s.customerMonthGoalPrompt : s.customerTotalGoalPrompt;
+  const val = prompt(promptText, prefs[key] > 0 ? String(prefs[key]) : "");
+  if (val === null) return;
+  const trimmed = val.trim();
+  if (trimmed === "") {
+    prefs[key] = 0;
+  } else {
+    const n = parseFloat(trimmed);
+    if (!isNaN(n) && n >= 0) {
+      prefs[key] = n;
+    }
+  }
+  savePrefs();
+  render();
+}
+
+async function loadCustomers() {
+  try {
+    const res = await fetch(API);
+    customers = await res.json();
+    render();
+  } catch (e) {
+    contentEl.innerHTML = `<div class="empty-state">${t().loadFailed}</div>`;
+  }
+}
+
+document.getElementById("customerSearchInput").addEventListener("input", render);
+document.getElementById("customerSortSelect").addEventListener("change", render);
+
+function openWhatsAppChat(id) {
+  const c = customers.find(x => x.id === id);
+  if (!c || !c.phone) return;
+  const digits = c.phone.replace(/[^\d+]/g, "").replace(/^\+/, "");
+  window.open(`https://wa.me/${digits}`, "_blank");
+}
+
+/* ============================================================
+   Back button / back gesture support: closing an open modal
+   should feel like "going back", including on Android's
+   hardware/gesture back button, instead of exiting the app.
+   ============================================================ */
+let historyPushed = false;
+
+function ensureHistoryPushed() {
+  if (!historyPushed) {
+    history.pushState({ appModal: true }, "");
+    historyPushed = true;
+  }
+}
+
+function releaseHistoryIfAllClosed() {
+  const anyOpen = document.querySelector(".modal-overlay.open");
+  if (!anyOpen && historyPushed) {
+    historyPushed = false;
+    history.back();
+  }
+}
+
+window.addEventListener("popstate", () => {
+  document.querySelectorAll(".modal-overlay.open").forEach(el => el.classList.remove("open"));
+  historyPushed = false;
+});
+
+/* ============================================================
+   Tabs: 顾客 / OPP 名单
+   ============================================================ */
+let currentTab = "customers";
+
+function switchTab(tab) {
+  currentTab = tab;
+  const s = t();
+  document.getElementById("tabCustomersBtn").classList.toggle("active", tab === "customers");
+  document.getElementById("tabProspectsBtn").classList.toggle("active", tab === "prospects");
+  document.getElementById("tabBirthdaysBtn").classList.toggle("active", tab === "birthdays");
+  document.getElementById("tabAbosBtn").classList.toggle("active", tab === "abos");
+  document.getElementById("customersView").style.display = tab === "customers" ? "block" : "none";
+  document.getElementById("prospectsView").style.display = tab === "prospects" ? "block" : "none";
+  document.getElementById("birthdaysView").style.display = tab === "birthdays" ? "block" : "none";
+  document.getElementById("abosView").style.display = tab === "abos" ? "block" : "none";
+  document.getElementById("addBtnLabel").textContent =
+    tab === "prospects" ? s.addProspectBtnLabel :
+    tab === "birthdays" ? s.addBirthdayBtnLabel :
+    tab === "abos" ? s.addAboBtnLabel :
+    s.addBtnLabel;
+}
+
+document.getElementById("openAddBtn").addEventListener("click", () => {
+  if (currentTab === "prospects") {
+    openAddProspectModal();
+  } else if (currentTab === "birthdays") {
+    openAddBirthdayModal();
+  } else if (currentTab === "abos") {
+    openAddAboModal();
+  } else {
+    openAddModal();
+  }
+});
+
+/* ============================================================
+   OPP 名单 (prospects)
+   ============================================================ */
+const PROSPECTS_API = "/api/prospects";
+let prospects = [];
+const prospectsContentEl = document.getElementById("prospectsContent");
+const prospectsFooterEl = document.getElementById("prospectsFooterCount");
+
+async function loadProspects() {
+  try {
+    const res = await fetch(PROSPECTS_API);
+    prospects = await res.json();
+    renderProspects();
+  } catch (e) {
+    if (prospectsContentEl) prospectsContentEl.innerHTML = `<div class="empty-state">${t().loadFailed}</div>`;
+  }
+}
+
+document.getElementById("prospectSearchInput").addEventListener("input", renderProspects);
+document.getElementById("prospectSortSelect").addEventListener("change", renderProspects);
+
+function renderProspects() {
+  if (!prospectsContentEl) return;
+  const s = t();
+
+  const oppStatsBar = document.getElementById("oppStatsBar");
+  const withOppDate = prospects.filter(p => p.oppDate);
+  if (withOppDate.length > 0 || prefs.oppGoal > 0 || prefs.oppMonthGoal > 0) {
+    const now = new Date();
+    const thisMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const thisMonthCount = withOppDate.filter(p => p.oppDate.startsWith(thisMonthKey)).length;
+    oppStatsBar.style.display = "flex";
+    document.getElementById("oppStatsThisMonthNum").textContent = prefs.oppMonthGoal > 0
+      ? `${thisMonthCount}/${prefs.oppMonthGoal}`
+      : String(thisMonthCount);
+    document.getElementById("oppStatsThisMonthLabel").textContent = s.oppStatsThisMonthLabel;
+    document.getElementById("oppStatsTotalNum").textContent = prefs.oppGoal > 0
+      ? `${withOppDate.length}/${prefs.oppGoal}`
+      : String(withOppDate.length);
+    document.getElementById("oppStatsTotalLabel").textContent = s.oppStatsTotalLabel;
+  } else {
+    oppStatsBar.style.display = "none";
+  }
+
+  const searchTerm = document.getElementById("prospectSearchInput").value.trim().toLowerCase();
+  const sortBy = document.getElementById("prospectSortSelect").value;
+  const filtered = prospects.filter(p =>
+    !searchTerm || p.name.toLowerCase().includes(searchTerm) || (p.phone && p.phone.includes(searchTerm))
+  );
+
+  if (filtered.length === 0) {
+    prospectsContentEl.innerHTML = `<div class="empty-state">${prospects.length === 0 ? s.prospectEmpty : s.noSearchResults}</div>`;
+    prospectsFooterEl.style.display = "none";
+    return;
+  }
+
+  let sorted = [...filtered];
+  if (sortBy === "name") {
+    sorted.sort((a, b) => a.name.localeCompare(b.name));
+  } else if (sortBy === "status") {
+    sorted.sort((a, b) => (a.status || "pending").localeCompare(b.status || "pending"));
+  } else {
+    sorted.sort((a, b) => {
+      if (a.oppDate && b.oppDate) return b.oppDate.localeCompare(a.oppDate);
+      if (a.oppDate) return -1;
+      if (b.oppDate) return 1;
+      return 0;
+    });
+  }
+
+  const rows = sorted.map(p => {
+    const whatsappIcon = p.phone
+      ? `<button class="icon-btn whatsapp-icon" onclick="event.stopPropagation(); openWhatsAppChatProspect('${p.id}')" aria-label="${s.whatsappChatLabel}">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38a9.9 9.9 0 0 0 4.74 1.21h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.86 9.86 0 0 0 12.04 2zm5.8 14.15c-.24.68-1.4 1.3-1.93 1.38-.5.08-1.11.11-1.79-.11a13 13 0 0 1-1.86-.7c-2.83-1.22-4.67-4.08-4.81-4.27-.14-.19-1.15-1.53-1.15-2.92 0-1.39.73-2.07.98-2.35.26-.28.56-.35.75-.35.19 0 .37 0 .53.01.17.01.4-.06.62.48.24.58.8 2 .87 2.14.07.14.12.31.02.5-.09.19-.14.31-.28.47-.14.16-.29.36-.42.48-.14.14-.28.29-.12.57.16.28.71 1.18 1.53 1.91 1.05.94 1.94 1.24 2.22 1.38.28.14.44.12.6-.07.16-.19.68-.79.87-1.06.19-.28.37-.23.62-.14.26.09 1.63.77 1.91.91.28.14.47.21.53.33.07.12.07.68-.17 1.36z"/></svg>
+        </button>`
+      : "";
+    const oppDateText = p.oppDate ? escapeHtml(p.oppDate) : s.noOppDateHint;
+    const status = p.status || "pending";
+    return `
+      <div class="row" onclick="openProspectDetailModal('${p.id}')">
+        <div class="row-left">
+          <div class="avatar">${genderAvatar(p)}</div>
+          <div class="info">
+            <div class="cust-name-row">
+              <p class="cust-name">${escapeHtml(p.name)}</p>
+              <span class="status-badge ${status}">${statusLabel(status)}</span>
+              ${p.notes ? `<span class="notes-dot" title="${escapeAttr(p.notes)}">📝</span>` : ""}
+            </div>
+            ${p.phone ? `<p class="cust-meta">${escapeHtml(p.phone)}</p>` : ""}
+            ${p.background ? `<p class="background-line">${escapeHtml(p.background)}</p>` : ""}
+          </div>
+        </div>
+        <div class="row-right">
+          <span class="opp-date-badge">${oppDateText}</span>
+          ${whatsappIcon}
+          <button class="icon-btn" onclick="event.stopPropagation(); openWishModalFor('prospect', '${p.id}')" aria-label="${s.sendWishLabel}">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+          </button>
+          <button class="icon-btn" onclick="event.stopPropagation(); deleteProspectFromRow('${p.id}')" aria-label="${s.deleteLabel}">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+          </button>
+        </div>
+      </div>`;
+  }).join("");
+
+  prospectsContentEl.innerHTML = `<div class="list">${rows}</div>`;
+  prospectsFooterEl.style.display = "block";
+  prospectsFooterEl.textContent = s.prospectFooterCount(sorted.length);
+}
+
+function editOppGoal(which) {
+  const s = t();
+  const key = which === "month" ? "oppMonthGoal" : "oppGoal";
+  const promptText = which === "month" ? s.oppMonthGoalPrompt : s.oppGoalPrompt;
+  const val = prompt(promptText, prefs[key] > 0 ? String(prefs[key]) : "");
+  if (val === null) return;
+  const trimmed = val.trim();
+  if (trimmed === "") {
+    prefs[key] = 0;
+  } else {
+    const n = parseInt(trimmed, 10);
+    if (!isNaN(n) && n >= 0) {
+      prefs[key] = n;
+    }
+  }
+  savePrefs();
+  renderProspects();
+}
+
+function openWhatsAppChatProspect(id) {
+  const p = prospects.find(x => x.id === id);
+  if (!p || !p.phone) return;
+  const digits = p.phone.replace(/[^\d+]/g, "").replace(/^\+/, "");
+  window.open(`https://wa.me/${digits}`, "_blank");
+}
+
+/* ---------- Add / Edit prospect modal ---------- */
+const prospectOverlay = document.getElementById("prospectOverlay");
+const prospectModalTitle = document.getElementById("prospectModalTitle");
+const prospectNameInput = document.getElementById("prospectNameInput");
+const prospectPhoneInput = document.getElementById("prospectPhoneInput");
+const oppDateInput = document.getElementById("oppDateInput");
+const backgroundInput = document.getElementById("backgroundInput");
+const prospectNotesInput = document.getElementById("prospectNotesInput");
+const prospectErrorMsg = document.getElementById("prospectErrorMsg");
+const deleteProspectBtn = document.getElementById("deleteProspectBtn");
+
+let pSelectedGender = "";
+let editingProspectId = null;
+
+function updateProspectAvatarPreview() {
+  const preview = document.getElementById("prospectAvatarPreview");
+  if (!preview) return;
+  if (pSelectedGender === "male") preview.textContent = "👨";
+  else if (pSelectedGender === "female") preview.textContent = "👩";
+  else preview.textContent = "👤";
+}
+
+function setProspectGender(gender) {
+  pSelectedGender = gender;
+  document.getElementById("prospectGenderSelect").value = gender;
+  updateProspectAvatarPreview();
+}
+
+document.getElementById("prospectGenderSelect").addEventListener("change", (e) => {
+  setProspectGender(e.target.value);
+});
+
+let followUpRows = []; // { key, date, note }
+let followUpKeyCounter = 0;
+const followUpsList = document.getElementById("followUpsList");
+
+function syncFollowUpRowsFromDOM() {
+  followUpRows.forEach(row => {
+    const dateEl = document.getElementById(`f-date-${row.key}`);
+    const noteEl = document.getElementById(`f-note-${row.key}`);
+    if (dateEl) row.date = dateEl.value;
+    if (noteEl) row.note = noteEl.value;
+  });
+}
+
+function renderFollowUpRows() {
+  if (!followUpsList) return;
+  syncFollowUpRowsFromDOM();
+  const s = t();
+  if (followUpRows.length === 0) {
+    followUpsList.innerHTML = `<p class="no-purchases-hint">${s.noFollowUpsHint}</p>`;
+    return;
+  }
+  followUpsList.innerHTML = followUpRows.map(row => `
+    <div class="purchase-row" data-key="${row.key}">
+      <button type="button" class="purchase-remove" onclick="removeFollowUpRow(${row.key})" aria-label="${s.removeFollowUpLabel}">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="M6 6l12 12"/></svg>
+      </button>
+      <label class="field-label" style="margin-top:0;">${s.followUpDateLabel}</label>
+      <input type="date" id="f-date-${row.key}" value="${escapeAttr(row.date)}" />
+      <label class="field-label">${s.followUpNoteLabel}</label>
+      <textarea class="product-textarea" id="f-note-${row.key}" placeholder="${escapeAttr(s.followUpNotePlaceholder)}">${escapeHtml(row.note)}</textarea>
+    </div>
+  `).join("");
+}
+
+function addFollowUpRow(initial) {
+  initial = initial || {};
+  syncFollowUpRowsFromDOM();
+  followUpKeyCounter += 1;
+  followUpRows.push({
+    key: followUpKeyCounter,
+    date: initial.date || "",
+    note: initial.note || "",
+  });
+  renderFollowUpRows();
+}
+
+function removeFollowUpRow(key) {
+  syncFollowUpRowsFromDOM();
+  followUpRows = followUpRows.filter(r => r.key !== key);
+  renderFollowUpRows();
+}
+
+document.getElementById("addFollowUpBtn").addEventListener("click", () => addFollowUpRow());
+
+function resetProspectForm() {
+  prospectNameInput.value = "";
+  prospectPhoneInput.value = "";
+  setMonthDayValue("prospectDateMonthSelect", "prospectDateDaySelect", "");
+  oppDateInput.value = "";
+  backgroundInput.value = "";
+  prospectNotesInput.value = "";
+  document.getElementById("statusSelect").value = "pending";
+  document.getElementById("interestedInput").value = "";
+  setRejectionReasonValue("");
+  followUpRows = [];
+  renderFollowUpRows();
+  setProspectGender("");
+  prospectErrorMsg.style.display = "none";
+}
+
+function openAddProspectModal() {
+  const s = t();
+  editingProspectId = null;
+  resetProspectForm();
+  prospectModalTitle.textContent = s.modalAddProspectTitle;
+  deleteProspectBtn.style.display = "none";
+  prospectOverlay.classList.add("open");
+  ensureHistoryPushed();
+}
+
+const prospectDetailOverlay = document.getElementById("prospectDetailOverlay");
+let detailProspectId = null;
+
+function openProspectDetailModal(id) {
+  const p = prospects.find(x => x.id === id);
+  if (!p) return;
+  const s = t();
+  detailProspectId = id;
+
+  document.getElementById("prospectDetailAvatar").textContent = genderAvatar(p);
+  document.getElementById("prospectDetailName").textContent = p.name;
+  const status = p.status || "pending";
+  const badge = document.getElementById("prospectDetailStatusBadge");
+  badge.textContent = statusLabel(status);
+  badge.className = `status-badge ${status}`;
+
+  document.getElementById("prospectDetailOppDateLine").textContent = p.oppDate
+    ? s.prospectDetailOppDateLabel(p.oppDate)
+    : `📅 ${s.noOppDateHint}`;
+
+  const birthdayLine = document.getElementById("prospectDetailBirthdayLine");
+  if (p.date) {
+    const [mm, dd] = parseMonthDay(p.date);
+    birthdayLine.style.display = "flex";
+    birthdayLine.textContent = `🎂 ${s.monthDay(mm, dd)}`;
+  } else {
+    birthdayLine.style.display = "none";
+  }
+
+  const phoneLine = document.getElementById("prospectDetailPhoneLine");
+  if (p.phone) {
+    phoneLine.style.display = "flex";
+    phoneLine.textContent = `📞 ${p.phone}`;
+  } else {
+    phoneLine.style.display = "none";
+  }
+
+  const flagsLine = document.getElementById("prospectDetailFlagsLine");
+  const flagBits = [];
+  if (p.interested) flagBits.push(`💬 ${escapeHtml(p.interested)}`);
+  if (p.rejectionReason) flagBits.push(`❌ ${escapeHtml(p.rejectionReason)}`);
+  if (flagBits.length > 0) {
+    flagsLine.style.display = "flex";
+    flagsLine.innerHTML = flagBits.join(" · ");
+  } else {
+    flagsLine.style.display = "none";
+  }
+
+  const bgWrap = document.getElementById("prospectDetailBackgroundWrap");
+  if (p.background) {
+    bgWrap.style.display = "block";
+    document.getElementById("prospectDetailBackgroundBox").textContent = p.background;
+  } else {
+    bgWrap.style.display = "none";
+  }
+
+  const notesWrap = document.getElementById("prospectDetailNotesWrap");
+  if (p.notes) {
+    notesWrap.style.display = "block";
+    document.getElementById("prospectDetailNotesBox").textContent = p.notes;
+  } else {
+    notesWrap.style.display = "none";
+  }
+
+  const followUps = Array.isArray(p.followUps) ? p.followUps : [];
+  const followUpsListEl = document.getElementById("prospectDetailFollowUpsList");
+  if (followUps.length === 0) {
+    followUpsListEl.innerHTML = `<p class="no-purchases-hint">${s.noFollowUpsHint}</p>`;
+  } else {
+    const sortedFollowUps = [...followUps].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+    followUpsListEl.innerHTML = sortedFollowUps.map(f => {
+      const dateLabel = f.date ? (() => {
+        const [, m, d] = f.date.split("-").map(Number);
+        return s.monthDay(m, d);
+      })() : "";
+      return `
+        <div class="history-item">
+          ${dateLabel ? `<p class="history-date">${dateLabel}</p>` : ""}
+          ${f.note ? `<p class="history-note">${escapeHtml(f.note)}</p>` : ""}
+        </div>`;
+    }).join("");
+  }
+
+  prospectDetailOverlay.classList.add("open");
+  ensureHistoryPushed();
+}
+
+function closeProspectDetailModal() {
+  prospectDetailOverlay.classList.remove("open");
+  releaseHistoryIfAllClosed();
+}
+
+document.getElementById("prospectDetailCloseBtn").addEventListener("click", closeProspectDetailModal);
+prospectDetailOverlay.addEventListener("click", (e) => {
+  if (e.target === prospectDetailOverlay) closeProspectDetailModal();
+});
+document.getElementById("prospectDetailEditBtn").addEventListener("click", () => {
+  prospectDetailOverlay.classList.remove("open");
+  openEditProspectModal(detailProspectId);
+});
+
+function openEditProspectModal(id) {
+  const p = prospects.find(x => x.id === id);
+  if (!p) return;
+  const s = t();
+  editingProspectId = id;
+  prospectErrorMsg.style.display = "none";
+  prospectNameInput.value = p.name || "";
+  prospectPhoneInput.value = p.phone || "";
+  setMonthDayValue("prospectDateMonthSelect", "prospectDateDaySelect", p.date || "");
+  oppDateInput.value = p.oppDate || "";
+  backgroundInput.value = p.background || "";
+  prospectNotesInput.value = p.notes || "";
+  document.getElementById("statusSelect").value = p.status || "pending";
+  document.getElementById("interestedInput").value = p.interested || "";
+  setRejectionReasonValue(p.rejectionReason || "");
+  followUpRows = (Array.isArray(p.followUps) ? p.followUps : []).map(f => {
+    followUpKeyCounter += 1;
+    return { key: followUpKeyCounter, date: f.date || "", note: f.note || "" };
+  });
+  renderFollowUpRows();
+  setProspectGender(p.gender || "");
+  prospectModalTitle.textContent = s.modalEditProspectTitle;
+  deleteProspectBtn.style.display = "block";
+  prospectOverlay.classList.add("open");
+  ensureHistoryPushed();
+}
+
+function closeProspectModal() {
+  prospectOverlay.classList.remove("open");
+  releaseHistoryIfAllClosed();
+}
+
+document.getElementById("cancelProspectBtn").addEventListener("click", closeProspectModal);
+prospectOverlay.addEventListener("click", (e) => {
+  if (e.target === prospectOverlay) closeProspectModal();
+});
+
+function showProspectError(msg) {
+  prospectErrorMsg.textContent = msg;
+  prospectErrorMsg.style.display = "block";
+}
+
+async function saveProspect() {
+  const s = t();
+  const name = prospectNameInput.value.trim();
+  const phone = prospectPhoneInput.value.trim();
+  const dateMonth = document.getElementById("prospectDateMonthSelect").value;
+  const dateDay = document.getElementById("prospectDateDaySelect").value;
+  const oppDate = oppDateInput.value;
+  const background = backgroundInput.value.trim();
+  const notes = prospectNotesInput.value.trim();
+  const status = document.getElementById("statusSelect").value;
+  const interested = document.getElementById("interestedInput").value.trim();
+  const rejectionReason = getRejectionReasonValue();
+  prospectErrorMsg.style.display = "none";
+
+  if (!name) { showProspectError(s.errorName); return; }
+  if ((dateMonth && !dateDay) || (!dateMonth && dateDay)) { showProspectError(s.errorIncompleteDate); return; }
+  if (phone && !/^[+\d][\d\s\-()]{4,}$/.test(phone)) { showProspectError(s.errorPhone); return; }
+  const date = dateMonth && dateDay ? `${dateMonth}-${dateDay}` : "";
+
+  syncFollowUpRowsFromDOM();
+  const followUps = followUpRows
+    .map(r => ({ date: r.date.trim(), note: r.note.trim() }))
+    .filter(f => f.date || f.note);
+
+  const payload = { name, gender: pSelectedGender, background, date, phone, oppDate, notes, status, followUps, interested, rejectionReason };
+
+  try {
+    let res, saved;
+    if (editingProspectId) {
+      res = await fetch(`${PROSPECTS_API}/${editingProspectId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+    } else {
+      res = await fetch(PROSPECTS_API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+    }
+    if (!res.ok) {
+      const data = await res.json();
+      showProspectError(data.error || s.errorAdd);
+      return;
+    }
+    saved = await res.json();
+    if (editingProspectId) {
+      prospects = prospects.map(p => p.id === editingProspectId ? saved : p);
+    } else {
+      prospects.push(saved);
+    }
+    closeProspectModal();
+    renderProspects();
+  } catch (e) {
+    showProspectError(s.errorNetwork);
+  }
+}
+
+document.getElementById("saveProspectBtn").addEventListener("click", saveProspect);
+
+async function deleteProspectById(id) {
+  const s = t();
+  try {
+    await fetch(`${PROSPECTS_API}/${id}`, { method: "DELETE" });
+    prospects = prospects.filter(p => p.id !== id);
+    renderProspects();
+    return true;
+  } catch (e) {
+    alert(s.deleteFailed);
+    return false;
+  }
+}
+
+async function deleteProspectFromRow(id) {
+  const s = t();
+  const p = prospects.find(x => x.id === id);
+  if (!p) return;
+  if (!confirm(s.deleteProspectRowConfirm(p.name))) return;
+  await deleteProspectById(id);
+}
+
+deleteProspectBtn.addEventListener("click", async () => {
+  const s = t();
+  if (!editingProspectId) return;
+  if (!confirm(s.deleteProspectConfirm)) return;
+  const ok = await deleteProspectById(editingProspectId);
+  if (ok) closeProspectModal();
+});
+
+[prospectNameInput, prospectPhoneInput, oppDateInput].forEach(el => {
+  el.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); saveProspect(); } });
+});
+
+/* ============================================================
+   生日名单 (birthdays) — 独立于顾客,记录任何人的生日
+   ============================================================ */
+const BIRTHDAYS_API = "/api/birthdays";
+let birthdays = [];
+const birthdaysContentEl = document.getElementById("birthdaysContent");
+const birthdaysFooterEl = document.getElementById("birthdaysFooterCount");
+
+async function loadBirthdays() {
+  try {
+    const res = await fetch(BIRTHDAYS_API);
+    birthdays = await res.json();
+    renderBirthdays();
+  } catch (e) {
+    if (birthdaysContentEl) birthdaysContentEl.innerHTML = `<div class="empty-state">${t().loadFailed}</div>`;
+  }
+}
+
+document.getElementById("birthdaySearchInput").addEventListener("input", renderBirthdays);
+document.getElementById("birthdaySortSelect").addEventListener("change", renderBirthdays);
+
+function renderBirthdays() {
+  if (!birthdaysContentEl) return;
+  const s = t();
+
+  const birthdaysStatsBar = document.getElementById("birthdaysStatsBar");
+  if (birthdays.length > 0 || prefs.birthdaysGoal > 0) {
+    const now = new Date();
+    const thisMonthStr = String(now.getMonth() + 1).padStart(2, "0");
+    const thisMonthCount = birthdays.filter(b => b.date && b.date.startsWith(thisMonthStr + "-")).length;
+    birthdaysStatsBar.style.display = "flex";
+    document.getElementById("birthdaysStatsMonthNum").textContent = thisMonthCount;
+    document.getElementById("birthdaysStatsMonthLabel").textContent = s.birthdaysStatsMonthLabel;
+    document.getElementById("birthdaysStatsTotalNum").textContent = prefs.birthdaysGoal > 0
+      ? `${birthdays.length}/${prefs.birthdaysGoal}`
+      : String(birthdays.length);
+    document.getElementById("birthdaysStatsTotalLabel").textContent = s.birthdaysStatsTotalLabel;
+  } else {
+    birthdaysStatsBar.style.display = "none";
+  }
+
+  const searchTerm = document.getElementById("birthdaySearchInput").value.trim().toLowerCase();
+  const sortBy = document.getElementById("birthdaySortSelect").value;
+  const filtered = birthdays.filter(b =>
+    !searchTerm || b.name.toLowerCase().includes(searchTerm) || (b.phone && b.phone.includes(searchTerm))
+  );
+
+  if (filtered.length === 0) {
+    birthdaysContentEl.innerHTML = `<div class="empty-state">${birthdays.length === 0 ? s.birthdayEmpty : s.noSearchResults}</div>`;
+    birthdaysFooterEl.style.display = "none";
+    return;
+  }
+
+  let sorted = filtered.map(b => ({ ...b, days: daysUntilNextBirthday(b.date) }));
+  if (sortBy === "name") {
+    sorted.sort((a, b) => a.name.localeCompare(b.name));
+  } else {
+    sorted.sort((a, b) => a.days - b.days);
+  }
+
+  const rows = sorted.map(b => {
+    const isToday = b.days === 0;
+    const [mm, dd] = parseMonthDay(b.date);
+    const whatsappIcon = b.phone
+      ? `<button class="icon-btn whatsapp-icon" onclick="event.stopPropagation(); openWhatsAppChatBirthday('${b.id}')" aria-label="${s.whatsappChatLabel}">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38a9.9 9.9 0 0 0 4.74 1.21h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.86 9.86 0 0 0 12.04 2zm5.8 14.15c-.24.68-1.4 1.3-1.93 1.38-.5.08-1.11.11-1.79-.11a13 13 0 0 1-1.86-.7c-2.83-1.22-4.67-4.08-4.81-4.27-.14-.19-1.15-1.53-1.15-2.92 0-1.39.73-2.07.98-2.35.26-.28.56-.35.75-.35.19 0 .37 0 .53.01.17.01.4-.06.62.48.24.58.8 2 .87 2.14.07.14.12.31.02.5-.09.19-.14.31-.28.47-.14.16-.29.36-.42.48-.14.14-.28.29-.12.57.16.28.71 1.18 1.53 1.91 1.05.94 1.94 1.24 2.22 1.38.28.14.44.12.6-.07.16-.19.68-.79.87-1.06.19-.28.37-.23.62-.14.26.09 1.63.77 1.91.91.28.14.47.21.53.33.07.12.07.68-.17 1.36z"/></svg>
+        </button>`
+      : "";
+    return `
+      <div class="row ${isToday ? "today" : ""}" onclick="openBirthdayDetailModal('${b.id}')">
+        <div class="row-left">
+          <div class="avatar">${genderAvatar(b)}</div>
+          <div class="info">
+            <div class="cust-name-row">
+              <p class="cust-name">${escapeHtml(b.name)}</p>
+              ${b.notes ? `<span class="notes-dot" title="${escapeAttr(b.notes)}">📝</span>` : ""}
+            </div>
+            <p class="cust-meta">${s.monthDay(mm, dd)}${b.phone ? " · " + escapeHtml(b.phone) : ""}</p>
+          </div>
+        </div>
+        <div class="row-right">
+          <span class="days-left">${isToday ? s.todayBirthday : s.daysAfter(b.days)}</span>
+          ${whatsappIcon}
+          <button class="icon-btn" onclick="event.stopPropagation(); openWishModalFor('birthday', '${b.id}')" aria-label="${s.sendWishLabel}">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+          </button>
+          <button class="icon-btn" onclick="event.stopPropagation(); deleteBirthdayFromRow('${b.id}')" aria-label="${s.deleteLabel}">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+          </button>
+        </div>
+      </div>`;
+  }).join("");
+
+  birthdaysContentEl.innerHTML = `<div class="list">${rows}</div>`;
+  birthdaysFooterEl.style.display = "block";
+  birthdaysFooterEl.textContent = s.birthdayFooterCount(sorted.length);
+}
+
+function editBirthdaysGoal() {
+  const s = t();
+  const val = prompt(s.birthdaysGoalPrompt, prefs.birthdaysGoal > 0 ? String(prefs.birthdaysGoal) : "");
+  if (val === null) return;
+  const trimmed = val.trim();
+  if (trimmed === "") {
+    prefs.birthdaysGoal = 0;
+  } else {
+    const n = parseInt(trimmed, 10);
+    if (!isNaN(n) && n >= 0) {
+      prefs.birthdaysGoal = n;
+    }
+  }
+  savePrefs();
+  renderBirthdays();
+}
+
+function openWhatsAppChatBirthday(id) {
+  const b = birthdays.find(x => x.id === id);
+  if (!b || !b.phone) return;
+  const digits = b.phone.replace(/[^\d+]/g, "").replace(/^\+/, "");
+  window.open(`https://wa.me/${digits}`, "_blank");
+}
+
+/* ---------- Birthday detail (view) modal ---------- */
+const birthdayDetailOverlay = document.getElementById("birthdayDetailOverlay");
+let detailBirthdayId = null;
+
+function openBirthdayDetailModal(id) {
+  const b = birthdays.find(x => x.id === id);
+  if (!b) return;
+  const s = t();
+  detailBirthdayId = id;
+
+  document.getElementById("birthdayDetailAvatar").textContent = genderAvatar(b);
+  document.getElementById("birthdayDetailName").textContent = b.name;
+
+  const [mm, dd] = parseMonthDay(b.date);
+  document.getElementById("birthdayDetailBirthdayLine").textContent = `🎂 ${s.monthDay(mm, dd)}`;
+
+  const phoneLine = document.getElementById("birthdayDetailPhoneLine");
+  if (b.phone) {
+    phoneLine.style.display = "flex";
+    phoneLine.textContent = `📞 ${b.phone}`;
+  } else {
+    phoneLine.style.display = "none";
+  }
+
+  const notesWrap = document.getElementById("birthdayDetailNotesWrap");
+  if (b.notes) {
+    notesWrap.style.display = "block";
+    document.getElementById("birthdayDetailNotesBox").textContent = b.notes;
+  } else {
+    notesWrap.style.display = "none";
+  }
+
+  birthdayDetailOverlay.classList.add("open");
+  ensureHistoryPushed();
+}
+
+function closeBirthdayDetailModal() {
+  birthdayDetailOverlay.classList.remove("open");
+  releaseHistoryIfAllClosed();
+}
+
+document.getElementById("birthdayDetailCloseBtn").addEventListener("click", closeBirthdayDetailModal);
+birthdayDetailOverlay.addEventListener("click", (e) => {
+  if (e.target === birthdayDetailOverlay) closeBirthdayDetailModal();
+});
+document.getElementById("birthdayDetailEditBtn").addEventListener("click", () => {
+  birthdayDetailOverlay.classList.remove("open");
+  openEditBirthdayModal(detailBirthdayId);
+});
+
+/* ---------- Add / Edit birthday modal ---------- */
+const birthdayOverlay = document.getElementById("birthdayOverlay");
+const birthdayModalTitle = document.getElementById("birthdayModalTitle");
+const birthdayNameInput = document.getElementById("birthdayNameInput");
+const birthdayPhoneInput = document.getElementById("birthdayPhoneInput");
+const birthdayNotesInput = document.getElementById("birthdayNotesInput");
+const birthdayErrorMsg = document.getElementById("birthdayErrorMsg");
+const deleteBirthdayBtn = document.getElementById("deleteBirthdayBtn");
+
+let bSelectedGender = "";
+let editingBirthdayId = null;
+
+function updateBirthdayAvatarPreview() {
+  const preview = document.getElementById("birthdayAvatarPreview");
+  if (!preview) return;
+  if (bSelectedGender === "male") preview.textContent = "👨";
+  else if (bSelectedGender === "female") preview.textContent = "👩";
+  else preview.textContent = "👤";
+}
+
+function setBirthdayGender(gender) {
+  bSelectedGender = gender;
+  const sel = document.getElementById("birthdayGenderSelect");
+  if (sel) sel.value = gender;
+  updateBirthdayAvatarPreview();
+}
+
+document.getElementById("birthdayGenderSelect").addEventListener("change", (e) => {
+  setBirthdayGender(e.target.value);
+});
+
+function resetBirthdayForm() {
+  birthdayNameInput.value = "";
+  birthdayPhoneInput.value = "";
+  setMonthDayValue("birthdayDateMonthSelect", "birthdayDateDaySelect", "");
+  birthdayNotesInput.value = "";
+  setBirthdayGender("");
+  birthdayErrorMsg.style.display = "none";
+}
+
+function openAddBirthdayModal() {
+  const s = t();
+  editingBirthdayId = null;
+  resetBirthdayForm();
+  birthdayModalTitle.textContent = s.modalAddBirthdayTitle;
+  deleteBirthdayBtn.style.display = "none";
+  birthdayOverlay.classList.add("open");
+  ensureHistoryPushed();
+}
+
+function openEditBirthdayModal(id) {
+  const b = birthdays.find(x => x.id === id);
+  if (!b) return;
+  const s = t();
+  editingBirthdayId = id;
+  birthdayErrorMsg.style.display = "none";
+  birthdayNameInput.value = b.name || "";
+  birthdayPhoneInput.value = b.phone || "";
+  setMonthDayValue("birthdayDateMonthSelect", "birthdayDateDaySelect", b.date || "");
+  birthdayNotesInput.value = b.notes || "";
+  setBirthdayGender(b.gender || "");
+  birthdayModalTitle.textContent = s.modalEditBirthdayTitle;
+  deleteBirthdayBtn.style.display = "block";
+  birthdayOverlay.classList.add("open");
+  ensureHistoryPushed();
+}
+
+function closeBirthdayModal() {
+  birthdayOverlay.classList.remove("open");
+  releaseHistoryIfAllClosed();
+}
+
+document.getElementById("cancelBirthdayBtn").addEventListener("click", closeBirthdayModal);
+birthdayOverlay.addEventListener("click", (e) => {
+  if (e.target === birthdayOverlay) closeBirthdayModal();
+});
+
+function showBirthdayError(msg) {
+  birthdayErrorMsg.textContent = msg;
+  birthdayErrorMsg.style.display = "block";
+}
+
+async function saveBirthday() {
+  const s = t();
+  const name = birthdayNameInput.value.trim();
+  const phone = birthdayPhoneInput.value.trim();
+  const date = getMonthDayValue("birthdayDateMonthSelect", "birthdayDateDaySelect");
+  const notes = birthdayNotesInput.value.trim();
+  birthdayErrorMsg.style.display = "none";
+
+  if (!name) { showBirthdayError(s.errorName); return; }
+  if (!date) { showBirthdayError(s.errorDate); return; }
+  if (phone && !/^[+\d][\d\s\-()]{4,}$/.test(phone)) { showBirthdayError(s.errorPhone); return; }
+
+  const payload = { name, gender: bSelectedGender, date, phone, notes };
+
+  try {
+    let res, saved;
+    if (editingBirthdayId) {
+      res = await fetch(`${BIRTHDAYS_API}/${editingBirthdayId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+    } else {
+      res = await fetch(BIRTHDAYS_API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+    }
+    if (!res.ok) {
+      const data = await res.json();
+      showBirthdayError(data.error || s.errorAdd);
+      return;
+    }
+    saved = await res.json();
+    if (editingBirthdayId) {
+      birthdays = birthdays.map(b => b.id === editingBirthdayId ? saved : b);
+    } else {
+      birthdays.push(saved);
+    }
+    closeBirthdayModal();
+    renderBirthdays();
+  } catch (e) {
+    showBirthdayError(s.errorNetwork);
+  }
+}
+
+document.getElementById("saveBirthdayBtn").addEventListener("click", saveBirthday);
+
+async function deleteBirthdayById(id) {
+  const s = t();
+  try {
+    await fetch(`${BIRTHDAYS_API}/${id}`, { method: "DELETE" });
+    birthdays = birthdays.filter(b => b.id !== id);
+    renderBirthdays();
+    return true;
+  } catch (e) {
+    alert(s.deleteFailed);
+    return false;
+  }
+}
+
+async function deleteBirthdayFromRow(id) {
+  const s = t();
+  const b = birthdays.find(x => x.id === id);
+  if (!b) return;
+  if (!confirm(s.deleteBirthdayRowConfirm(b.name))) return;
+  await deleteBirthdayById(id);
+}
+
+deleteBirthdayBtn.addEventListener("click", async () => {
+  const s = t();
+  if (!editingBirthdayId) return;
+  if (!confirm(s.deleteBirthdayConfirm)) return;
+  const ok = await deleteBirthdayById(editingBirthdayId);
+  if (ok) closeBirthdayModal();
+});
+
+[birthdayNameInput, birthdayPhoneInput].forEach(el => {
+  el.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); saveBirthday(); } });
+});
+
+/* ============================================================
+   跟进对象 (新ABO / 刚OPP完成的伙伴)
+   ============================================================ */
+const ABOS_API = "/api/abos";
+let abos = [];
+const abosContentEl = document.getElementById("abosContent");
+const abosFooterEl = document.getElementById("abosFooterCount");
+
+const ABO_CHECKLIST_FIELDS = [
+  { key: "class2", labelKey: "aboClass2Label" },
+  { key: "hasList", labelKey: "aboHasListLabel" },
+  { key: "watchedDemo", labelKey: "aboWatchedDemoLabel" },
+  { key: "visitedHQ", labelKey: "aboVisitedHQLabel" },
+  { key: "centerMeeting", labelKey: "aboCenterMeetingLabel" },
+  { key: "houseMeeting", labelKey: "aboHouseMeetingLabel" },
+  { key: "abcUpline", labelKey: "aboAbcUplineLabel" },
+];
+
+function aboProgressCount(a) {
+  const done = ABO_CHECKLIST_FIELDS.filter(f => a[f.key]).length;
+  return { done, total: ABO_CHECKLIST_FIELDS.length };
+}
+
+async function loadAbos() {
+  try {
+    const res = await fetch(ABOS_API);
+    abos = await res.json();
+    renderAbos();
+  } catch (e) {
+    if (abosContentEl) abosContentEl.innerHTML = `<div class="empty-state">${t().loadFailed}</div>`;
+  }
+}
+
+document.getElementById("aboSearchInput").addEventListener("input", renderAbos);
+document.getElementById("aboSortSelect").addEventListener("change", renderAbos);
+
+function renderAbos() {
+  if (!abosContentEl) return;
+  const s = t();
+
+  const abosStatsBar = document.getElementById("abosStatsBar");
+  if (abos.length > 0 || prefs.abosGoal > 0) {
+    const now = new Date();
+    const thisMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const thisMonthCount = abos.filter(a => a.createdAt && a.createdAt.startsWith(thisMonthKey)).length;
+    abosStatsBar.style.display = "flex";
+    document.getElementById("abosStatsMonthNum").textContent = thisMonthCount;
+    document.getElementById("abosStatsMonthLabel").textContent = s.abosStatsMonthLabel;
+    document.getElementById("abosStatsTotalNum").textContent = prefs.abosGoal > 0
+      ? `${abos.length}/${prefs.abosGoal}`
+      : String(abos.length);
+    document.getElementById("abosStatsTotalLabel").textContent = s.abosStatsTotalLabel;
+  } else {
+    abosStatsBar.style.display = "none";
+  }
+
+  const searchTerm = document.getElementById("aboSearchInput").value.trim().toLowerCase();
+  const sortBy = document.getElementById("aboSortSelect").value;
+  const filtered = abos.filter(a =>
+    !searchTerm || a.name.toLowerCase().includes(searchTerm) || (a.phone && a.phone.includes(searchTerm))
+  );
+
+  if (filtered.length === 0) {
+    abosContentEl.innerHTML = `<div class="empty-state">${abos.length === 0 ? s.aboEmpty : s.noSearchResults}</div>`;
+    abosFooterEl.style.display = "none";
+    return;
+  }
+
+  let sortedAbos = [...filtered];
+  if (sortBy === "name") {
+    sortedAbos.sort((a, b) => a.name.localeCompare(b.name));
+  } else if (sortBy === "progress") {
+    sortedAbos.sort((a, b) => aboProgressCount(b).done - aboProgressCount(a).done);
+  } else {
+    sortedAbos.sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+  }
+
+  const rows = sortedAbos.map(a => {
+    const { done, total } = aboProgressCount(a);
+    const whatsappIcon = a.phone
+      ? `<button class="icon-btn whatsapp-icon" onclick="event.stopPropagation(); openWhatsAppChatAbo('${a.id}')" aria-label="${s.whatsappChatLabel}">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38a9.9 9.9 0 0 0 4.74 1.21h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.86 9.86 0 0 0 12.04 2zm5.8 14.15c-.24.68-1.4 1.3-1.93 1.38-.5.08-1.11.11-1.79-.11a13 13 0 0 1-1.86-.7c-2.83-1.22-4.67-4.08-4.81-4.27-.14-.19-1.15-1.53-1.15-2.92 0-1.39.73-2.07.98-2.35.26-.28.56-.35.75-.35.19 0 .37 0 .53.01.17.01.4-.06.62.48.24.58.8 2 .87 2.14.07.14.12.31.02.5-.09.19-.14.31-.28.47-.14.16-.29.36-.42.48-.14.14-.28.29-.12.57.16.28.71 1.18 1.53 1.91 1.05.94 1.94 1.24 2.22 1.38.28.14.44.12.6-.07.16-.19.68-.79.87-1.06.19-.28.37-.23.62-.14.26.09 1.63.77 1.91.91.28.14.47.21.53.33.07.12.07.68-.17 1.36z"/></svg>
+        </button>`
+      : "";
+    const metaBits = [];
+    if (a.currentStatus) metaBits.push(escapeHtml(a.currentStatus));
+    if (a.phone) metaBits.push(escapeHtml(a.phone));
+    const metaLine = metaBits.length > 0 ? `<p class="cust-meta">${metaBits.join(" · ")}</p>` : "";
+    return `
+      <div class="row" onclick="openAboDetailModal('${a.id}')">
+        <div class="row-left">
+          <div class="avatar">${genderAvatar(a)}</div>
+          <div class="info">
+            <div class="cust-name-row">
+              <p class="cust-name">${escapeHtml(a.name)}</p>
+              <span class="progress-badge">${s.aboProgressLabel(done, total)}</span>
+              ${a.notes ? `<span class="notes-dot" title="${escapeAttr(a.notes)}">📝</span>` : ""}
+            </div>
+            ${metaLine}
+          </div>
+        </div>
+        <div class="row-right">
+          ${whatsappIcon}
+          <button class="icon-btn" onclick="event.stopPropagation(); openWishModalFor('abo', '${a.id}')" aria-label="${s.sendWishLabel}">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+          </button>
+          <button class="icon-btn" onclick="event.stopPropagation(); deleteAboFromRow('${a.id}')" aria-label="${s.deleteLabel}">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+          </button>
+        </div>
+      </div>`;
+  }).join("");
+
+  abosContentEl.innerHTML = `<div class="list">${rows}</div>`;
+  abosFooterEl.style.display = "block";
+  abosFooterEl.textContent = s.aboFooterCount(abos.length);
+}
+
+function editAbosGoal() {
+  const s = t();
+  const val = prompt(s.abosGoalPrompt, prefs.abosGoal > 0 ? String(prefs.abosGoal) : "");
+  if (val === null) return;
+  const trimmed = val.trim();
+  if (trimmed === "") {
+    prefs.abosGoal = 0;
+  } else {
+    const n = parseInt(trimmed, 10);
+    if (!isNaN(n) && n >= 0) {
+      prefs.abosGoal = n;
+    }
+  }
+  savePrefs();
+  renderAbos();
+}
+
+function openWhatsAppChatAbo(id) {
+  const a = abos.find(x => x.id === id);
+  if (!a || !a.phone) return;
+  const digits = a.phone.replace(/[^\d+]/g, "").replace(/^\+/, "");
+  window.open(`https://wa.me/${digits}`, "_blank");
+}
+
+/* ---------- ABO detail (view) modal ---------- */
+const aboDetailOverlay = document.getElementById("aboDetailOverlay");
+let detailAboId = null;
+
+function openAboDetailModal(id) {
+  const a = abos.find(x => x.id === id);
+  if (!a) return;
+  const s = t();
+  detailAboId = id;
+
+  document.getElementById("aboDetailAvatar").textContent = genderAvatar(a);
+  document.getElementById("aboDetailName").textContent = a.name;
+
+  const phoneLine = document.getElementById("aboDetailPhoneLine");
+  if (a.phone) {
+    phoneLine.style.display = "flex";
+    phoneLine.textContent = `📞 ${a.phone}`;
+  } else {
+    phoneLine.style.display = "none";
+  }
+
+  const checklistEl = document.getElementById("aboDetailChecklist");
+  checklistEl.innerHTML = ABO_CHECKLIST_FIELDS.map(f => {
+    const checked = !!a[f.key];
+    return `<div class="abo-checklist-detail-item ${checked ? "" : "unchecked"}">
+      <span class="check-icon">${checked ? "✅" : "⬜"}</span>
+      <span>${s[f.labelKey]}</span>
+    </div>`;
+  }).join("");
+
+  const audioWrap = document.getElementById("aboDetailAudioWrap");
+  if (a.audioListened) {
+    audioWrap.style.display = "block";
+    document.getElementById("aboDetailAudioBox").textContent = a.audioListened;
+  } else {
+    audioWrap.style.display = "none";
+  }
+
+  const meetingsWrap = document.getElementById("aboDetailMeetingsWrap");
+  if (a.meetingsAttended) {
+    meetingsWrap.style.display = "block";
+    document.getElementById("aboDetailMeetingsBox").textContent = a.meetingsAttended;
+  } else {
+    meetingsWrap.style.display = "none";
+  }
+
+  const statusWrap = document.getElementById("aboDetailStatusWrap");
+  if (a.currentStatus) {
+    statusWrap.style.display = "block";
+    document.getElementById("aboDetailStatusBox").textContent = a.currentStatus;
+  } else {
+    statusWrap.style.display = "none";
+  }
+
+  const notesWrap = document.getElementById("aboDetailNotesWrap");
+  if (a.notes) {
+    notesWrap.style.display = "block";
+    document.getElementById("aboDetailNotesBox").textContent = a.notes;
+  } else {
+    notesWrap.style.display = "none";
+  }
+
+  aboDetailOverlay.classList.add("open");
+  ensureHistoryPushed();
+}
+
+function closeAboDetailModal() {
+  aboDetailOverlay.classList.remove("open");
+  releaseHistoryIfAllClosed();
+}
+
+document.getElementById("aboDetailCloseBtn").addEventListener("click", closeAboDetailModal);
+aboDetailOverlay.addEventListener("click", (e) => {
+  if (e.target === aboDetailOverlay) closeAboDetailModal();
+});
+document.getElementById("aboDetailEditBtn").addEventListener("click", () => {
+  aboDetailOverlay.classList.remove("open");
+  openEditAboModal(detailAboId);
+});
+
+/* ---------- Add / Edit ABO modal ---------- */
+const aboOverlay = document.getElementById("aboOverlay");
+const aboModalTitle = document.getElementById("aboModalTitle");
+const aboNameInput = document.getElementById("aboNameInput");
+const aboPhoneInput = document.getElementById("aboPhoneInput");
+const aboAudioInput = document.getElementById("aboAudioInput");
+const aboMeetingsInput = document.getElementById("aboMeetingsInput");
+const aboCurrentStatusInput = document.getElementById("aboCurrentStatusInput");
+const aboNotesInput = document.getElementById("aboNotesInput");
+const aboErrorMsg = document.getElementById("aboErrorMsg");
+const deleteAboBtn = document.getElementById("deleteAboBtn");
+
+let aSelectedGender = "";
+let editingAboId = null;
+
+function updateAboAvatarPreview() {
+  const preview = document.getElementById("aboAvatarPreview");
+  if (!preview) return;
+  if (aSelectedGender === "male") preview.textContent = "👨";
+  else if (aSelectedGender === "female") preview.textContent = "👩";
+  else preview.textContent = "👤";
+}
+
+function setAboGender(gender) {
+  aSelectedGender = gender;
+  const sel = document.getElementById("aboGenderSelect");
+  if (sel) sel.value = gender;
+  updateAboAvatarPreview();
+}
+
+document.getElementById("aboGenderSelect").addEventListener("change", (e) => {
+  setAboGender(e.target.value);
+});
+
+const ABO_CHECKBOX_IDS = {
+  class2: "aboClass2Cb",
+  hasList: "aboHasListCb",
+  watchedDemo: "aboWatchedDemoCb",
+  visitedHQ: "aboVisitedHQCb",
+  centerMeeting: "aboCenterMeetingCb",
+  houseMeeting: "aboHouseMeetingCb",
+  abcUpline: "aboAbcUplineCb",
+};
+
+function setAboChecklist(a) {
+  Object.keys(ABO_CHECKBOX_IDS).forEach(key => {
+    document.getElementById(ABO_CHECKBOX_IDS[key]).checked = !!(a && a[key]);
+  });
+}
+
+function getAboChecklist() {
+  const result = {};
+  Object.keys(ABO_CHECKBOX_IDS).forEach(key => {
+    result[key] = document.getElementById(ABO_CHECKBOX_IDS[key]).checked;
+  });
+  return result;
+}
+
+function resetAboForm() {
+  aboNameInput.value = "";
+  aboPhoneInput.value = "";
+  setAboChecklist(null);
+  aboAudioInput.value = "";
+  aboMeetingsInput.value = "";
+  aboCurrentStatusInput.value = "";
+  aboNotesInput.value = "";
+  setAboGender("");
+  aboErrorMsg.style.display = "none";
+}
+
+function openAddAboModal() {
+  const s = t();
+  editingAboId = null;
+  resetAboForm();
+  aboModalTitle.textContent = s.modalAddAboTitle;
+  deleteAboBtn.style.display = "none";
+  aboOverlay.classList.add("open");
+  ensureHistoryPushed();
+}
+
+function openEditAboModal(id) {
+  const a = abos.find(x => x.id === id);
+  if (!a) return;
+  const s = t();
+  editingAboId = id;
+  aboErrorMsg.style.display = "none";
+  aboNameInput.value = a.name || "";
+  aboPhoneInput.value = a.phone || "";
+  setAboChecklist(a);
+  aboAudioInput.value = a.audioListened || "";
+  aboMeetingsInput.value = a.meetingsAttended || "";
+  aboCurrentStatusInput.value = a.currentStatus || "";
+  aboNotesInput.value = a.notes || "";
+  setAboGender(a.gender || "");
+  aboModalTitle.textContent = s.modalEditAboTitle;
+  deleteAboBtn.style.display = "block";
+  aboOverlay.classList.add("open");
+  ensureHistoryPushed();
+}
+
+function closeAboModal() {
+  aboOverlay.classList.remove("open");
+  releaseHistoryIfAllClosed();
+}
+
+document.getElementById("cancelAboBtn").addEventListener("click", closeAboModal);
+aboOverlay.addEventListener("click", (e) => {
+  if (e.target === aboOverlay) closeAboModal();
+});
+
+function showAboError(msg) {
+  aboErrorMsg.textContent = msg;
+  aboErrorMsg.style.display = "block";
+}
+
+async function saveAbo() {
+  const s = t();
+  const name = aboNameInput.value.trim();
+  const phone = aboPhoneInput.value.trim();
+  const audioListened = aboAudioInput.value.trim();
+  const meetingsAttended = aboMeetingsInput.value.trim();
+  const currentStatus = aboCurrentStatusInput.value.trim();
+  const notes = aboNotesInput.value.trim();
+  aboErrorMsg.style.display = "none";
+
+  if (!name) { showAboError(s.errorName); return; }
+  if (phone && !/^[+\d][\d\s\-()]{4,}$/.test(phone)) { showAboError(s.errorPhone); return; }
+
+  const checklist = getAboChecklist();
+  const payload = { name, gender: aSelectedGender, phone, audioListened, meetingsAttended, currentStatus, notes, ...checklist };
+
+  try {
+    let res, saved;
+    if (editingAboId) {
+      res = await fetch(`${ABOS_API}/${editingAboId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+    } else {
+      res = await fetch(ABOS_API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+    }
+    if (!res.ok) {
+      const data = await res.json();
+      showAboError(data.error || s.errorAdd);
+      return;
+    }
+    saved = await res.json();
+    if (editingAboId) {
+      abos = abos.map(a => a.id === editingAboId ? saved : a);
+    } else {
+      abos.push(saved);
+    }
+    closeAboModal();
+    renderAbos();
+  } catch (e) {
+    showAboError(s.errorNetwork);
+  }
+}
+
+document.getElementById("saveAboBtn").addEventListener("click", saveAbo);
+
+async function deleteAboById(id) {
+  const s = t();
+  try {
+    await fetch(`${ABOS_API}/${id}`, { method: "DELETE" });
+    abos = abos.filter(a => a.id !== id);
+    renderAbos();
+    return true;
+  } catch (e) {
+    alert(s.deleteFailed);
+    return false;
+  }
+}
+
+async function deleteAboFromRow(id) {
+  const s = t();
+  const a = abos.find(x => x.id === id);
+  if (!a) return;
+  if (!confirm(s.deleteAboRowConfirm(a.name))) return;
+  await deleteAboById(id);
+}
+
+deleteAboBtn.addEventListener("click", async () => {
+  const s = t();
+  if (!editingAboId) return;
+  if (!confirm(s.deleteAboConfirm)) return;
+  const ok = await deleteAboById(editingAboId);
+  if (ok) closeAboModal();
+});
+
+[aboNameInput, aboPhoneInput, aboAudioInput, aboMeetingsInput, aboCurrentStatusInput].forEach(el => {
+  el.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); saveAbo(); } });
+});
+
+/* ---------- Customer detail (view) modal ---------- */
+const detailOverlay = document.getElementById("detailOverlay");
+let detailCustomerId = null;
+
+function openDetailModal(id) {
+  const c = customers.find(x => x.id === id);
+  if (!c) return;
+  const s = t();
+  detailCustomerId = id;
+
+  document.getElementById("detailAvatar").textContent = genderAvatar(c);
+  document.getElementById("detailName").textContent = c.name;
+  const badge = document.getElementById("detailCategoryBadge");
+  const category = c.category || "new";
+  badge.textContent = categoryLabel(category);
+  badge.className = `category-badge ${category}`;
+
+  const birthdayLine = document.getElementById("detailBirthdayLine");
+  if (c.date) {
+    const [mm, dd] = parseMonthDay(c.date);
+    birthdayLine.style.display = "flex";
+    birthdayLine.textContent = `🎂 ${s.monthDay(mm, dd)}`;
+  } else {
+    birthdayLine.style.display = "none";
+  }
+
+  const phoneLine = document.getElementById("detailPhoneLine");
+  if (c.phone) {
+    phoneLine.style.display = "flex";
+    phoneLine.textContent = `📞 ${c.phone}`;
+  } else {
+    phoneLine.style.display = "none";
+  }
+
+  const meetingLine = document.getElementById("detailMeetingLine");
+  const meetingBits = [];
+  if (c.lastMeeting) meetingBits.push(s.lastMeetingRowLabel(c.lastMeeting));
+  if (c.sawDemo === "yes") meetingBits.push(s.sawDemoBadge);
+  else if (c.sawDemo === "no") meetingBits.push(`❌ ${s.sawDemoNo}`);
+  if (meetingBits.length > 0) {
+    meetingLine.style.display = "flex";
+    meetingLine.textContent = meetingBits.join(" · ");
+  } else {
+    meetingLine.style.display = "none";
+  }
+
+  const purchases = Array.isArray(c.purchases) ? c.purchases : [];
+  const warnBanner = document.getElementById("detailWarnBanner");
+  const lastDate = lastPurchaseDate(purchases);
+  if (lastDate && daysSince(lastDate) >= INACTIVE_DAYS_THRESHOLD) {
+    warnBanner.style.display = "block";
+    warnBanner.textContent = s.inactiveWarning;
+  } else {
+    warnBanner.style.display = "none";
+  }
+
+  const espringBanner = document.getElementById("detailEspringBanner");
+  const espring = getEspringReminder(purchases);
+  if (espring && espring.overdue) {
+    espringBanner.style.display = "block";
+    espringBanner.textContent = s.espringReminder;
+  } else {
+    espringBanner.style.display = "none";
+  }
+
+  const preferenceWrap = document.getElementById("detailPreferenceWrap");
+  if (c.preference) {
+    preferenceWrap.style.display = "block";
+    document.getElementById("detailPreferenceBox").textContent = c.preference;
+  } else {
+    preferenceWrap.style.display = "none";
+  }
+
+  const notesWrap = document.getElementById("detailNotesWrap");
+  if (c.notes) {
+    notesWrap.style.display = "block";
+    document.getElementById("detailNotesBox").textContent = c.notes;
+  } else {
+    notesWrap.style.display = "none";
+  }
+
+  const historyList = document.getElementById("detailHistoryList");
+  if (purchases.length === 0) {
+    historyList.innerHTML = `<p class="no-purchases-hint">${s.noHistoryHint}</p>`;
+  } else {
+    const sortedPurchases = [...purchases].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+    historyList.innerHTML = sortedPurchases.map(p => {
+      const dateLabel = p.date ? (() => {
+        const [, m, d] = p.date.split("-").map(Number);
+        return s.monthDay(m, d);
+      })() : "";
+      return `
+        <div class="history-item">
+          ${dateLabel ? `<p class="history-date">${dateLabel}</p>` : ""}
+          ${p.product ? `<p class="history-product">${escapeHtml(p.product)}</p>` : ""}
+          ${p.amount ? `<p class="history-amount">RM${escapeHtml(p.amount)}</p>` : ""}
+          ${p.note ? `<p class="history-note">${escapeHtml(p.note)}</p>` : ""}
+        </div>`;
+    }).join("");
+  }
+
+  detailOverlay.classList.add("open");
+  ensureHistoryPushed();
+}
+
+function closeDetailModal() {
+  detailOverlay.classList.remove("open");
+  releaseHistoryIfAllClosed();
+}
+
+document.getElementById("detailCloseBtn").addEventListener("click", closeDetailModal);
+detailOverlay.addEventListener("click", (e) => {
+  if (e.target === detailOverlay) closeDetailModal();
+});
+document.getElementById("detailEditBtn").addEventListener("click", () => {
+  if (!detailCustomerId) return;
+  detailOverlay.classList.remove("open");
+  openEditModal(detailCustomerId);
+});
+
+/* ---------- Add / Edit customer modal ---------- */
+const customerOverlay = document.getElementById("customerOverlay");
+const customerModalTitle = document.getElementById("customerModalTitle");
+const nameInput = document.getElementById("nameInput");
+const phoneInput = document.getElementById("phoneInput");
+const notesInput = document.getElementById("notesInput");
+const errorMsg = document.getElementById("errorMsg");
+const deleteCustomerBtn = document.getElementById("deleteCustomerBtn");
+const purchasesList = document.getElementById("purchasesList");
+
+let selectedGender = "";
+let selectedCategory = "new";
+let editingId = null;
+let purchaseRows = []; // { key, date, product, amount, note }
+let purchaseKeyCounter = 0;
+
+function updateAvatarPreview() {
+  const preview = document.getElementById("avatarPreview");
+  if (!preview) return;
+  if (selectedGender === "male") preview.textContent = "👨";
+  else if (selectedGender === "female") preview.textContent = "👩";
+  else preview.textContent = "👤";
+}
+
+function setGender(gender) {
+  selectedGender = gender;
+  const sel = document.getElementById("genderSelect");
+  if (sel) sel.value = gender;
+  updateAvatarPreview();
+}
+
+document.getElementById("genderSelect").addEventListener("change", (e) => {
+  setGender(e.target.value);
+});
+
+function setCategory(cat) {
+  selectedCategory = cat;
+  const sel = document.getElementById("categorySelect");
+  if (sel) sel.value = cat;
+}
+
+document.getElementById("categorySelect").addEventListener("change", (e) => {
+  setCategory(e.target.value);
+});
+
+let selectedSawDemo = "";
+function setSawDemo(val) {
+  selectedSawDemo = val;
+  const sel = document.getElementById("sawDemoSelect");
+  if (sel) sel.value = val;
+}
+
+document.getElementById("sawDemoSelect").addEventListener("change", (e) => {
+  setSawDemo(e.target.value);
+});
+
+document.getElementById("rejectionReasonSelect").addEventListener("change", (e) => {
+  document.getElementById("rejectionReasonOtherInput").style.display = e.target.value === "other" ? "block" : "none";
+});
+
+function getRejectionReasonValue() {
+  const sel = document.getElementById("rejectionReasonSelect").value;
+  if (sel === "other") return document.getElementById("rejectionReasonOtherInput").value.trim();
+  return sel;
+}
+
+function setRejectionReasonValue(val) {
+  const sel = document.getElementById("rejectionReasonSelect");
+  const otherInput = document.getElementById("rejectionReasonOtherInput");
+  const presetValues = Array.from(sel.options).map(o => o.value).filter(v => v !== "other");
+  if (!val) {
+    sel.value = "";
+    otherInput.style.display = "none";
+    otherInput.value = "";
+  } else if (presetValues.includes(val)) {
+    sel.value = val;
+    otherInput.style.display = "none";
+    otherInput.value = "";
+  } else {
+    sel.value = "other";
+    otherInput.style.display = "block";
+    otherInput.value = val;
+  }
+}
+
+function syncPurchaseRowsFromDOM() {
+  purchaseRows.forEach(row => {
+    const dateEl = document.getElementById(`p-date-${row.key}`);
+    const productEl = document.getElementById(`p-product-${row.key}`);
+    const amountEl = document.getElementById(`p-amount-${row.key}`);
+    const noteEl = document.getElementById(`p-note-${row.key}`);
+    if (dateEl) row.date = dateEl.value;
+    if (productEl) row.product = productEl.value;
+    if (amountEl) row.amount = amountEl.value;
+    if (noteEl) row.note = noteEl.value;
+  });
+}
+
+function renderPurchaseRows() {
+  if (!purchasesList) return;
+  syncPurchaseRowsFromDOM();
+  const s = t();
+  if (purchaseRows.length === 0) {
+    purchasesList.innerHTML = `<p class="no-purchases-hint">${s.noPurchasesHint}</p>`;
+    return;
+  }
+  purchasesList.innerHTML = purchaseRows.map(row => `
+    <div class="purchase-row" data-key="${row.key}">
+      <button type="button" class="purchase-remove" onclick="removePurchaseRow(${row.key})" aria-label="${s.removePurchaseLabel}">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="M6 6l12 12"/></svg>
+      </button>
+      <div class="two-col">
+        <div>
+          <label class="field-label" style="margin-top:0;">${s.purchaseDateLabel}</label>
+          <input type="date" id="p-date-${row.key}" value="${escapeAttr(row.date)}" />
+        </div>
+        <div>
+          <label class="field-label" style="margin-top:0;">${s.purchaseAmountLabel}</label>
+          <div class="amount-wrap">
+            <span class="rm-prefix">RM</span>
+            <input type="text" inputmode="decimal" id="p-amount-${row.key}" value="${escapeAttr(row.amount)}" placeholder="${escapeAttr(s.amountPlaceholder)}" />
+          </div>
+        </div>
+      </div>
+      <label class="field-label">${s.purchaseProductLabel}</label>
+      <textarea class="product-textarea" id="p-product-${row.key}" placeholder="${escapeAttr(s.productPlaceholder)}">${escapeHtml(row.product)}</textarea>
+      <label class="field-label">${s.purchaseNoteLabel}</label>
+      <textarea class="purchase-note-textarea" id="p-note-${row.key}" placeholder="${escapeAttr(s.purchaseNotePlaceholder)}">${escapeHtml(row.note)}</textarea>
+    </div>
+  `).join("");
+}
+
+function addPurchaseRow(initial) {
+  initial = initial || {};
+  syncPurchaseRowsFromDOM();
+  purchaseKeyCounter += 1;
+  purchaseRows.push({
+    key: purchaseKeyCounter,
+    date: initial.date || "",
+    product: initial.product || "",
+    amount: initial.amount || "",
+    note: initial.note || "",
+  });
+  renderPurchaseRows();
+}
+
+function removePurchaseRow(key) {
+  syncPurchaseRowsFromDOM();
+  purchaseRows = purchaseRows.filter(r => r.key !== key);
+  renderPurchaseRows();
+}
+
+document.getElementById("addPurchaseBtn").addEventListener("click", () => addPurchaseRow());
+
+function resetCustomerForm() {
+  nameInput.value = "";
+  phoneInput.value = "";
+  setMonthDayValue("dateMonthSelect", "dateDaySelect", "");
+  notesInput.value = "";
+  document.getElementById("preferenceInput").value = "";
+  document.getElementById("lastMeetingInput").value = "";
+  purchaseRows = [];
+  renderPurchaseRows();
+  setGender("");
+  setCategory("new");
+  setSawDemo("");
+  errorMsg.style.display = "none";
+}
+
+function openAddModal() {
+  const s = t();
+  editingId = null;
+  resetCustomerForm();
+  customerModalTitle.textContent = s.modalAddTitle;
+  deleteCustomerBtn.style.display = "none";
+  customerOverlay.classList.add("open");
+  ensureHistoryPushed();
+}
+
+function openEditModal(id) {
+  const c = customers.find(x => x.id === id);
+  if (!c) return;
+  const s = t();
+  editingId = id;
+  errorMsg.style.display = "none";
+  nameInput.value = c.name || "";
+  phoneInput.value = c.phone || "";
+  setMonthDayValue("dateMonthSelect", "dateDaySelect", c.date || "");
+  notesInput.value = c.notes || "";
+  document.getElementById("preferenceInput").value = c.preference || "";
+  document.getElementById("lastMeetingInput").value = c.lastMeeting || "";
+  purchaseRows = (Array.isArray(c.purchases) ? c.purchases : []).map(p => {
+    purchaseKeyCounter += 1;
+    return { key: purchaseKeyCounter, date: p.date || "", product: p.product || "", amount: p.amount || "", note: p.note || "" };
+  });
+  renderPurchaseRows();
+  setGender(c.gender || "");
+  setCategory(c.category || "new");
+  setSawDemo(c.sawDemo || "");
+  customerModalTitle.textContent = s.modalEditTitle;
+  deleteCustomerBtn.style.display = "block";
+  customerOverlay.classList.add("open");
+  ensureHistoryPushed();
+}
+
+function closeCustomerModal() {
+  customerOverlay.classList.remove("open");
+  releaseHistoryIfAllClosed();
+}
+
+document.getElementById("cancelCustomerBtn").addEventListener("click", closeCustomerModal);
+customerOverlay.addEventListener("click", (e) => {
+  if (e.target === customerOverlay) closeCustomerModal();
+});
+
+function showError(msg) {
+  errorMsg.textContent = msg;
+  errorMsg.style.display = "block";
+}
+
+async function saveCustomer() {
+  const s = t();
+  const name = nameInput.value.trim();
+  const phone = phoneInput.value.trim();
+  const dateMonth = document.getElementById("dateMonthSelect").value;
+  const dateDay = document.getElementById("dateDaySelect").value;
+  const notes = notesInput.value.trim();
+  const preference = document.getElementById("preferenceInput").value.trim();
+  const lastMeeting = document.getElementById("lastMeetingInput").value;
+  errorMsg.style.display = "none";
+
+  if (!name) { showError(s.errorName); return; }
+  if ((dateMonth && !dateDay) || (!dateMonth && dateDay)) { showError(s.errorIncompleteDate); return; }
+  if (phone && !/^[+\d][\d\s\-()]{4,}$/.test(phone)) { showError(s.errorPhone); return; }
+  const date = dateMonth && dateDay ? `${dateMonth}-${dateDay}` : "";
+
+  syncPurchaseRowsFromDOM();
+  const purchases = purchaseRows
+    .map(r => ({ date: r.date.trim(), product: r.product.trim(), amount: r.amount.trim(), note: r.note.trim() }))
+    .filter(p => p.date || p.product || p.amount || p.note);
+
+  const payload = { name, date, phone, gender: selectedGender, purchases, notes, category: selectedCategory, lastMeeting, sawDemo: selectedSawDemo, preference };
+
+  try {
+    let res, saved;
+    if (editingId) {
+      res = await fetch(`${API}/${editingId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+    } else {
+      res = await fetch(API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+    }
+    if (!res.ok) {
+      const data = await res.json();
+      showError(data.error || s.errorAdd);
+      return;
+    }
+    saved = await res.json();
+    if (editingId) {
+      customers = customers.map(c => c.id === editingId ? saved : c);
+    } else {
+      customers.push(saved);
+    }
+    closeCustomerModal();
+    render();
+  } catch (e) {
+    showError(s.errorNetwork);
+  }
+}
+
+document.getElementById("saveCustomerBtn").addEventListener("click", saveCustomer);
+
+async function deleteCustomerById(id) {
+  const s = t();
+  try {
+    await fetch(`${API}/${id}`, { method: "DELETE" });
+    customers = customers.filter(c => c.id !== id);
+    render();
+    return true;
+  } catch (e) {
+    alert(s.deleteFailed);
+    return false;
+  }
+}
+
+async function deleteCustomerFromRow(id) {
+  const s = t();
+  const c = customers.find(x => x.id === id);
+  if (!c) return;
+  if (!confirm(s.deleteRowConfirm(c.name))) return;
+  await deleteCustomerById(id);
+}
+
+deleteCustomerBtn.addEventListener("click", async () => {
+  const s = t();
+  if (!editingId) return;
+  if (!confirm(s.deleteConfirm)) return;
+  const ok = await deleteCustomerById(editingId);
+  if (ok) closeCustomerModal();
+});
+
+[nameInput, phoneInput].forEach(el => {
+  el.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); saveCustomer(); } });
+});
+
+/* ---------- settings panel ---------- */
+const settingsBtn = document.getElementById("settingsBtn");
+const settingsPanel = document.getElementById("settingsPanel");
+settingsBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  settingsPanel.classList.toggle("open");
+});
+document.addEventListener("click", (e) => {
+  if (!settingsPanel.contains(e.target) && e.target !== settingsBtn) {
+    settingsPanel.classList.remove("open");
+  }
+});
+
+document.querySelectorAll(".swatch").forEach(sw => {
+  sw.addEventListener("click", () => {
+    prefs.color = sw.dataset.color;
+    savePrefs();
+    applyPrefs();
+  });
+});
+
+document.getElementById("customColor").addEventListener("input", (e) => {
+  prefs.color = e.target.value;
+  savePrefs();
+  applyPrefs();
+});
+
+document.getElementById("darkToggle").addEventListener("click", () => {
+  prefs.dark = !prefs.dark;
+  savePrefs();
+  applyPrefs();
+});
+
+document.querySelectorAll(".lang-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    prefs.lang = btn.dataset.lang;
+    savePrefs();
+    applyPrefs();
+  });
+});
+
+document.getElementById("appTitleInput").addEventListener("input", (e) => {
+  prefs.appTitle = e.target.value;
+  savePrefs();
+  const s = t();
+  const displayTitle = (prefs.appTitle && prefs.appTitle.trim()) || s.title;
+  document.title = displayTitle;
+  document.getElementById("title").textContent = displayTitle;
+});
+
+document.getElementById("appSubtitleInput").addEventListener("input", (e) => {
+  prefs.appSubtitle = e.target.value;
+  savePrefs();
+  const s = t();
+  document.getElementById("subtitle").textContent = (prefs.appSubtitle && prefs.appSubtitle.trim()) || s.subtitle;
+});
+
+const DEFAULT_ICON_SVG = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-text)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`;
+
+function updateIconBadge() {
+  const badge = document.getElementById("iconBadge");
+  const preview = document.getElementById("iconUploadPreview");
+  if (prefs.customIcon) {
+    badge.innerHTML = `<img src="${prefs.customIcon}" alt="" />`;
+    preview.innerHTML = `<img src="${prefs.customIcon}" alt="" />`;
+  } else {
+    badge.innerHTML = DEFAULT_ICON_SVG;
+    preview.textContent = "👤";
+  }
+}
+
+document.getElementById("iconUploadInput").addEventListener("change", (e) => {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+  const s = t();
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const img = new Image();
+    img.onload = () => {
+      const size = 128;
+      const canvas = document.createElement("canvas");
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext("2d");
+      const scale = Math.max(size / img.width, size / img.height);
+      const w = img.width * scale;
+      const h = img.height * scale;
+      ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
+      const dataUrl = canvas.toDataURL("image/png", 0.9);
+      if (dataUrl.length > 900000) {
+        alert(s.iconTooLargeError);
+        return;
+      }
+      prefs.customIcon = dataUrl;
+      savePrefs();
+      updateIconBadge();
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+});
+
+document.getElementById("iconResetBtn").addEventListener("click", () => {
+  prefs.customIcon = "";
+  savePrefs();
+  updateIconBadge();
+});
+
+/* ---------- wish modal ---------- */
+const wishOverlay = document.getElementById("wishOverlay");
+const wishSubtitleEl = document.getElementById("wishSubtitle");
+const wishTextarea = document.getElementById("wishTextarea");
+const copyBtn = document.getElementById("copyBtn");
+const copyLabelEl = document.getElementById("copyLabel");
+const whatsappBtn = document.getElementById("whatsappBtn");
+const noPhoneHint = document.getElementById("noPhoneHint");
+let wishCustomerName = "";
+let wishCustomerPhone = "";
+let wishLang = "zh";
+
+function pickWish() {
+  const templates = I18N[wishLang].wishes;
+  const msg = templates[Math.floor(Math.random() * templates.length)](wishCustomerName);
+  wishTextarea.value = msg;
+}
+
+function setWishLang(lang) {
+  wishLang = lang;
+  document.querySelectorAll("#wishLangToggle .lang-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.wishlang === lang);
+  });
+  pickWish();
+}
+
+document.querySelectorAll("#wishLangToggle .lang-btn").forEach(btn => {
+  btn.addEventListener("click", () => setWishLang(btn.dataset.wishlang));
+});
+
+function openWishModal(id) {
+  openWishModalFor("customer", id);
+}
+
+function openWishModalFor(sourceType, id) {
+  const person = sourceType === "birthday" ? birthdays.find(x => x.id === id)
+    : sourceType === "prospect" ? prospects.find(x => x.id === id)
+    : sourceType === "abo" ? abos.find(x => x.id === id)
+    : customers.find(x => x.id === id);
+  if (!person) return;
+  const s = t();
+  wishCustomerName = person.name;
+  wishCustomerPhone = person.phone || "";
+  wishSubtitleEl.textContent = s.wishSubtitle(person.name);
+  copyLabelEl.textContent = s.copy;
+  wishLang = prefs.lang;
+  document.querySelectorAll("#wishLangToggle .lang-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.wishlang === wishLang);
+  });
+  pickWish();
+  if (wishCustomerPhone) {
+    whatsappBtn.style.display = "flex";
+    noPhoneHint.style.display = "none";
+  } else {
+    whatsappBtn.style.display = "none";
+    noPhoneHint.style.display = "block";
+    noPhoneHint.textContent = s.noPhoneHint;
+  }
+  wishOverlay.classList.add("open");
+  ensureHistoryPushed();
+}
+
+function closeWishModal() {
+  wishOverlay.classList.remove("open");
+  releaseHistoryIfAllClosed();
+}
+
+document.getElementById("shuffleBtn").addEventListener("click", pickWish);
+document.getElementById("wishCloseBtn").addEventListener("click", closeWishModal);
+wishOverlay.addEventListener("click", (e) => {
+  if (e.target === wishOverlay) closeWishModal();
+});
+
+copyBtn.addEventListener("click", async () => {
+  const s = t();
+  try {
+    await navigator.clipboard.writeText(wishTextarea.value);
+  } catch (e) {
+    wishTextarea.select();
+    document.execCommand("copy");
+  }
+  copyLabelEl.textContent = s.copied;
+  setTimeout(() => { copyLabelEl.textContent = s.copy; }, 1500);
+});
+
+whatsappBtn.addEventListener("click", () => {
+  if (!wishCustomerPhone) return;
+  const digits = wishCustomerPhone.replace(/[^\d+]/g, "").replace(/^\+/, "");
+  const url = `https://wa.me/${digits}?text=${encodeURIComponent(wishTextarea.value)}`;
+  window.open(url, "_blank");
+});
+
+setCategory("new");
+applyPrefs();
+loadCustomers();
+loadProspects();
+loadBirthdays();
+loadAbos();
+</script>
+</body>
+</html>
     padding: 6px 0;
     border-radius: 8px;
     border: 1px solid var(--input-border);
