@@ -30,6 +30,11 @@ function sanitizeCategory(category) {
   return VALID_CATEGORIES.includes(category) ? category : "new";
 }
 
+const VALID_PROSPECT_STATUS = ["pending", "considering", "not_interested", "joined", "customer", "unreachable"];
+function sanitizeProspectStatus(status) {
+  return VALID_PROSPECT_STATUS.includes(status) ? status : "pending";
+}
+
 const VALID_GENDERS = ["male", "female"];
 function sanitizeGender(gender) {
   return VALID_GENDERS.includes(gender) ? gender : "";
@@ -97,6 +102,7 @@ function readProspects() {
       phone: p.phone || "",
       oppDate: isValidDateOrEmpty(p.oppDate) ? (p.oppDate || "") : "",
       notes: p.notes || "",
+      status: sanitizeProspectStatus(p.status),
     }));
   } catch (e) {
     return [];
@@ -117,7 +123,7 @@ function prospectValidationError(body) {
 }
 
 function buildProspectFields(body) {
-  const { name, gender, background, date, phone, oppDate, notes } = body;
+  const { name, gender, background, date, phone, oppDate, notes, status } = body;
   return {
     name: name.trim(),
     gender: sanitizeGender(gender),
@@ -126,6 +132,7 @@ function buildProspectFields(body) {
     phone: (phone || "").toString().trim(),
     oppDate: isValidDateOrEmpty(oppDate) ? (oppDate || "") : "",
     notes: (notes || "").toString().trim(),
+    status: sanitizeProspectStatus(status),
   };
 }
 
