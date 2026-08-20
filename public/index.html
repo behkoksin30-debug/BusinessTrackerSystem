@@ -1135,11 +1135,12 @@
 
     <div id="prospectsView" style="display:none;">
       <div class="opp-stats-bar" id="oppStatsBar" style="display:none;">
-        <div class="opp-stat-chip">
+        <div class="opp-stat-chip opp-stat-chip-editable" onclick="editOppGoal('month')">
           <span class="opp-stat-number" id="oppStatsThisMonthNum">0</span>
           <span class="opp-stat-label" id="oppStatsThisMonthLabel"></span>
+          <svg class="opp-stat-edit-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
         </div>
-        <div class="opp-stat-chip opp-stat-chip-editable" id="oppStatsTotalChip" onclick="editOppGoal()">
+        <div class="opp-stat-chip opp-stat-chip-editable" id="oppStatsTotalChip" onclick="editOppGoal('total')">
           <span class="opp-stat-number" id="oppStatsTotalNum">0</span>
           <span class="opp-stat-label" id="oppStatsTotalLabel"></span>
           <svg class="opp-stat-edit-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
@@ -1208,6 +1209,7 @@
       </div>
 
       <p class="detail-warn-banner" id="detailWarnBanner" style="display:none;"></p>
+      <p class="detail-warn-banner" id="detailEspringBanner" style="display:none;"></p>
 
       <div id="detailPreferenceWrap" style="display:none;">
         <p class="detail-section-title" id="detailPreferenceTitle">喜好</p>
@@ -1633,6 +1635,10 @@
       </button>
       <p class="modal-title" id="wishTitle">送祝福语</p>
       <p class="modal-subtitle" id="wishSubtitle"></p>
+      <div class="lang-toggle" id="wishLangToggle" style="margin-bottom:10px;">
+        <button class="lang-btn" data-wishlang="zh" type="button">中文</button>
+        <button class="lang-btn" data-wishlang="en" type="button">English</button>
+      </div>
       <textarea class="modal-textarea" id="wishTextarea" readonly></textarea>
       <button class="whatsapp-btn" id="whatsappBtn" type="button" style="display:none;">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38a9.9 9.9 0 0 0 4.74 1.21h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.86 9.86 0 0 0 12.04 2zm5.8 14.15c-.24.68-1.4 1.3-1.93 1.38-.5.08-1.11.11-1.79-.11a13 13 0 0 1-1.86-.7c-2.83-1.22-4.67-4.08-4.81-4.27-.14-.19-1.15-1.53-1.15-2.92 0-1.39.73-2.07.98-2.35.26-.28.56-.35.75-.35.19 0 .37 0 .53.01.17.01.4-.06.62.48.24.58.8 2 .87 2.14.07.14.12.31.02.5-.09.19-.14.31-.28.47-.14.16-.29.36-.42.48-.14.14-.28.29-.12.57.16.28.71 1.18 1.53 1.91 1.05.94 1.94 1.24 2.22 1.38.28.14.44.12.6-.07.16-.19.68-.79.87-1.06.19-.28.37-.23.62-.14.26.09 1.63.77 1.91.91.28.14.47.21.53.33.07.12.07.68-.17 1.36z"/></svg>
@@ -1742,6 +1748,7 @@ const I18N = {
     oppStatsThisMonthLabel: "本月做了几场 OPP",
     oppStatsTotalLabel: "累计做了几场 OPP",
     oppGoalPrompt: "设定你的累计 OPP 目标场数(留空表示不设定目标):",
+    oppMonthGoalPrompt: "设定本月 OPP 目标场数(留空表示不设定目标):",
     customerMonthGoalPrompt: "设定本月顾客消费目标 (RM,留空表示不设定目标):",
     customerTotalGoalPrompt: "设定累计顾客消费目标 (RM,留空表示不设定目标):",
     birthdaysStatsMonthLabel: "本月生日人数",
@@ -1829,6 +1836,7 @@ const I18N = {
     noPurchasesHint: "还没有订单",
     purchasesSummary: (count, total) => `🛍 ${count} 笔订单 · 共 RM${total}`,
     inactiveWarning: "⚠️ 已超过 2 个月未购买",
+    espringReminder: "💧 Espring 滤芯该更换了(购买已满一年)",
     notesFieldLabel: "备注(选填)",
     preferenceFieldLabel: "喜好(选填)",
     preferencePlaceholder: "记录顾客喜欢的产品、口味、颜色…",
@@ -1940,6 +1948,7 @@ const I18N = {
     oppStatsThisMonthLabel: "OPPs this month",
     oppStatsTotalLabel: "OPPs total",
     oppGoalPrompt: "Set your total OPP goal (leave blank for no goal):",
+    oppMonthGoalPrompt: "Set this month's OPP goal (leave blank for no goal):",
     customerMonthGoalPrompt: "Set this month's customer spending goal (RM, leave blank for no goal):",
     customerTotalGoalPrompt: "Set total customer spending goal (RM, leave blank for no goal):",
     birthdaysStatsMonthLabel: "Birthdays this month",
@@ -2027,6 +2036,7 @@ const I18N = {
     noPurchasesHint: "No purchases recorded yet",
     purchasesSummary: (count, total) => `🛍 ${count} purchase${count === 1 ? "" : "s"} · RM${total} total`,
     inactiveWarning: "⚠️ No purchase in over 2 months",
+    espringReminder: "💧 Espring cartridge due for replacement (1 year since purchase)",
     notesFieldLabel: "Notes (optional)",
     preferenceFieldLabel: "Preferences (optional)",
     preferencePlaceholder: "Products, flavors, colors this customer likes…",
@@ -2055,7 +2065,7 @@ const I18N = {
 };
 
 const PREFS_KEY = "birthday-app-prefs";
-let prefs = { color: "#C4635A", dark: false, lang: "zh", appTitle: "", appSubtitle: "", customIcon: "", oppGoal: 0, customerMonthGoal: 0, customerTotalGoal: 0, abosGoal: 0, birthdaysGoal: 0 };
+let prefs = { color: "#C4635A", dark: false, lang: "zh", appTitle: "", appSubtitle: "", customIcon: "", oppMonthGoal: 0, oppGoal: 0, customerMonthGoal: 0, customerTotalGoal: 0, abosGoal: 0, birthdaysGoal: 0 };
 try {
   const saved = JSON.parse(localStorage.getItem(PREFS_KEY) || "{}");
   prefs = { ...prefs, ...saved };
@@ -2377,6 +2387,17 @@ function daysSince(date) {
   return Math.round((today - d) / 86400000);
 }
 
+const ESPRING_REMINDER_DAYS = 365;
+function getEspringReminder(purchases) {
+  if (!Array.isArray(purchases)) return null;
+  const matches = purchases.filter(p => p.product && /espring/i.test(p.product) && p.date && /^\d{4}-\d{2}-\d{2}$/.test(p.date));
+  if (matches.length === 0) return null;
+  const sorted = [...matches].sort((a, b) => b.date.localeCompare(a.date));
+  const lastDate = sorted[0].date;
+  const days = daysSince(lastDate);
+  return { lastDate, days, overdue: days >= ESPRING_REMINDER_DAYS };
+}
+
 const contentEl = document.getElementById("content");
 const footerEl = document.getElementById("footerCount");
 
@@ -2460,6 +2481,9 @@ function render() {
     }
     const warnLine = isInactive ? `<p class="cust-meta warn-line">${s.inactiveWarning}</p>` : "";
 
+    const espring = getEspringReminder(purchases);
+    const espringLine = espring && espring.overdue ? `<p class="cust-meta warn-line">${s.espringReminder}</p>` : "";
+
     const extraBits = [];
     if (c.lastMeeting) extraBits.push(escapeHtml(s.lastMeetingRowLabel(c.lastMeeting)));
     if (c.sawDemo === "yes") extraBits.push(`<span class="demo-badge">${s.sawDemoBadge}</span>`);
@@ -2485,6 +2509,7 @@ function render() {
             ${purchaseLine}
             ${extraLine}
             ${warnLine}
+            ${espringLine}
           </div>
         </div>
         <div class="row-right">
@@ -2630,12 +2655,14 @@ function renderProspects() {
 
   const oppStatsBar = document.getElementById("oppStatsBar");
   const withOppDate = prospects.filter(p => p.oppDate);
-  if (withOppDate.length > 0 || prefs.oppGoal > 0) {
+  if (withOppDate.length > 0 || prefs.oppGoal > 0 || prefs.oppMonthGoal > 0) {
     const now = new Date();
     const thisMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
     const thisMonthCount = withOppDate.filter(p => p.oppDate.startsWith(thisMonthKey)).length;
     oppStatsBar.style.display = "flex";
-    document.getElementById("oppStatsThisMonthNum").textContent = thisMonthCount;
+    document.getElementById("oppStatsThisMonthNum").textContent = prefs.oppMonthGoal > 0
+      ? `${thisMonthCount}/${prefs.oppMonthGoal}`
+      : String(thisMonthCount);
     document.getElementById("oppStatsThisMonthLabel").textContent = s.oppStatsThisMonthLabel;
     document.getElementById("oppStatsTotalNum").textContent = prefs.oppGoal > 0
       ? `${withOppDate.length}/${prefs.oppGoal}`
@@ -2683,6 +2710,9 @@ function renderProspects() {
         <div class="row-right">
           <span class="opp-date-badge">${oppDateText}</span>
           ${whatsappIcon}
+          <button class="icon-btn" onclick="event.stopPropagation(); openWishModalFor('prospect', '${p.id}')" aria-label="${s.sendWishLabel}">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+          </button>
           <button class="icon-btn" onclick="event.stopPropagation(); deleteProspectFromRow('${p.id}')" aria-label="${s.deleteLabel}">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
           </button>
@@ -2695,17 +2725,19 @@ function renderProspects() {
   prospectsFooterEl.textContent = s.prospectFooterCount(sorted.length);
 }
 
-function editOppGoal() {
+function editOppGoal(which) {
   const s = t();
-  const val = prompt(s.oppGoalPrompt, prefs.oppGoal > 0 ? String(prefs.oppGoal) : "");
+  const key = which === "month" ? "oppMonthGoal" : "oppGoal";
+  const promptText = which === "month" ? s.oppMonthGoalPrompt : s.oppGoalPrompt;
+  const val = prompt(promptText, prefs[key] > 0 ? String(prefs[key]) : "");
   if (val === null) return;
   const trimmed = val.trim();
   if (trimmed === "") {
-    prefs.oppGoal = 0;
+    prefs[key] = 0;
   } else {
     const n = parseInt(trimmed, 10);
     if (!isNaN(n) && n >= 0) {
-      prefs.oppGoal = n;
+      prefs[key] = n;
     }
   }
   savePrefs();
@@ -3478,6 +3510,9 @@ function renderAbos() {
         </div>
         <div class="row-right">
           ${whatsappIcon}
+          <button class="icon-btn" onclick="event.stopPropagation(); openWishModalFor('abo', '${a.id}')" aria-label="${s.sendWishLabel}">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+          </button>
           <button class="icon-btn" onclick="event.stopPropagation(); deleteAboFromRow('${a.id}')" aria-label="${s.deleteLabel}">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
           </button>
@@ -3848,6 +3883,15 @@ function openDetailModal(id) {
     warnBanner.textContent = s.inactiveWarning;
   } else {
     warnBanner.style.display = "none";
+  }
+
+  const espringBanner = document.getElementById("detailEspringBanner");
+  const espring = getEspringReminder(purchases);
+  if (espring && espring.overdue) {
+    espringBanner.style.display = "block";
+    espringBanner.textContent = s.espringReminder;
+  } else {
+    espringBanner.style.display = "none";
   }
 
   const preferenceWrap = document.getElementById("detailPreferenceWrap");
@@ -4334,21 +4378,34 @@ const whatsappBtn = document.getElementById("whatsappBtn");
 const noPhoneHint = document.getElementById("noPhoneHint");
 let wishCustomerName = "";
 let wishCustomerPhone = "";
+let wishLang = "zh";
 
 function pickWish() {
-  const s = t();
-  const templates = s.wishes;
+  const templates = I18N[wishLang].wishes;
   const msg = templates[Math.floor(Math.random() * templates.length)](wishCustomerName);
   wishTextarea.value = msg;
 }
+
+function setWishLang(lang) {
+  wishLang = lang;
+  document.querySelectorAll("#wishLangToggle .lang-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.wishlang === lang);
+  });
+  pickWish();
+}
+
+document.querySelectorAll("#wishLangToggle .lang-btn").forEach(btn => {
+  btn.addEventListener("click", () => setWishLang(btn.dataset.wishlang));
+});
 
 function openWishModal(id) {
   openWishModalFor("customer", id);
 }
 
 function openWishModalFor(sourceType, id) {
-  const person = sourceType === "birthday"
-    ? birthdays.find(x => x.id === id)
+  const person = sourceType === "birthday" ? birthdays.find(x => x.id === id)
+    : sourceType === "prospect" ? prospects.find(x => x.id === id)
+    : sourceType === "abo" ? abos.find(x => x.id === id)
     : customers.find(x => x.id === id);
   if (!person) return;
   const s = t();
@@ -4356,6 +4413,10 @@ function openWishModalFor(sourceType, id) {
   wishCustomerPhone = person.phone || "";
   wishSubtitleEl.textContent = s.wishSubtitle(person.name);
   copyLabelEl.textContent = s.copy;
+  wishLang = prefs.lang;
+  document.querySelectorAll("#wishLangToggle .lang-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.wishlang === wishLang);
+  });
   pickWish();
   if (wishCustomerPhone) {
     whatsappBtn.style.display = "flex";
