@@ -546,6 +546,58 @@
     color: var(--muted);
   }
 
+  .checklist-group {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: 12px;
+    padding: 6px 4px;
+  }
+  .checklist-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--text);
+  }
+  .checklist-item:hover { background: color-mix(in srgb, var(--accent) 8%, transparent); }
+  .checklist-item input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--accent);
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+  .progress-badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--accent) 15%, transparent);
+    color: var(--accent);
+    white-space: nowrap;
+  }
+  .abo-checklist-detail {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .abo-checklist-detail-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text);
+  }
+  .abo-checklist-detail-item .check-icon { flex-shrink: 0; }
+  .abo-checklist-detail-item.unchecked { color: var(--muted-light); }
+
+
   .demo-badge {
     font-size: 11px;
     font-weight: 600;
@@ -1040,6 +1092,9 @@
       <button class="tab-btn" id="tabBirthdaysBtn" type="button" onclick="switchTab('birthdays')">
         <span id="tabBirthdaysLabel">生日</span><span class="tab-count" id="tabBirthdaysCount"></span>
       </button>
+      <button class="tab-btn" id="tabAbosBtn" type="button" onclick="switchTab('abos')">
+        <span id="tabAbosLabel">跟进对象</span><span class="tab-count" id="tabAbosCount"></span>
+      </button>
     </div>
 
     <button class="add-btn" id="openAddBtn" type="button">
@@ -1048,6 +1103,16 @@
     </button>
 
     <div id="customersView">
+      <div class="opp-stats-bar" id="customerStatsBar" style="display:none;">
+        <div class="opp-stat-chip">
+          <span class="opp-stat-number" id="customerStatsMonthNum">0</span>
+          <span class="opp-stat-label" id="customerStatsMonthLabel"></span>
+        </div>
+        <div class="opp-stat-chip">
+          <span class="opp-stat-number" id="customerStatsTotalNum">0</span>
+          <span class="opp-stat-label" id="customerStatsTotalLabel"></span>
+        </div>
+      </div>
       <div id="content">
         <div class="loading-state" id="loadingLabel">加载中…</div>
       </div>
@@ -1077,6 +1142,13 @@
       </div>
       <p class="footer-count" id="birthdaysFooterCount" style="display:none;"></p>
     </div>
+
+    <div id="abosView" style="display:none;">
+      <div id="abosContent">
+        <div class="loading-state" id="abosLoadingLabel">加载中…</div>
+      </div>
+      <p class="footer-count" id="abosFooterCount" style="display:none;"></p>
+    </div>
   </div>
 
   <!-- Customer detail (view) modal -->
@@ -1099,6 +1171,11 @@
       </div>
 
       <p class="detail-warn-banner" id="detailWarnBanner" style="display:none;"></p>
+
+      <div id="detailPreferenceWrap" style="display:none;">
+        <p class="detail-section-title" id="detailPreferenceTitle">喜好</p>
+        <p class="detail-notes-box" id="detailPreferenceBox"></p>
+      </div>
 
       <div id="detailNotesWrap" style="display:none;">
         <p class="detail-section-title" id="detailNotesTitle">备注</p>
@@ -1177,6 +1254,9 @@
         </button>
       </div>
 
+      <label class="field-label" id="preferenceFieldLabel">喜好</label>
+      <textarea id="preferenceInput"></textarea>
+
       <label class="field-label" id="notesFieldLabel">备注</label>
       <textarea id="notesInput"></textarea>
 
@@ -1208,6 +1288,7 @@
           <p class="detail-info-line" id="prospectDetailOppDateLine"></p>
           <p class="detail-info-line" id="prospectDetailBirthdayLine" style="display:none;"></p>
           <p class="detail-info-line" id="prospectDetailPhoneLine" style="display:none;"></p>
+          <p class="detail-info-line" id="prospectDetailFlagsLine" style="display:none;"></p>
         </div>
       </div>
 
@@ -1283,6 +1364,20 @@
         <option value="customer" id="statusCustomerOpt">已成为顾客</option>
         <option value="unreachable" id="statusUnreachableOpt">联系不上</option>
       </select>
+
+      <label class="field-label" id="interestedFieldLabel">对产品有兴趣吗</label>
+      <div class="category-toggle" id="interestedToggle">
+        <button class="demo-btn" data-interested="yes" type="button"><span id="interestedYesLabel">有兴趣</span></button>
+        <button class="demo-btn" data-interested="no" type="button"><span id="interestedNoLabel">没兴趣</span></button>
+        <button class="demo-btn active" data-interested="" type="button"><span id="interestedUnsetLabel">不确定</span></button>
+      </div>
+
+      <label class="field-label" id="relationshipFieldLabel">关系健康吗</label>
+      <div class="category-toggle" id="relationshipToggle">
+        <button class="demo-btn" data-relationship="yes" type="button"><span id="relationshipYesLabel">健康</span></button>
+        <button class="demo-btn" data-relationship="no" type="button"><span id="relationshipNoLabel">需要改善</span></button>
+        <button class="demo-btn active" data-relationship="" type="button"><span id="relationshipUnsetLabel">不确定</span></button>
+      </div>
 
       <div class="purchases-section">
         <label class="field-label" id="followUpsFieldLabel" style="margin-top:0;">跟进记录</label>
@@ -1384,6 +1479,113 @@
     </div>
   </div>
 
+  <!-- ABO (跟进对象) detail modal -->
+  <div class="modal-overlay" id="aboDetailOverlay">
+    <div class="modal-box">
+      <button class="modal-back-btn" onclick="closeAboDetailModal()" aria-label="Back">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+      </button>
+      <div class="detail-header">
+        <div class="detail-avatar" id="aboDetailAvatar">👤</div>
+        <div>
+          <div class="detail-name-row">
+            <p class="detail-name" id="aboDetailName"></p>
+          </div>
+          <p class="detail-info-line" id="aboDetailPhoneLine" style="display:none;"></p>
+        </div>
+      </div>
+
+      <p class="detail-section-title" id="aboDetailChecklistTitle">进度清单</p>
+      <div class="abo-checklist-detail" id="aboDetailChecklist"></div>
+
+      <div id="aboDetailAudioWrap" style="display:none; margin-top:14px;">
+        <p class="detail-section-title" id="aboDetailAudioTitle">听了什么 Audio</p>
+        <p class="detail-notes-box" id="aboDetailAudioBox"></p>
+      </div>
+
+      <div id="aboDetailMeetingsWrap" style="display:none;">
+        <p class="detail-section-title" id="aboDetailMeetingsTitle">参加了什么会议</p>
+        <p class="detail-notes-box" id="aboDetailMeetingsBox"></p>
+      </div>
+
+      <div id="aboDetailStatusWrap" style="display:none;">
+        <p class="detail-section-title" id="aboDetailStatusTitle">现在状况</p>
+        <p class="detail-notes-box" id="aboDetailStatusBox"></p>
+      </div>
+
+      <div id="aboDetailNotesWrap" style="display:none;">
+        <p class="detail-section-title" id="aboDetailNotesTitle">备注</p>
+        <p class="detail-notes-box" id="aboDetailNotesBox"></p>
+      </div>
+
+      <div class="modal-actions">
+        <button id="aboDetailCloseBtn" type="button"><span id="aboDetailCloseLabel">关闭</span></button>
+        <button class="primary-btn" id="aboDetailEditBtn" type="button"><span id="aboDetailEditLabel">编辑资料</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ABO (跟进对象) add/edit modal -->
+  <div class="modal-overlay" id="aboOverlay">
+    <div class="modal-box">
+      <button class="modal-back-btn" onclick="closeAboModal()" aria-label="Back">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+      </button>
+      <p class="modal-title" id="aboModalTitle">添加跟进对象</p>
+      <p class="modal-subtitle" id="aboModalSubtitle">记录新ABO或刚讲完OPP伙伴的跟进进度</p>
+
+      <div class="emoji-row">
+        <div class="avatar-preview" id="aboAvatarPreview">👤</div>
+        <div style="flex:1;">
+          <input id="aboNameInput" type="text" />
+        </div>
+      </div>
+
+      <label class="field-label" id="aboGenderFieldLabel">性别</label>
+      <div class="gender-toggle" id="aboGenderToggle">
+        <button class="gender-btn" data-gender="male" type="button"><span id="aboGenderMaleLabel">男</span></button>
+        <button class="gender-btn" data-gender="female" type="button"><span id="aboGenderFemaleLabel">女</span></button>
+        <button class="gender-btn active" data-gender="" type="button"><span id="aboGenderUnsetLabel">不设置</span></button>
+      </div>
+
+      <label class="field-label" id="aboPhoneFieldLabel">电话号码(选填)</label>
+      <input id="aboPhoneInput" type="tel" />
+
+      <label class="field-label" id="aboChecklistFieldLabel" style="margin-top:0;">进度清单</label>
+      <div class="checklist-group">
+        <label class="checklist-item"><input type="checkbox" id="aboClass2Cb" /><span id="aboClass2Label">Class 2: Why Amway</span></label>
+        <label class="checklist-item"><input type="checkbox" id="aboHasListCb" /><span id="aboHasListLabel">名单 List</span></label>
+        <label class="checklist-item"><input type="checkbox" id="aboWatchedDemoCb" /><span id="aboWatchedDemoLabel">看了 Demo</span></label>
+        <label class="checklist-item"><input type="checkbox" id="aboVisitedHQCb" /><span id="aboVisitedHQLabel">Visit HQ</span></label>
+        <label class="checklist-item"><input type="checkbox" id="aboCenterMeetingCb" /><span id="aboCenterMeetingLabel">Center Meeting</span></label>
+        <label class="checklist-item"><input type="checkbox" id="aboHouseMeetingCb" /><span id="aboHouseMeetingLabel">House Meeting</span></label>
+        <label class="checklist-item"><input type="checkbox" id="aboAbcUplineCb" /><span id="aboAbcUplineLabel">ABC 上线</span></label>
+      </div>
+
+      <label class="field-label" id="aboAudioFieldLabel">听了什么 Audio</label>
+      <input id="aboAudioInput" type="text" />
+
+      <label class="field-label" id="aboMeetingsFieldLabel">参加了什么会议</label>
+      <input id="aboMeetingsInput" type="text" />
+
+      <label class="field-label" id="aboCurrentStatusFieldLabel">现在状况</label>
+      <input id="aboCurrentStatusInput" type="text" />
+
+      <label class="field-label" id="aboNotesFieldLabel">备注</label>
+      <textarea id="aboNotesInput"></textarea>
+
+      <p class="error-msg" id="aboErrorMsg" style="display:none;"></p>
+
+      <div class="modal-actions">
+        <button id="cancelAboBtn" type="button"><span id="cancelAboLabel">取消</span></button>
+        <button class="primary-btn" id="saveAboBtn" type="button"><span id="saveAboLabel">保存</span></button>
+      </div>
+      <button class="delete-row-btn" id="deleteAboBtn" type="button" style="display:none;">
+        <span id="deleteAboLabel">删除这条记录</span>
+      </button>
+    </div>
+  </div>
+
   <!-- Birthday wish modal -->
   <div class="modal-overlay" id="wishOverlay">
     <div class="modal-box">
@@ -1476,8 +1678,32 @@ const I18N = {
     tabCustomers: "顾客",
     tabProspects: "OPP 名单",
     tabBirthdays: "生日",
+    tabAbos: "跟进对象",
+    addAboBtnLabel: "添加跟进对象",
+    modalAddAboTitle: "添加跟进对象",
+    modalEditAboTitle: "编辑跟进对象",
+    aboModalSubtitle: "记录新ABO或刚讲完OPP伙伴的跟进进度",
+    aboChecklistFieldLabel: "进度清单",
+    aboClass2Label: "Class 2: Why Amway",
+    aboHasListLabel: "名单 List",
+    aboWatchedDemoLabel: "看了 Demo",
+    aboVisitedHQLabel: "Visit HQ",
+    aboCenterMeetingLabel: "Center Meeting",
+    aboHouseMeetingLabel: "House Meeting",
+    aboAbcUplineLabel: "ABC 上线",
+    aboAudioFieldLabel: "听了什么 Audio",
+    aboMeetingsFieldLabel: "参加了什么会议",
+    aboCurrentStatusFieldLabel: "现在状况",
+    aboEmpty: "还没有记录,添加第一位吧",
+    aboFooterCount: (n) => `共 ${n} 位`,
+    deleteAboRowConfirm: (name) => `确定要删除「${name}」吗?此操作无法撤销。`,
+    deleteAboConfirm: "确定要删除这条记录吗?此操作无法撤销。",
+    deleteAboLabel: "删除这条记录",
+    aboProgressLabel: (done, total) => `${done}/${total} 已完成`,
     oppStatsThisMonthLabel: "本月做了几场 OPP",
     oppStatsTotalLabel: "累计做了几场 OPP",
+    customerStatsMonthLabel: "本月顾客消费 (RM)",
+    customerStatsTotalLabel: "累计顾客消费 (RM)",
     addBirthdayBtnLabel: "添加生日",
     modalAddBirthdayTitle: "添加生日",
     modalEditBirthdayTitle: "编辑生日",
@@ -1509,6 +1735,13 @@ const I18N = {
     deleteProspectLabel: "删除这条记录",
     noOppDateHint: "未记录日期",
     statusFieldLabel: "讲 OPP 之后的反应",
+    interestedFieldLabel: "对产品有兴趣吗",
+    interestedYes: "有兴趣",
+    interestedNo: "没兴趣",
+    relationshipFieldLabel: "关系健康吗",
+    relationshipYes: "健康",
+    relationshipNo: "需要改善",
+    yesNoUnset: "不确定",
     followUpsFieldLabel: "跟进记录",
     followUpDateLabel: "日期",
     followUpNoteLabel: "事项",
@@ -1546,6 +1779,8 @@ const I18N = {
     purchasesSummary: (count, total) => `🛍 ${count} 笔订单 · 共 RM${total}`,
     inactiveWarning: "⚠️ 已超过 2 个月未购买",
     notesFieldLabel: "备注(选填)",
+    preferenceFieldLabel: "喜好(选填)",
+    preferencePlaceholder: "记录顾客喜欢的产品、口味、颜色…",
     cancelLabel: "取消",
     saveLabel: "保存",
     deleteCustomerLabel: "删除这位顾客",
@@ -1554,6 +1789,7 @@ const I18N = {
     modalSubtitle: "记录顾客的资料,之后随时可以修改",
     deleteConfirm: "确定要删除这位顾客吗?此操作无法撤销。",
     notesLabel: "备注",
+    preferenceLabel: "喜好",
     phoneLabel: "电话",
     detailCloseLabel: "关闭",
     detailEditLabel: "编辑资料",
@@ -1628,8 +1864,32 @@ const I18N = {
     tabCustomers: "Customers",
     tabProspects: "OPP List",
     tabBirthdays: "Birthdays",
+    tabAbos: "Follow-ups",
+    addAboBtnLabel: "Add Follow-up",
+    modalAddAboTitle: "Add Follow-up",
+    modalEditAboTitle: "Edit Follow-up",
+    aboModalSubtitle: "Track a new ABO or someone who just had their OPP",
+    aboChecklistFieldLabel: "Progress checklist",
+    aboClass2Label: "Class 2: Why Amway",
+    aboHasListLabel: "Name list",
+    aboWatchedDemoLabel: "Watched Demo",
+    aboVisitedHQLabel: "Visited HQ",
+    aboCenterMeetingLabel: "Center Meeting",
+    aboHouseMeetingLabel: "House Meeting",
+    aboAbcUplineLabel: "ABC with upline",
+    aboAudioFieldLabel: "Audio listened to",
+    aboMeetingsFieldLabel: "Meetings attended",
+    aboCurrentStatusFieldLabel: "Current status",
+    aboEmpty: "No records yet — add your first one",
+    aboFooterCount: (n) => `${n} ${n === 1 ? "person" : "people"}`,
+    deleteAboRowConfirm: (name) => `Delete "${name}"? This cannot be undone.`,
+    deleteAboConfirm: "Delete this record? This cannot be undone.",
+    deleteAboLabel: "Delete this record",
+    aboProgressLabel: (done, total) => `${done}/${total} done`,
     oppStatsThisMonthLabel: "OPPs this month",
     oppStatsTotalLabel: "OPPs total",
+    customerStatsMonthLabel: "Customer spending this month (RM)",
+    customerStatsTotalLabel: "Total customer spending (RM)",
     addBirthdayBtnLabel: "Add Birthday",
     modalAddBirthdayTitle: "Add Birthday",
     modalEditBirthdayTitle: "Edit Birthday",
@@ -1661,6 +1921,13 @@ const I18N = {
     deleteProspectLabel: "Delete this record",
     noOppDateHint: "No date recorded",
     statusFieldLabel: "Reaction after OPP",
+    interestedFieldLabel: "Interested in products?",
+    interestedYes: "Interested",
+    interestedNo: "Not interested",
+    relationshipFieldLabel: "Relationship healthy?",
+    relationshipYes: "Healthy",
+    relationshipNo: "Needs work",
+    yesNoUnset: "Not sure",
     followUpsFieldLabel: "Follow-up records",
     followUpDateLabel: "Date",
     followUpNoteLabel: "Note",
@@ -1698,6 +1965,8 @@ const I18N = {
     purchasesSummary: (count, total) => `🛍 ${count} purchase${count === 1 ? "" : "s"} · RM${total} total`,
     inactiveWarning: "⚠️ No purchase in over 2 months",
     notesFieldLabel: "Notes (optional)",
+    preferenceFieldLabel: "Preferences (optional)",
+    preferencePlaceholder: "Products, flavors, colors this customer likes…",
     cancelLabel: "Cancel",
     saveLabel: "Save",
     deleteCustomerLabel: "Delete this customer",
@@ -1706,6 +1975,7 @@ const I18N = {
     modalSubtitle: "Save this customer's details — you can edit them anytime",
     deleteConfirm: "Delete this customer? This cannot be undone.",
     notesLabel: "Notes",
+    preferenceLabel: "Preferences",
     phoneLabel: "Phone",
     detailCloseLabel: "Close",
     detailEditLabel: "Edit details",
@@ -1783,6 +2053,8 @@ function applyLanguage() {
   document.getElementById("nameInput").placeholder = s.namePlaceholder;
   document.getElementById("phoneInput").placeholder = s.phonePlaceholder;
   document.getElementById("notesInput").placeholder = s.notesPlaceholder;
+  document.getElementById("preferenceFieldLabel").textContent = s.preferenceFieldLabel;
+  document.getElementById("preferenceInput").placeholder = s.preferencePlaceholder;
   document.getElementById("colorLabel").textContent = s.colorLabel;
   document.getElementById("darkModeLabel").textContent = s.darkModeLabel;
   document.getElementById("langLabel").textContent = s.langLabel;
@@ -1827,6 +2099,14 @@ function applyLanguage() {
   document.getElementById("prospectDetailBackgroundTitle").textContent = s.backgroundFieldLabel;
   document.getElementById("prospectDetailNotesTitle").textContent = s.notesFieldLabel;
   document.getElementById("statusFieldLabel").textContent = s.statusFieldLabel;
+  document.getElementById("interestedFieldLabel").textContent = s.interestedFieldLabel;
+  document.getElementById("interestedYesLabel").textContent = s.interestedYes;
+  document.getElementById("interestedNoLabel").textContent = s.interestedNo;
+  document.getElementById("interestedUnsetLabel").textContent = s.yesNoUnset;
+  document.getElementById("relationshipFieldLabel").textContent = s.relationshipFieldLabel;
+  document.getElementById("relationshipYesLabel").textContent = s.relationshipYes;
+  document.getElementById("relationshipNoLabel").textContent = s.relationshipNo;
+  document.getElementById("relationshipUnsetLabel").textContent = s.yesNoUnset;
   document.getElementById("followUpsFieldLabel").textContent = s.followUpsFieldLabel;
   document.getElementById("addFollowUpLabel").textContent = s.addFollowUpLabel;
   document.getElementById("prospectDetailFollowUpsTitle").textContent = s.followUpsFieldLabel;
@@ -1856,6 +2136,40 @@ function applyLanguage() {
   document.getElementById("birthdayDetailCloseLabel").textContent = s.birthdayDetailCloseLabel;
   document.getElementById("birthdayDetailEditLabel").textContent = s.birthdayDetailEditLabel;
   document.getElementById("birthdayDetailNotesTitle").textContent = s.notesFieldLabel;
+  document.getElementById("tabAbosLabel").textContent = s.tabAbos;
+  document.getElementById("abosLoadingLabel").textContent = s.loading;
+  document.getElementById("aboNameInput").placeholder = s.namePlaceholder;
+  document.getElementById("aboGenderFieldLabel").textContent = s.genderFieldLabel;
+  document.getElementById("aboGenderMaleLabel").textContent = s.genderMale;
+  document.getElementById("aboGenderFemaleLabel").textContent = s.genderFemale;
+  document.getElementById("aboGenderUnsetLabel").textContent = s.genderUnset;
+  document.getElementById("aboPhoneFieldLabel").textContent = s.phoneFieldLabel;
+  document.getElementById("aboPhoneInput").placeholder = s.phonePlaceholder;
+  document.getElementById("aboChecklistFieldLabel").textContent = s.aboChecklistFieldLabel;
+  document.getElementById("aboClass2Label").textContent = s.aboClass2Label;
+  document.getElementById("aboHasListLabel").textContent = s.aboHasListLabel;
+  document.getElementById("aboWatchedDemoLabel").textContent = s.aboWatchedDemoLabel;
+  document.getElementById("aboVisitedHQLabel").textContent = s.aboVisitedHQLabel;
+  document.getElementById("aboCenterMeetingLabel").textContent = s.aboCenterMeetingLabel;
+  document.getElementById("aboHouseMeetingLabel").textContent = s.aboHouseMeetingLabel;
+  document.getElementById("aboAbcUplineLabel").textContent = s.aboAbcUplineLabel;
+  document.getElementById("aboAudioFieldLabel").textContent = s.aboAudioFieldLabel;
+  document.getElementById("aboMeetingsFieldLabel").textContent = s.aboMeetingsFieldLabel;
+  document.getElementById("aboCurrentStatusFieldLabel").textContent = s.aboCurrentStatusFieldLabel;
+  document.getElementById("aboNotesFieldLabel").textContent = s.notesFieldLabel;
+  document.getElementById("aboNotesInput").placeholder = s.notesPlaceholder;
+  document.getElementById("cancelAboLabel").textContent = s.cancelLabel;
+  document.getElementById("saveAboLabel").textContent = s.saveLabel;
+  document.getElementById("deleteAboLabel").textContent = s.deleteAboLabel;
+  document.getElementById("aboModalSubtitle").textContent = s.aboModalSubtitle;
+  document.getElementById("aboDetailCloseLabel").textContent = s.detailCloseLabel;
+  document.getElementById("aboDetailEditLabel").textContent = s.detailEditLabel;
+  document.getElementById("aboDetailChecklistTitle").textContent = s.aboChecklistFieldLabel;
+  document.getElementById("aboDetailAudioTitle").textContent = s.aboAudioFieldLabel;
+  document.getElementById("aboDetailMeetingsTitle").textContent = s.aboMeetingsFieldLabel;
+  document.getElementById("aboDetailStatusTitle").textContent = s.aboCurrentStatusFieldLabel;
+  document.getElementById("aboDetailNotesTitle").textContent = s.notesFieldLabel;
+  renderAbos();
   document.getElementById("appTitleLabel").textContent = s.appTitleLabel;
   const appTitleInput = document.getElementById("appTitleInput");
   appTitleInput.placeholder = s.title;
@@ -1891,6 +2205,7 @@ function applyLanguage() {
   document.getElementById("detailCloseLabel").textContent = s.detailCloseLabel;
   document.getElementById("detailEditLabel").textContent = s.detailEditLabel;
   document.getElementById("detailNotesTitle").textContent = s.notesLabel;
+  document.getElementById("detailPreferenceTitle").textContent = s.preferenceLabel;
   document.getElementById("detailHistoryTitle").textContent = s.purchasesFieldLabel;
   document.getElementById("addBtnLabel").textContent =
     currentTab === "prospects" ? s.addProspectBtnLabel :
@@ -2016,6 +2331,32 @@ function escapeAttr(str) {
 function render() {
   const s = t();
   document.getElementById("tabCustomersCount").textContent = customers.length > 0 ? `(${customers.length})` : "";
+
+  const customerStatsBar = document.getElementById("customerStatsBar");
+  let allPurchases = [];
+  customers.forEach(c => {
+    if (Array.isArray(c.purchases)) c.purchases.forEach(p => allPurchases.push(p));
+  });
+  const withAmount = allPurchases.filter(p => p.amount);
+  if (withAmount.length > 0) {
+    const now = new Date();
+    const thisMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const sumAmount = (list) => list.reduce((sum, p) => {
+      const n = parseFloat(String(p.amount).replace(/[^\d.]/g, ""));
+      return sum + (isNaN(n) ? 0 : n);
+    }, 0);
+    const fmt = (n) => (Number.isInteger(n) ? String(n) : n.toFixed(2));
+    const thisMonthTotal = sumAmount(withAmount.filter(p => p.date && p.date.startsWith(thisMonthKey)));
+    const grandTotal = sumAmount(withAmount);
+    customerStatsBar.style.display = "flex";
+    document.getElementById("customerStatsMonthNum").textContent = fmt(thisMonthTotal);
+    document.getElementById("customerStatsMonthLabel").textContent = s.customerStatsMonthLabel;
+    document.getElementById("customerStatsTotalNum").textContent = fmt(grandTotal);
+    document.getElementById("customerStatsTotalLabel").textContent = s.customerStatsTotalLabel;
+  } else {
+    customerStatsBar.style.display = "none";
+  }
+
   if (customers.length === 0) {
     contentEl.innerHTML = `<div class="empty-state">${s.empty}</div>`;
     footerEl.style.display = "none";
@@ -2153,12 +2494,15 @@ function switchTab(tab) {
   document.getElementById("tabCustomersBtn").classList.toggle("active", tab === "customers");
   document.getElementById("tabProspectsBtn").classList.toggle("active", tab === "prospects");
   document.getElementById("tabBirthdaysBtn").classList.toggle("active", tab === "birthdays");
+  document.getElementById("tabAbosBtn").classList.toggle("active", tab === "abos");
   document.getElementById("customersView").style.display = tab === "customers" ? "block" : "none";
   document.getElementById("prospectsView").style.display = tab === "prospects" ? "block" : "none";
   document.getElementById("birthdaysView").style.display = tab === "birthdays" ? "block" : "none";
+  document.getElementById("abosView").style.display = tab === "abos" ? "block" : "none";
   document.getElementById("addBtnLabel").textContent =
     tab === "prospects" ? s.addProspectBtnLabel :
     tab === "birthdays" ? s.addBirthdayBtnLabel :
+    tab === "abos" ? s.addAboBtnLabel :
     s.addBtnLabel;
 }
 
@@ -2167,6 +2511,8 @@ document.getElementById("openAddBtn").addEventListener("click", () => {
     openAddProspectModal();
   } else if (currentTab === "birthdays") {
     openAddBirthdayModal();
+  } else if (currentTab === "abos") {
+    openAddAboModal();
   } else {
     openAddModal();
   }
@@ -2363,6 +2709,8 @@ function resetProspectForm() {
   backgroundInput.value = "";
   prospectNotesInput.value = "";
   document.getElementById("statusSelect").value = "pending";
+  setInterested("");
+  setRelationshipHealthy("");
   followUpRows = [];
   renderFollowUpRows();
   setProspectGender("");
@@ -2414,6 +2762,19 @@ function openProspectDetailModal(id) {
     phoneLine.textContent = `📞 ${p.phone}`;
   } else {
     phoneLine.style.display = "none";
+  }
+
+  const flagsLine = document.getElementById("prospectDetailFlagsLine");
+  const flagBits = [];
+  if (p.interested === "yes") flagBits.push(`👍 ${s.interestedYes}`);
+  else if (p.interested === "no") flagBits.push(`👎 ${s.interestedNo}`);
+  if (p.relationshipHealthy === "yes") flagBits.push(`💚 ${s.relationshipYes}`);
+  else if (p.relationshipHealthy === "no") flagBits.push(`⚠️ ${s.relationshipNo}`);
+  if (flagBits.length > 0) {
+    flagsLine.style.display = "flex";
+    flagsLine.textContent = flagBits.join(" · ");
+  } else {
+    flagsLine.style.display = "none";
   }
 
   const bgWrap = document.getElementById("prospectDetailBackgroundWrap");
@@ -2482,6 +2843,8 @@ function openEditProspectModal(id) {
   backgroundInput.value = p.background || "";
   prospectNotesInput.value = p.notes || "";
   document.getElementById("statusSelect").value = p.status || "pending";
+  setInterested(p.interested || "");
+  setRelationshipHealthy(p.relationshipHealthy || "");
   followUpRows = (Array.isArray(p.followUps) ? p.followUps : []).map(f => {
     followUpKeyCounter += 1;
     return { key: followUpKeyCounter, date: f.date || "", note: f.note || "" };
@@ -2531,7 +2894,7 @@ async function saveProspect() {
     .map(r => ({ date: r.date.trim(), note: r.note.trim() }))
     .filter(f => f.date || f.note);
 
-  const payload = { name, gender: pSelectedGender, background, date, phone, oppDate, notes, status, followUps };
+  const payload = { name, gender: pSelectedGender, background, date, phone, oppDate, notes, status, followUps, interested: selectedInterested, relationshipHealthy: selectedRelationshipHealthy };
 
   try {
     let res, saved;
@@ -2893,6 +3256,374 @@ deleteBirthdayBtn.addEventListener("click", async () => {
   el.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); saveBirthday(); } });
 });
 
+/* ============================================================
+   跟进对象 (新ABO / 刚OPP完成的伙伴)
+   ============================================================ */
+const ABOS_API = "/api/abos";
+let abos = [];
+const abosContentEl = document.getElementById("abosContent");
+const abosFooterEl = document.getElementById("abosFooterCount");
+
+const ABO_CHECKLIST_FIELDS = [
+  { key: "class2", labelKey: "aboClass2Label" },
+  { key: "hasList", labelKey: "aboHasListLabel" },
+  { key: "watchedDemo", labelKey: "aboWatchedDemoLabel" },
+  { key: "visitedHQ", labelKey: "aboVisitedHQLabel" },
+  { key: "centerMeeting", labelKey: "aboCenterMeetingLabel" },
+  { key: "houseMeeting", labelKey: "aboHouseMeetingLabel" },
+  { key: "abcUpline", labelKey: "aboAbcUplineLabel" },
+];
+
+function aboProgressCount(a) {
+  const done = ABO_CHECKLIST_FIELDS.filter(f => a[f.key]).length;
+  return { done, total: ABO_CHECKLIST_FIELDS.length };
+}
+
+async function loadAbos() {
+  try {
+    const res = await fetch(ABOS_API);
+    abos = await res.json();
+    renderAbos();
+  } catch (e) {
+    if (abosContentEl) abosContentEl.innerHTML = `<div class="empty-state">${t().loadFailed}</div>`;
+  }
+}
+
+function renderAbos() {
+  if (!abosContentEl) return;
+  const s = t();
+  document.getElementById("tabAbosCount").textContent = abos.length > 0 ? `(${abos.length})` : "";
+  if (abos.length === 0) {
+    abosContentEl.innerHTML = `<div class="empty-state">${s.aboEmpty}</div>`;
+    abosFooterEl.style.display = "none";
+    return;
+  }
+
+  const rows = abos.map(a => {
+    const { done, total } = aboProgressCount(a);
+    const whatsappIcon = a.phone
+      ? `<button class="icon-btn whatsapp-icon" onclick="event.stopPropagation(); openWhatsAppChatAbo('${a.id}')" aria-label="${s.whatsappChatLabel}">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38a9.9 9.9 0 0 0 4.74 1.21h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.86 9.86 0 0 0 12.04 2zm5.8 14.15c-.24.68-1.4 1.3-1.93 1.38-.5.08-1.11.11-1.79-.11a13 13 0 0 1-1.86-.7c-2.83-1.22-4.67-4.08-4.81-4.27-.14-.19-1.15-1.53-1.15-2.92 0-1.39.73-2.07.98-2.35.26-.28.56-.35.75-.35.19 0 .37 0 .53.01.17.01.4-.06.62.48.24.58.8 2 .87 2.14.07.14.12.31.02.5-.09.19-.14.31-.28.47-.14.16-.29.36-.42.48-.14.14-.28.29-.12.57.16.28.71 1.18 1.53 1.91 1.05.94 1.94 1.24 2.22 1.38.28.14.44.12.6-.07.16-.19.68-.79.87-1.06.19-.28.37-.23.62-.14.26.09 1.63.77 1.91.91.28.14.47.21.53.33.07.12.07.68-.17 1.36z"/></svg>
+        </button>`
+      : "";
+    const metaBits = [];
+    if (a.currentStatus) metaBits.push(escapeHtml(a.currentStatus));
+    if (a.phone) metaBits.push(escapeHtml(a.phone));
+    const metaLine = metaBits.length > 0 ? `<p class="cust-meta">${metaBits.join(" · ")}</p>` : "";
+    return `
+      <div class="row" onclick="openAboDetailModal('${a.id}')">
+        <div class="row-left">
+          <div class="avatar">${genderAvatar(a)}</div>
+          <div class="info">
+            <div class="cust-name-row">
+              <p class="cust-name">${escapeHtml(a.name)}</p>
+              <span class="progress-badge">${s.aboProgressLabel(done, total)}</span>
+              ${a.notes ? `<span class="notes-dot" title="${escapeAttr(a.notes)}">📝</span>` : ""}
+            </div>
+            ${metaLine}
+          </div>
+        </div>
+        <div class="row-right">
+          ${whatsappIcon}
+          <button class="icon-btn" onclick="event.stopPropagation(); deleteAboFromRow('${a.id}')" aria-label="${s.deleteLabel}">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+          </button>
+        </div>
+      </div>`;
+  }).join("");
+
+  abosContentEl.innerHTML = `<div class="list">${rows}</div>`;
+  abosFooterEl.style.display = "block";
+  abosFooterEl.textContent = s.aboFooterCount(abos.length);
+}
+
+function openWhatsAppChatAbo(id) {
+  const a = abos.find(x => x.id === id);
+  if (!a || !a.phone) return;
+  const digits = a.phone.replace(/[^\d+]/g, "").replace(/^\+/, "");
+  window.open(`https://wa.me/${digits}`, "_blank");
+}
+
+/* ---------- ABO detail (view) modal ---------- */
+const aboDetailOverlay = document.getElementById("aboDetailOverlay");
+let detailAboId = null;
+
+function openAboDetailModal(id) {
+  const a = abos.find(x => x.id === id);
+  if (!a) return;
+  const s = t();
+  detailAboId = id;
+
+  document.getElementById("aboDetailAvatar").textContent = genderAvatar(a);
+  document.getElementById("aboDetailName").textContent = a.name;
+
+  const phoneLine = document.getElementById("aboDetailPhoneLine");
+  if (a.phone) {
+    phoneLine.style.display = "flex";
+    phoneLine.textContent = `📞 ${a.phone}`;
+  } else {
+    phoneLine.style.display = "none";
+  }
+
+  const checklistEl = document.getElementById("aboDetailChecklist");
+  checklistEl.innerHTML = ABO_CHECKLIST_FIELDS.map(f => {
+    const checked = !!a[f.key];
+    return `<div class="abo-checklist-detail-item ${checked ? "" : "unchecked"}">
+      <span class="check-icon">${checked ? "✅" : "⬜"}</span>
+      <span>${s[f.labelKey]}</span>
+    </div>`;
+  }).join("");
+
+  const audioWrap = document.getElementById("aboDetailAudioWrap");
+  if (a.audioListened) {
+    audioWrap.style.display = "block";
+    document.getElementById("aboDetailAudioBox").textContent = a.audioListened;
+  } else {
+    audioWrap.style.display = "none";
+  }
+
+  const meetingsWrap = document.getElementById("aboDetailMeetingsWrap");
+  if (a.meetingsAttended) {
+    meetingsWrap.style.display = "block";
+    document.getElementById("aboDetailMeetingsBox").textContent = a.meetingsAttended;
+  } else {
+    meetingsWrap.style.display = "none";
+  }
+
+  const statusWrap = document.getElementById("aboDetailStatusWrap");
+  if (a.currentStatus) {
+    statusWrap.style.display = "block";
+    document.getElementById("aboDetailStatusBox").textContent = a.currentStatus;
+  } else {
+    statusWrap.style.display = "none";
+  }
+
+  const notesWrap = document.getElementById("aboDetailNotesWrap");
+  if (a.notes) {
+    notesWrap.style.display = "block";
+    document.getElementById("aboDetailNotesBox").textContent = a.notes;
+  } else {
+    notesWrap.style.display = "none";
+  }
+
+  aboDetailOverlay.classList.add("open");
+  ensureHistoryPushed();
+}
+
+function closeAboDetailModal() {
+  aboDetailOverlay.classList.remove("open");
+  releaseHistoryIfAllClosed();
+}
+
+document.getElementById("aboDetailCloseBtn").addEventListener("click", closeAboDetailModal);
+aboDetailOverlay.addEventListener("click", (e) => {
+  if (e.target === aboDetailOverlay) closeAboDetailModal();
+});
+document.getElementById("aboDetailEditBtn").addEventListener("click", () => {
+  aboDetailOverlay.classList.remove("open");
+  openEditAboModal(detailAboId);
+});
+
+/* ---------- Add / Edit ABO modal ---------- */
+const aboOverlay = document.getElementById("aboOverlay");
+const aboModalTitle = document.getElementById("aboModalTitle");
+const aboNameInput = document.getElementById("aboNameInput");
+const aboPhoneInput = document.getElementById("aboPhoneInput");
+const aboAudioInput = document.getElementById("aboAudioInput");
+const aboMeetingsInput = document.getElementById("aboMeetingsInput");
+const aboCurrentStatusInput = document.getElementById("aboCurrentStatusInput");
+const aboNotesInput = document.getElementById("aboNotesInput");
+const aboErrorMsg = document.getElementById("aboErrorMsg");
+const deleteAboBtn = document.getElementById("deleteAboBtn");
+
+let aSelectedGender = "";
+let editingAboId = null;
+
+function updateAboAvatarPreview() {
+  const preview = document.getElementById("aboAvatarPreview");
+  if (!preview) return;
+  if (aSelectedGender === "male") preview.textContent = "👨";
+  else if (aSelectedGender === "female") preview.textContent = "👩";
+  else preview.textContent = "👤";
+}
+
+function setAboGender(gender) {
+  aSelectedGender = gender;
+  document.querySelectorAll("#aboGenderToggle .gender-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.gender === gender);
+  });
+  updateAboAvatarPreview();
+}
+
+document.querySelectorAll("#aboGenderToggle .gender-btn").forEach(btn => {
+  btn.addEventListener("click", () => setAboGender(btn.dataset.gender));
+});
+
+const ABO_CHECKBOX_IDS = {
+  class2: "aboClass2Cb",
+  hasList: "aboHasListCb",
+  watchedDemo: "aboWatchedDemoCb",
+  visitedHQ: "aboVisitedHQCb",
+  centerMeeting: "aboCenterMeetingCb",
+  houseMeeting: "aboHouseMeetingCb",
+  abcUpline: "aboAbcUplineCb",
+};
+
+function setAboChecklist(a) {
+  Object.keys(ABO_CHECKBOX_IDS).forEach(key => {
+    document.getElementById(ABO_CHECKBOX_IDS[key]).checked = !!(a && a[key]);
+  });
+}
+
+function getAboChecklist() {
+  const result = {};
+  Object.keys(ABO_CHECKBOX_IDS).forEach(key => {
+    result[key] = document.getElementById(ABO_CHECKBOX_IDS[key]).checked;
+  });
+  return result;
+}
+
+function resetAboForm() {
+  aboNameInput.value = "";
+  aboPhoneInput.value = "";
+  setAboChecklist(null);
+  aboAudioInput.value = "";
+  aboMeetingsInput.value = "";
+  aboCurrentStatusInput.value = "";
+  aboNotesInput.value = "";
+  setAboGender("");
+  aboErrorMsg.style.display = "none";
+}
+
+function openAddAboModal() {
+  const s = t();
+  editingAboId = null;
+  resetAboForm();
+  aboModalTitle.textContent = s.modalAddAboTitle;
+  deleteAboBtn.style.display = "none";
+  aboOverlay.classList.add("open");
+  ensureHistoryPushed();
+}
+
+function openEditAboModal(id) {
+  const a = abos.find(x => x.id === id);
+  if (!a) return;
+  const s = t();
+  editingAboId = id;
+  aboErrorMsg.style.display = "none";
+  aboNameInput.value = a.name || "";
+  aboPhoneInput.value = a.phone || "";
+  setAboChecklist(a);
+  aboAudioInput.value = a.audioListened || "";
+  aboMeetingsInput.value = a.meetingsAttended || "";
+  aboCurrentStatusInput.value = a.currentStatus || "";
+  aboNotesInput.value = a.notes || "";
+  setAboGender(a.gender || "");
+  aboModalTitle.textContent = s.modalEditAboTitle;
+  deleteAboBtn.style.display = "block";
+  aboOverlay.classList.add("open");
+  ensureHistoryPushed();
+}
+
+function closeAboModal() {
+  aboOverlay.classList.remove("open");
+  releaseHistoryIfAllClosed();
+}
+
+document.getElementById("cancelAboBtn").addEventListener("click", closeAboModal);
+aboOverlay.addEventListener("click", (e) => {
+  if (e.target === aboOverlay) closeAboModal();
+});
+
+function showAboError(msg) {
+  aboErrorMsg.textContent = msg;
+  aboErrorMsg.style.display = "block";
+}
+
+async function saveAbo() {
+  const s = t();
+  const name = aboNameInput.value.trim();
+  const phone = aboPhoneInput.value.trim();
+  const audioListened = aboAudioInput.value.trim();
+  const meetingsAttended = aboMeetingsInput.value.trim();
+  const currentStatus = aboCurrentStatusInput.value.trim();
+  const notes = aboNotesInput.value.trim();
+  aboErrorMsg.style.display = "none";
+
+  if (!name) { showAboError(s.errorName); return; }
+  if (phone && !/^[+\d][\d\s\-()]{4,}$/.test(phone)) { showAboError(s.errorPhone); return; }
+
+  const checklist = getAboChecklist();
+  const payload = { name, gender: aSelectedGender, phone, audioListened, meetingsAttended, currentStatus, notes, ...checklist };
+
+  try {
+    let res, saved;
+    if (editingAboId) {
+      res = await fetch(`${ABOS_API}/${editingAboId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+    } else {
+      res = await fetch(ABOS_API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+    }
+    if (!res.ok) {
+      const data = await res.json();
+      showAboError(data.error || s.errorAdd);
+      return;
+    }
+    saved = await res.json();
+    if (editingAboId) {
+      abos = abos.map(a => a.id === editingAboId ? saved : a);
+    } else {
+      abos.push(saved);
+    }
+    closeAboModal();
+    renderAbos();
+  } catch (e) {
+    showAboError(s.errorNetwork);
+  }
+}
+
+document.getElementById("saveAboBtn").addEventListener("click", saveAbo);
+
+async function deleteAboById(id) {
+  const s = t();
+  try {
+    await fetch(`${ABOS_API}/${id}`, { method: "DELETE" });
+    abos = abos.filter(a => a.id !== id);
+    renderAbos();
+    return true;
+  } catch (e) {
+    alert(s.deleteFailed);
+    return false;
+  }
+}
+
+async function deleteAboFromRow(id) {
+  const s = t();
+  const a = abos.find(x => x.id === id);
+  if (!a) return;
+  if (!confirm(s.deleteAboRowConfirm(a.name))) return;
+  await deleteAboById(id);
+}
+
+deleteAboBtn.addEventListener("click", async () => {
+  const s = t();
+  if (!editingAboId) return;
+  if (!confirm(s.deleteAboConfirm)) return;
+  const ok = await deleteAboById(editingAboId);
+  if (ok) closeAboModal();
+});
+
+[aboNameInput, aboPhoneInput, aboAudioInput, aboMeetingsInput, aboCurrentStatusInput].forEach(el => {
+  el.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); saveAbo(); } });
+});
+
 /* ---------- Customer detail (view) modal ---------- */
 const detailOverlay = document.getElementById("detailOverlay");
 let detailCustomerId = null;
@@ -2947,6 +3678,14 @@ function openDetailModal(id) {
     warnBanner.textContent = s.inactiveWarning;
   } else {
     warnBanner.style.display = "none";
+  }
+
+  const preferenceWrap = document.getElementById("detailPreferenceWrap");
+  if (c.preference) {
+    preferenceWrap.style.display = "block";
+    document.getElementById("detailPreferenceBox").textContent = c.preference;
+  } else {
+    preferenceWrap.style.display = "none";
   }
 
   const notesWrap = document.getElementById("detailNotesWrap");
@@ -3047,13 +3786,35 @@ document.querySelectorAll(".category-btn").forEach(btn => {
 let selectedSawDemo = "";
 function setSawDemo(val) {
   selectedSawDemo = val;
-  document.querySelectorAll(".demo-btn").forEach(btn => {
+  document.querySelectorAll("#sawDemoToggle .demo-btn").forEach(btn => {
     btn.classList.toggle("active", btn.dataset.demo === val);
   });
 }
 
-document.querySelectorAll(".demo-btn").forEach(btn => {
+document.querySelectorAll("#sawDemoToggle .demo-btn").forEach(btn => {
   btn.addEventListener("click", () => setSawDemo(btn.dataset.demo));
+});
+
+let selectedInterested = "";
+function setInterested(val) {
+  selectedInterested = val;
+  document.querySelectorAll("#interestedToggle .demo-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.interested === val);
+  });
+}
+document.querySelectorAll("#interestedToggle .demo-btn").forEach(btn => {
+  btn.addEventListener("click", () => setInterested(btn.dataset.interested));
+});
+
+let selectedRelationshipHealthy = "";
+function setRelationshipHealthy(val) {
+  selectedRelationshipHealthy = val;
+  document.querySelectorAll("#relationshipToggle .demo-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.relationship === val);
+  });
+}
+document.querySelectorAll("#relationshipToggle .demo-btn").forEach(btn => {
+  btn.addEventListener("click", () => setRelationshipHealthy(btn.dataset.relationship));
 });
 
 function syncPurchaseRowsFromDOM() {
@@ -3130,6 +3891,7 @@ function resetCustomerForm() {
   phoneInput.value = "";
   setMonthDayValue("dateMonthSelect", "dateDaySelect", "");
   notesInput.value = "";
+  document.getElementById("preferenceInput").value = "";
   document.getElementById("lastMeetingInput").value = "";
   purchaseRows = [];
   renderPurchaseRows();
@@ -3159,6 +3921,7 @@ function openEditModal(id) {
   phoneInput.value = c.phone || "";
   setMonthDayValue("dateMonthSelect", "dateDaySelect", c.date || "");
   notesInput.value = c.notes || "";
+  document.getElementById("preferenceInput").value = c.preference || "";
   document.getElementById("lastMeetingInput").value = c.lastMeeting || "";
   purchaseRows = (Array.isArray(c.purchases) ? c.purchases : []).map(p => {
     purchaseKeyCounter += 1;
@@ -3196,6 +3959,7 @@ async function saveCustomer() {
   const dateMonth = document.getElementById("dateMonthSelect").value;
   const dateDay = document.getElementById("dateDaySelect").value;
   const notes = notesInput.value.trim();
+  const preference = document.getElementById("preferenceInput").value.trim();
   const lastMeeting = document.getElementById("lastMeetingInput").value;
   errorMsg.style.display = "none";
 
@@ -3209,7 +3973,7 @@ async function saveCustomer() {
     .map(r => ({ date: r.date.trim(), product: r.product.trim(), amount: r.amount.trim(), note: r.note.trim() }))
     .filter(p => p.date || p.product || p.amount || p.note);
 
-  const payload = { name, date, phone, gender: selectedGender, purchases, notes, category: selectedCategory, lastMeeting, sawDemo: selectedSawDemo };
+  const payload = { name, date, phone, gender: selectedGender, purchases, notes, category: selectedCategory, lastMeeting, sawDemo: selectedSawDemo, preference };
 
   try {
     let res, saved;
@@ -3467,6 +4231,7 @@ applyPrefs();
 loadCustomers();
 loadProspects();
 loadBirthdays();
+loadAbos();
 </script>
 </body>
 </html>
