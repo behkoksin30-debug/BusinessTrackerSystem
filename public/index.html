@@ -588,6 +588,46 @@
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
   }
 
+  .icon-upload-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .icon-upload-preview {
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+    background: var(--accent);
+    color: var(--accent-text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .icon-upload-preview img { width: 100%; height: 100%; object-fit: cover; }
+  .icon-upload-btn {
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--input-border);
+    background: var(--input-bg);
+    color: var(--text);
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .icon-upload-btn:hover { border-color: var(--accent); }
+  .icon-upload-reset {
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: none;
+    background: none;
+    color: var(--muted-light);
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .icon-upload-reset:hover { color: var(--accent); }
+
   .error-msg {
     font-size: 12px;
     color: var(--accent);
@@ -684,6 +724,20 @@
     cursor: pointer;
     padding: 4px;
   }
+  .modal-back-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    border: 1px solid var(--card-border);
+    background: var(--input-bg);
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    margin-bottom: 14px;
+  }
+  .modal-back-btn:hover { color: var(--accent); border-color: var(--accent); }
   .modal-close:hover { color: var(--muted); }
 
   /* purchases section (edit modal) */
@@ -882,7 +936,7 @@
   <div class="wrap">
     <div class="header">
       <div class="header-left">
-        <div class="icon-badge">
+        <div class="icon-badge" id="iconBadge">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-text)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
         </div>
         <h1 class="font-display" id="title">顾客记录</h1>
@@ -921,7 +975,22 @@
           </div>
           <div class="settings-section">
             <p class="settings-label" id="appTitleLabel">标题</p>
-            <input type="text" class="app-title-input" id="appTitleInput" maxlength="20" />
+            <input type="text" class="app-title-input" id="appTitleInput" maxlength="60" />
+          </div>
+          <div class="settings-section">
+            <p class="settings-label" id="subtitleFieldSettingsLabel">副标题</p>
+            <input type="text" class="app-title-input" id="appSubtitleInput" maxlength="120" />
+          </div>
+          <div class="settings-section">
+            <p class="settings-label" id="iconUploadLabel">图标</p>
+            <div class="icon-upload-row">
+              <div class="icon-upload-preview" id="iconUploadPreview">👤</div>
+              <label class="icon-upload-btn" id="iconUploadBtnLabel">
+                <span id="iconUploadBtnText">上传</span>
+                <input type="file" accept="image/*" id="iconUploadInput" style="display:none;" />
+              </label>
+              <button class="icon-upload-reset" id="iconResetBtn" type="button">重置</button>
+            </div>
           </div>
         </div>
       </div>
@@ -934,6 +1003,9 @@
       </button>
       <button class="tab-btn" id="tabProspectsBtn" type="button" onclick="switchTab('prospects')">
         <span id="tabProspectsLabel">OPP 名单</span>
+      </button>
+      <button class="tab-btn" id="tabBirthdaysBtn" type="button" onclick="switchTab('birthdays')">
+        <span id="tabBirthdaysLabel">生日</span>
       </button>
     </div>
 
@@ -955,11 +1027,21 @@
       </div>
       <p class="footer-count" id="prospectsFooterCount" style="display:none;"></p>
     </div>
+
+    <div id="birthdaysView" style="display:none;">
+      <div id="birthdaysContent">
+        <div class="loading-state" id="birthdaysLoadingLabel">加载中…</div>
+      </div>
+      <p class="footer-count" id="birthdaysFooterCount" style="display:none;"></p>
+    </div>
   </div>
 
   <!-- Customer detail (view) modal -->
   <div class="modal-overlay" id="detailOverlay">
     <div class="modal-box">
+      <button class="modal-back-btn" onclick="closeDetailModal()" aria-label="Back">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+      </button>
       <div class="detail-header">
         <div class="detail-avatar" id="detailAvatar">👤</div>
         <div>
@@ -993,6 +1075,9 @@
   <!-- Add / Edit customer modal -->
   <div class="modal-overlay" id="customerOverlay">
     <div class="modal-box">
+      <button class="modal-back-btn" onclick="closeCustomerModal()" aria-label="Back">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+      </button>
       <p class="modal-title" id="customerModalTitle">添加顾客</p>
       <p class="modal-subtitle" id="customerModalSubtitle">记录顾客的资料,之后随时可以修改</p>
 
@@ -1057,9 +1142,48 @@
     </div>
   </div>
 
+  <!-- Prospect detail (view) modal -->
+  <div class="modal-overlay" id="prospectDetailOverlay">
+    <div class="modal-box">
+      <button class="modal-back-btn" onclick="closeProspectDetailModal()" aria-label="Back">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+      </button>
+      <div class="detail-header">
+        <div class="detail-avatar" id="prospectDetailAvatar">👤</div>
+        <div>
+          <div class="detail-name-row">
+            <p class="detail-name" id="prospectDetailName"></p>
+            <span class="status-badge" id="prospectDetailStatusBadge"></span>
+          </div>
+          <p class="detail-info-line" id="prospectDetailOppDateLine"></p>
+          <p class="detail-info-line" id="prospectDetailBirthdayLine" style="display:none;"></p>
+          <p class="detail-info-line" id="prospectDetailPhoneLine" style="display:none;"></p>
+        </div>
+      </div>
+
+      <div id="prospectDetailBackgroundWrap" style="display:none;">
+        <p class="detail-section-title" id="prospectDetailBackgroundTitle">背景</p>
+        <p class="detail-notes-box" id="prospectDetailBackgroundBox"></p>
+      </div>
+
+      <div id="prospectDetailNotesWrap" style="display:none;">
+        <p class="detail-section-title" id="prospectDetailNotesTitle">备注</p>
+        <p class="detail-notes-box" id="prospectDetailNotesBox"></p>
+      </div>
+
+      <div class="modal-actions">
+        <button id="prospectDetailCloseBtn" type="button"><span id="prospectDetailCloseLabel">关闭</span></button>
+        <button class="primary-btn" id="prospectDetailEditBtn" type="button"><span id="prospectDetailEditLabel">编辑资料</span></button>
+      </div>
+    </div>
+  </div>
+
   <!-- Add / Edit prospect (OPP list) modal -->
   <div class="modal-overlay" id="prospectOverlay">
     <div class="modal-box">
+      <button class="modal-back-btn" onclick="closeProspectModal()" aria-label="Back">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+      </button>
       <p class="modal-title" id="prospectModalTitle">添加 OPP 名单</p>
       <p class="modal-subtitle" id="prospectModalSubtitle">记录讲 OPP 后的联系人资料</p>
 
@@ -1119,9 +1243,85 @@
     </div>
   </div>
 
+  <!-- Birthday detail (view) modal -->
+  <div class="modal-overlay" id="birthdayDetailOverlay">
+    <div class="modal-box">
+      <button class="modal-back-btn" onclick="closeBirthdayDetailModal()" aria-label="Back">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+      </button>
+      <div class="detail-header">
+        <div class="detail-avatar" id="birthdayDetailAvatar">👤</div>
+        <div>
+          <div class="detail-name-row">
+            <p class="detail-name" id="birthdayDetailName"></p>
+          </div>
+          <p class="detail-info-line" id="birthdayDetailBirthdayLine"></p>
+          <p class="detail-info-line" id="birthdayDetailPhoneLine" style="display:none;"></p>
+        </div>
+      </div>
+
+      <div id="birthdayDetailNotesWrap" style="display:none;">
+        <p class="detail-section-title" id="birthdayDetailNotesTitle">备注</p>
+        <p class="detail-notes-box" id="birthdayDetailNotesBox"></p>
+      </div>
+
+      <div class="modal-actions">
+        <button id="birthdayDetailCloseBtn" type="button"><span id="birthdayDetailCloseLabel">关闭</span></button>
+        <button class="primary-btn" id="birthdayDetailEditBtn" type="button"><span id="birthdayDetailEditLabel">编辑资料</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add / Edit birthday modal -->
+  <div class="modal-overlay" id="birthdayOverlay">
+    <div class="modal-box">
+      <button class="modal-back-btn" onclick="closeBirthdayModal()" aria-label="Back">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+      </button>
+      <p class="modal-title" id="birthdayModalTitle">添加生日</p>
+      <p class="modal-subtitle" id="birthdayModalSubtitle">记录任何人的生日,不一定要是顾客</p>
+
+      <div class="emoji-row">
+        <div class="avatar-preview" id="birthdayAvatarPreview">👤</div>
+        <div style="flex:1;">
+          <input id="birthdayNameInput" type="text" />
+        </div>
+      </div>
+
+      <label class="field-label" id="birthdayGenderFieldLabel">性别</label>
+      <div class="gender-toggle" id="birthdayGenderToggle">
+        <button class="gender-btn" data-gender="male" type="button"><span id="birthdayGenderMaleLabel">男</span></button>
+        <button class="gender-btn" data-gender="female" type="button"><span id="birthdayGenderFemaleLabel">女</span></button>
+        <button class="gender-btn active" data-gender="" type="button"><span id="birthdayGenderUnsetLabel">不设置</span></button>
+      </div>
+
+      <label class="field-label" id="birthdayDateFieldLabel">生日</label>
+      <input id="birthdayDateInput" type="date" />
+
+      <label class="field-label" id="birthdayPhoneFieldLabel">电话号码(选填)</label>
+      <input id="birthdayPhoneInput" type="tel" />
+
+      <label class="field-label" id="birthdayNotesFieldLabel">备注</label>
+      <textarea id="birthdayNotesInput"></textarea>
+
+      <p class="error-msg" id="birthdayErrorMsg" style="display:none;"></p>
+
+      <div class="modal-actions">
+        <button id="cancelBirthdayBtn" type="button"><span id="cancelBirthdayLabel">取消</span></button>
+        <button class="primary-btn" id="saveBirthdayBtn" type="button"><span id="saveBirthdayLabel">保存</span></button>
+      </div>
+      <button class="delete-row-btn" id="deleteBirthdayBtn" type="button" style="display:none;">
+        <span id="deleteBirthdayLabel">删除这条记录</span>
+      </button>
+    </div>
+  </div>
+
   <!-- Birthday wish modal -->
   <div class="modal-overlay" id="wishOverlay">
     <div class="modal-box">
+      <button class="modal-back-btn" onclick="closeWishModal()" aria-label="Back">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+      </button>
       <p class="modal-title" id="wishTitle">送祝福语</p>
       <p class="modal-subtitle" id="wishSubtitle"></p>
       <textarea class="modal-textarea" id="wishTextarea" readonly></textarea>
@@ -1202,11 +1402,27 @@ const I18N = {
     sawDemoBadge: "✅ 已看示范",
     tabCustomers: "顾客",
     tabProspects: "OPP 名单",
+    tabBirthdays: "生日",
+    addBirthdayBtnLabel: "添加生日",
+    modalAddBirthdayTitle: "添加生日",
+    modalEditBirthdayTitle: "编辑生日",
+    birthdayModalSubtitle: "记录任何人的生日,不一定要是顾客",
+    birthdayDateFieldLabel: "生日",
+    birthdayEmpty: "还没有记录,添加第一位吧",
+    birthdayFooterCount: (n) => `共 ${n} 位`,
+    deleteBirthdayRowConfirm: (name) => `确定要删除「${name}」吗?此操作无法撤销。`,
+    deleteBirthdayConfirm: "确定要删除这条记录吗?此操作无法撤销。",
+    deleteBirthdayLabel: "删除这条记录",
+    birthdayDetailCloseLabel: "关闭",
+    birthdayDetailEditLabel: "编辑资料",
     addProspectBtnLabel: "添加 OPP 名单",
     modalAddProspectTitle: "添加 OPP 名单",
     modalEditProspectTitle: "编辑 OPP 名单",
     prospectModalSubtitle: "记录讲 OPP 后的联系人资料",
     backgroundFieldLabel: "背景",
+    prospectDetailCloseLabel: "关闭",
+    prospectDetailEditLabel: "编辑资料",
+    prospectDetailOppDateLabel: (d) => `📅 讲 OPP 日期: ${d}`,
     backgroundPlaceholder: "例如:朋友介绍、做生意的、对健康有兴趣…",
     oppDateFieldLabel: "讲 OPP 的日期",
     prospectBirthdayFieldLabel: "生日(选填)",
@@ -1225,6 +1441,11 @@ const I18N = {
     statusCustomer: "已成为顾客",
     statusUnreachable: "联系不上",
     appTitleLabel: "标题",
+    subtitleFieldSettingsLabel: "副标题",
+    iconUploadLabel: "图标",
+    iconUploadBtn: "上传",
+    iconResetBtn: "重置",
+    iconTooLargeError: "图片太大,请选择小一点的图片",
     categoryFieldLabel: "顾客分类",
     categoryNew: "新顾客",
     categoryRegular: "一般",
@@ -1319,11 +1540,27 @@ const I18N = {
     sawDemoBadge: "✅ Seen demo",
     tabCustomers: "Customers",
     tabProspects: "OPP List",
+    tabBirthdays: "Birthdays",
+    addBirthdayBtnLabel: "Add Birthday",
+    modalAddBirthdayTitle: "Add Birthday",
+    modalEditBirthdayTitle: "Edit Birthday",
+    birthdayModalSubtitle: "Track anyone's birthday — they don't have to be a customer",
+    birthdayDateFieldLabel: "Birthday",
+    birthdayEmpty: "No records yet — add your first one",
+    birthdayFooterCount: (n) => `${n} ${n === 1 ? "person" : "people"}`,
+    deleteBirthdayRowConfirm: (name) => `Delete "${name}"? This cannot be undone.`,
+    deleteBirthdayConfirm: "Delete this record? This cannot be undone.",
+    deleteBirthdayLabel: "Delete this record",
+    birthdayDetailCloseLabel: "Close",
+    birthdayDetailEditLabel: "Edit details",
     addProspectBtnLabel: "Add Prospect",
     modalAddProspectTitle: "Add Prospect",
     modalEditProspectTitle: "Edit Prospect",
     prospectModalSubtitle: "Track people you've presented the opportunity to",
     backgroundFieldLabel: "Background",
+    prospectDetailCloseLabel: "Close",
+    prospectDetailEditLabel: "Edit details",
+    prospectDetailOppDateLabel: (d) => `📅 OPP presented: ${d}`,
     backgroundPlaceholder: "e.g. introduced by a friend, runs a business, interested in health…",
     oppDateFieldLabel: "OPP presentation date",
     prospectBirthdayFieldLabel: "Birthday (optional)",
@@ -1342,6 +1579,11 @@ const I18N = {
     statusCustomer: "Became customer",
     statusUnreachable: "Unreachable",
     appTitleLabel: "Title",
+    subtitleFieldSettingsLabel: "Subtitle",
+    iconUploadLabel: "Icon",
+    iconUploadBtn: "Upload",
+    iconResetBtn: "Reset",
+    iconTooLargeError: "Image too large, please pick a smaller one",
     categoryFieldLabel: "Category",
     categoryNew: "New",
     categoryRegular: "Regular",
@@ -1384,7 +1626,7 @@ const I18N = {
 };
 
 const PREFS_KEY = "birthday-app-prefs";
-let prefs = { color: "#C4635A", dark: false, lang: "zh", appTitle: "" };
+let prefs = { color: "#C4635A", dark: false, lang: "zh", appTitle: "", appSubtitle: "", customIcon: "" };
 try {
   const saved = JSON.parse(localStorage.getItem(PREFS_KEY) || "{}");
   prefs = { ...prefs, ...saved };
@@ -1438,7 +1680,6 @@ function statusLabel(status) {
 
 function applyLanguage() {
   const s = t();
-  document.getElementById("subtitle").textContent = s.subtitle;
   document.getElementById("addBtnLabel").textContent = s.addBtnLabel;
   document.getElementById("nameInput").placeholder = s.namePlaceholder;
   document.getElementById("phoneInput").placeholder = s.phonePlaceholder;
@@ -1482,6 +1723,10 @@ function applyLanguage() {
   document.getElementById("saveProspectLabel").textContent = s.saveLabel;
   document.getElementById("deleteProspectLabel").textContent = s.deleteProspectLabel;
   document.getElementById("prospectModalSubtitle").textContent = s.prospectModalSubtitle;
+  document.getElementById("prospectDetailCloseLabel").textContent = s.prospectDetailCloseLabel;
+  document.getElementById("prospectDetailEditLabel").textContent = s.prospectDetailEditLabel;
+  document.getElementById("prospectDetailBackgroundTitle").textContent = s.backgroundFieldLabel;
+  document.getElementById("prospectDetailNotesTitle").textContent = s.notesFieldLabel;
   document.getElementById("statusFieldLabel").textContent = s.statusFieldLabel;
   document.getElementById("statusPendingOpt").textContent = s.statusPending;
   document.getElementById("statusConsideringOpt").textContent = s.statusConsidering;
@@ -1489,6 +1734,25 @@ function applyLanguage() {
   document.getElementById("statusJoinedOpt").textContent = s.statusJoined;
   document.getElementById("statusCustomerOpt").textContent = s.statusCustomer;
   document.getElementById("statusUnreachableOpt").textContent = s.statusUnreachable;
+  document.getElementById("tabBirthdaysLabel").textContent = s.tabBirthdays;
+  document.getElementById("birthdaysLoadingLabel").textContent = s.loading;
+  document.getElementById("birthdayNameInput").placeholder = s.namePlaceholder;
+  document.getElementById("birthdayGenderFieldLabel").textContent = s.genderFieldLabel;
+  document.getElementById("birthdayGenderMaleLabel").textContent = s.genderMale;
+  document.getElementById("birthdayGenderFemaleLabel").textContent = s.genderFemale;
+  document.getElementById("birthdayGenderUnsetLabel").textContent = s.genderUnset;
+  document.getElementById("birthdayDateFieldLabel").textContent = s.birthdayDateFieldLabel;
+  document.getElementById("birthdayPhoneFieldLabel").textContent = s.phoneFieldLabel;
+  document.getElementById("birthdayPhoneInput").placeholder = s.phonePlaceholder;
+  document.getElementById("birthdayNotesFieldLabel").textContent = s.notesFieldLabel;
+  document.getElementById("birthdayNotesInput").placeholder = s.notesPlaceholder;
+  document.getElementById("cancelBirthdayLabel").textContent = s.cancelLabel;
+  document.getElementById("saveBirthdayLabel").textContent = s.saveLabel;
+  document.getElementById("deleteBirthdayLabel").textContent = s.deleteBirthdayLabel;
+  document.getElementById("birthdayModalSubtitle").textContent = s.birthdayModalSubtitle;
+  document.getElementById("birthdayDetailCloseLabel").textContent = s.birthdayDetailCloseLabel;
+  document.getElementById("birthdayDetailEditLabel").textContent = s.birthdayDetailEditLabel;
+  document.getElementById("birthdayDetailNotesTitle").textContent = s.notesFieldLabel;
   document.getElementById("appTitleLabel").textContent = s.appTitleLabel;
   const appTitleInput = document.getElementById("appTitleInput");
   appTitleInput.placeholder = s.title;
@@ -1498,6 +1762,17 @@ function applyLanguage() {
   const displayTitle = (prefs.appTitle && prefs.appTitle.trim()) || s.title;
   document.title = displayTitle;
   document.getElementById("title").textContent = displayTitle;
+  document.getElementById("subtitleFieldSettingsLabel").textContent = s.subtitleFieldSettingsLabel;
+  const appSubtitleInput = document.getElementById("appSubtitleInput");
+  appSubtitleInput.placeholder = s.subtitle;
+  if (document.activeElement !== appSubtitleInput) {
+    appSubtitleInput.value = prefs.appSubtitle || "";
+  }
+  document.getElementById("subtitle").textContent = (prefs.appSubtitle && prefs.appSubtitle.trim()) || s.subtitle;
+  document.getElementById("iconUploadLabel").textContent = s.iconUploadLabel;
+  document.getElementById("iconUploadBtnText").textContent = s.iconUploadBtn;
+  document.getElementById("iconResetBtn").textContent = s.iconResetBtn;
+  updateIconBadge();
   document.getElementById("purchasesFieldLabel").textContent = s.purchasesFieldLabel;
   document.getElementById("addPurchaseLabel").textContent = s.addPurchaseLabel;
   document.getElementById("notesFieldLabel").textContent = s.notesFieldLabel;
@@ -1514,11 +1789,15 @@ function applyLanguage() {
   document.getElementById("detailEditLabel").textContent = s.detailEditLabel;
   document.getElementById("detailNotesTitle").textContent = s.notesLabel;
   document.getElementById("detailHistoryTitle").textContent = s.purchasesFieldLabel;
-  document.getElementById("addBtnLabel").textContent = currentTab === "prospects" ? s.addProspectBtnLabel : s.addBtnLabel;
+  document.getElementById("addBtnLabel").textContent =
+    currentTab === "prospects" ? s.addProspectBtnLabel :
+    currentTab === "birthdays" ? s.addBirthdayBtnLabel :
+    s.addBtnLabel;
   document.documentElement.lang = prefs.lang === "zh" ? "zh-CN" : "en";
   renderPurchaseRows();
   render();
   renderProspects();
+  renderBirthdays();
 }
 
 function daysUntilNextBirthday(dateStr) {
@@ -1673,6 +1952,33 @@ function openWhatsAppChat(id) {
 }
 
 /* ============================================================
+   Back button / back gesture support: closing an open modal
+   should feel like "going back", including on Android's
+   hardware/gesture back button, instead of exiting the app.
+   ============================================================ */
+let historyPushed = false;
+
+function ensureHistoryPushed() {
+  if (!historyPushed) {
+    history.pushState({ appModal: true }, "");
+    historyPushed = true;
+  }
+}
+
+function releaseHistoryIfAllClosed() {
+  const anyOpen = document.querySelector(".modal-overlay.open");
+  if (!anyOpen && historyPushed) {
+    historyPushed = false;
+    history.back();
+  }
+}
+
+window.addEventListener("popstate", () => {
+  document.querySelectorAll(".modal-overlay.open").forEach(el => el.classList.remove("open"));
+  historyPushed = false;
+});
+
+/* ============================================================
    Tabs: 顾客 / OPP 名单
    ============================================================ */
 let currentTab = "customers";
@@ -1682,14 +1988,21 @@ function switchTab(tab) {
   const s = t();
   document.getElementById("tabCustomersBtn").classList.toggle("active", tab === "customers");
   document.getElementById("tabProspectsBtn").classList.toggle("active", tab === "prospects");
+  document.getElementById("tabBirthdaysBtn").classList.toggle("active", tab === "birthdays");
   document.getElementById("customersView").style.display = tab === "customers" ? "block" : "none";
   document.getElementById("prospectsView").style.display = tab === "prospects" ? "block" : "none";
-  document.getElementById("addBtnLabel").textContent = tab === "prospects" ? s.addProspectBtnLabel : s.addBtnLabel;
+  document.getElementById("birthdaysView").style.display = tab === "birthdays" ? "block" : "none";
+  document.getElementById("addBtnLabel").textContent =
+    tab === "prospects" ? s.addProspectBtnLabel :
+    tab === "birthdays" ? s.addBirthdayBtnLabel :
+    s.addBtnLabel;
 }
 
 document.getElementById("openAddBtn").addEventListener("click", () => {
   if (currentTab === "prospects") {
     openAddProspectModal();
+  } else if (currentTab === "birthdays") {
+    openAddBirthdayModal();
   } else {
     openAddModal();
   }
@@ -1738,7 +2051,7 @@ function renderProspects() {
     const oppDateText = p.oppDate ? escapeHtml(p.oppDate) : s.noOppDateHint;
     const status = p.status || "pending";
     return `
-      <div class="row" onclick="openEditProspectModal('${p.id}')">
+      <div class="row" onclick="openProspectDetailModal('${p.id}')">
         <div class="row-left">
           <div class="avatar">${genderAvatar(p)}</div>
           <div class="info">
@@ -1827,7 +2140,79 @@ function openAddProspectModal() {
   prospectModalTitle.textContent = s.modalAddProspectTitle;
   deleteProspectBtn.style.display = "none";
   prospectOverlay.classList.add("open");
+  ensureHistoryPushed();
 }
+
+const prospectDetailOverlay = document.getElementById("prospectDetailOverlay");
+let detailProspectId = null;
+
+function openProspectDetailModal(id) {
+  const p = prospects.find(x => x.id === id);
+  if (!p) return;
+  const s = t();
+  detailProspectId = id;
+
+  document.getElementById("prospectDetailAvatar").textContent = genderAvatar(p);
+  document.getElementById("prospectDetailName").textContent = p.name;
+  const status = p.status || "pending";
+  const badge = document.getElementById("prospectDetailStatusBadge");
+  badge.textContent = statusLabel(status);
+  badge.className = `status-badge ${status}`;
+
+  document.getElementById("prospectDetailOppDateLine").textContent = p.oppDate
+    ? s.prospectDetailOppDateLabel(p.oppDate)
+    : `📅 ${s.noOppDateHint}`;
+
+  const birthdayLine = document.getElementById("prospectDetailBirthdayLine");
+  if (p.date) {
+    const [, mm, dd] = p.date.split("-").map(Number);
+    birthdayLine.style.display = "flex";
+    birthdayLine.textContent = `🎂 ${s.monthDay(mm, dd)}`;
+  } else {
+    birthdayLine.style.display = "none";
+  }
+
+  const phoneLine = document.getElementById("prospectDetailPhoneLine");
+  if (p.phone) {
+    phoneLine.style.display = "flex";
+    phoneLine.textContent = `📞 ${p.phone}`;
+  } else {
+    phoneLine.style.display = "none";
+  }
+
+  const bgWrap = document.getElementById("prospectDetailBackgroundWrap");
+  if (p.background) {
+    bgWrap.style.display = "block";
+    document.getElementById("prospectDetailBackgroundBox").textContent = p.background;
+  } else {
+    bgWrap.style.display = "none";
+  }
+
+  const notesWrap = document.getElementById("prospectDetailNotesWrap");
+  if (p.notes) {
+    notesWrap.style.display = "block";
+    document.getElementById("prospectDetailNotesBox").textContent = p.notes;
+  } else {
+    notesWrap.style.display = "none";
+  }
+
+  prospectDetailOverlay.classList.add("open");
+  ensureHistoryPushed();
+}
+
+function closeProspectDetailModal() {
+  prospectDetailOverlay.classList.remove("open");
+  releaseHistoryIfAllClosed();
+}
+
+document.getElementById("prospectDetailCloseBtn").addEventListener("click", closeProspectDetailModal);
+prospectDetailOverlay.addEventListener("click", (e) => {
+  if (e.target === prospectDetailOverlay) closeProspectDetailModal();
+});
+document.getElementById("prospectDetailEditBtn").addEventListener("click", () => {
+  closeProspectDetailModal();
+  openEditProspectModal(detailProspectId);
+});
 
 function openEditProspectModal(id) {
   const p = prospects.find(x => x.id === id);
@@ -1846,10 +2231,12 @@ function openEditProspectModal(id) {
   prospectModalTitle.textContent = s.modalEditProspectTitle;
   deleteProspectBtn.style.display = "block";
   prospectOverlay.classList.add("open");
+  ensureHistoryPushed();
 }
 
 function closeProspectModal() {
   prospectOverlay.classList.remove("open");
+  releaseHistoryIfAllClosed();
 }
 
 document.getElementById("cancelProspectBtn").addEventListener("click", closeProspectModal);
@@ -1946,6 +2333,298 @@ deleteProspectBtn.addEventListener("click", async () => {
   el.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); saveProspect(); } });
 });
 
+/* ============================================================
+   生日名单 (birthdays) — 独立于顾客,记录任何人的生日
+   ============================================================ */
+const BIRTHDAYS_API = "/api/birthdays";
+let birthdays = [];
+const birthdaysContentEl = document.getElementById("birthdaysContent");
+const birthdaysFooterEl = document.getElementById("birthdaysFooterCount");
+
+async function loadBirthdays() {
+  try {
+    const res = await fetch(BIRTHDAYS_API);
+    birthdays = await res.json();
+    renderBirthdays();
+  } catch (e) {
+    if (birthdaysContentEl) birthdaysContentEl.innerHTML = `<div class="empty-state">${t().loadFailed}</div>`;
+  }
+}
+
+function renderBirthdays() {
+  if (!birthdaysContentEl) return;
+  const s = t();
+  if (birthdays.length === 0) {
+    birthdaysContentEl.innerHTML = `<div class="empty-state">${s.birthdayEmpty}</div>`;
+    birthdaysFooterEl.style.display = "none";
+    return;
+  }
+
+  const sorted = [...birthdays]
+    .map(b => ({ ...b, days: daysUntilNextBirthday(b.date) }))
+    .sort((a, b) => a.days - b.days);
+
+  const rows = sorted.map(b => {
+    const isToday = b.days === 0;
+    const [, mm, dd] = b.date.split("-").map(Number);
+    const whatsappIcon = b.phone
+      ? `<button class="icon-btn whatsapp-icon" onclick="event.stopPropagation(); openWhatsAppChatBirthday('${b.id}')" aria-label="${s.whatsappChatLabel}">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38a9.9 9.9 0 0 0 4.74 1.21h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.86 9.86 0 0 0 12.04 2zm5.8 14.15c-.24.68-1.4 1.3-1.93 1.38-.5.08-1.11.11-1.79-.11a13 13 0 0 1-1.86-.7c-2.83-1.22-4.67-4.08-4.81-4.27-.14-.19-1.15-1.53-1.15-2.92 0-1.39.73-2.07.98-2.35.26-.28.56-.35.75-.35.19 0 .37 0 .53.01.17.01.4-.06.62.48.24.58.8 2 .87 2.14.07.14.12.31.02.5-.09.19-.14.31-.28.47-.14.16-.29.36-.42.48-.14.14-.28.29-.12.57.16.28.71 1.18 1.53 1.91 1.05.94 1.94 1.24 2.22 1.38.28.14.44.12.6-.07.16-.19.68-.79.87-1.06.19-.28.37-.23.62-.14.26.09 1.63.77 1.91.91.28.14.47.21.53.33.07.12.07.68-.17 1.36z"/></svg>
+        </button>`
+      : "";
+    return `
+      <div class="row ${isToday ? "today" : ""}" onclick="openBirthdayDetailModal('${b.id}')">
+        <div class="row-left">
+          <div class="avatar">${genderAvatar(b)}</div>
+          <div class="info">
+            <div class="cust-name-row">
+              <p class="cust-name">${escapeHtml(b.name)}</p>
+              ${b.notes ? `<span class="notes-dot" title="${escapeAttr(b.notes)}">📝</span>` : ""}
+            </div>
+            <p class="cust-meta">${s.monthDay(mm, dd)} · ${s.willTurn(ageTurning(b.date))}${b.phone ? " · " + escapeHtml(b.phone) : ""}</p>
+          </div>
+        </div>
+        <div class="row-right">
+          <span class="days-left">${isToday ? s.todayBirthday : s.daysAfter(b.days)}</span>
+          ${whatsappIcon}
+          <button class="icon-btn" onclick="event.stopPropagation(); openWishModalFor('birthday', '${b.id}')" aria-label="${s.sendWishLabel}">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+          </button>
+          <button class="icon-btn" onclick="event.stopPropagation(); deleteBirthdayFromRow('${b.id}')" aria-label="${s.deleteLabel}">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+          </button>
+        </div>
+      </div>`;
+  }).join("");
+
+  birthdaysContentEl.innerHTML = `<div class="list">${rows}</div>`;
+  birthdaysFooterEl.style.display = "block";
+  birthdaysFooterEl.textContent = s.birthdayFooterCount(sorted.length);
+}
+
+function openWhatsAppChatBirthday(id) {
+  const b = birthdays.find(x => x.id === id);
+  if (!b || !b.phone) return;
+  const digits = b.phone.replace(/[^\d+]/g, "").replace(/^\+/, "");
+  window.open(`https://wa.me/${digits}`, "_blank");
+}
+
+/* ---------- Birthday detail (view) modal ---------- */
+const birthdayDetailOverlay = document.getElementById("birthdayDetailOverlay");
+let detailBirthdayId = null;
+
+function openBirthdayDetailModal(id) {
+  const b = birthdays.find(x => x.id === id);
+  if (!b) return;
+  const s = t();
+  detailBirthdayId = id;
+
+  document.getElementById("birthdayDetailAvatar").textContent = genderAvatar(b);
+  document.getElementById("birthdayDetailName").textContent = b.name;
+
+  const [, mm, dd] = b.date.split("-").map(Number);
+  document.getElementById("birthdayDetailBirthdayLine").textContent = `🎂 ${s.monthDay(mm, dd)} · ${s.willTurn(ageTurning(b.date))}`;
+
+  const phoneLine = document.getElementById("birthdayDetailPhoneLine");
+  if (b.phone) {
+    phoneLine.style.display = "flex";
+    phoneLine.textContent = `📞 ${b.phone}`;
+  } else {
+    phoneLine.style.display = "none";
+  }
+
+  const notesWrap = document.getElementById("birthdayDetailNotesWrap");
+  if (b.notes) {
+    notesWrap.style.display = "block";
+    document.getElementById("birthdayDetailNotesBox").textContent = b.notes;
+  } else {
+    notesWrap.style.display = "none";
+  }
+
+  birthdayDetailOverlay.classList.add("open");
+  ensureHistoryPushed();
+}
+
+function closeBirthdayDetailModal() {
+  birthdayDetailOverlay.classList.remove("open");
+  releaseHistoryIfAllClosed();
+}
+
+document.getElementById("birthdayDetailCloseBtn").addEventListener("click", closeBirthdayDetailModal);
+birthdayDetailOverlay.addEventListener("click", (e) => {
+  if (e.target === birthdayDetailOverlay) closeBirthdayDetailModal();
+});
+document.getElementById("birthdayDetailEditBtn").addEventListener("click", () => {
+  closeBirthdayDetailModal();
+  openEditBirthdayModal(detailBirthdayId);
+});
+
+/* ---------- Add / Edit birthday modal ---------- */
+const birthdayOverlay = document.getElementById("birthdayOverlay");
+const birthdayModalTitle = document.getElementById("birthdayModalTitle");
+const birthdayNameInput = document.getElementById("birthdayNameInput");
+const birthdayPhoneInput = document.getElementById("birthdayPhoneInput");
+const birthdayDateInput = document.getElementById("birthdayDateInput");
+const birthdayNotesInput = document.getElementById("birthdayNotesInput");
+const birthdayErrorMsg = document.getElementById("birthdayErrorMsg");
+const deleteBirthdayBtn = document.getElementById("deleteBirthdayBtn");
+
+let bSelectedGender = "";
+let editingBirthdayId = null;
+
+function updateBirthdayAvatarPreview() {
+  const preview = document.getElementById("birthdayAvatarPreview");
+  if (!preview) return;
+  if (bSelectedGender === "male") preview.textContent = "👨";
+  else if (bSelectedGender === "female") preview.textContent = "👩";
+  else preview.textContent = "👤";
+}
+
+function setBirthdayGender(gender) {
+  bSelectedGender = gender;
+  document.querySelectorAll("#birthdayGenderToggle .gender-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.gender === gender);
+  });
+  updateBirthdayAvatarPreview();
+}
+
+document.querySelectorAll("#birthdayGenderToggle .gender-btn").forEach(btn => {
+  btn.addEventListener("click", () => setBirthdayGender(btn.dataset.gender));
+});
+
+function resetBirthdayForm() {
+  birthdayNameInput.value = "";
+  birthdayPhoneInput.value = "";
+  birthdayDateInput.value = "";
+  birthdayNotesInput.value = "";
+  setBirthdayGender("");
+  birthdayErrorMsg.style.display = "none";
+}
+
+function openAddBirthdayModal() {
+  const s = t();
+  editingBirthdayId = null;
+  resetBirthdayForm();
+  birthdayModalTitle.textContent = s.modalAddBirthdayTitle;
+  deleteBirthdayBtn.style.display = "none";
+  birthdayOverlay.classList.add("open");
+  ensureHistoryPushed();
+}
+
+function openEditBirthdayModal(id) {
+  const b = birthdays.find(x => x.id === id);
+  if (!b) return;
+  const s = t();
+  editingBirthdayId = id;
+  birthdayErrorMsg.style.display = "none";
+  birthdayNameInput.value = b.name || "";
+  birthdayPhoneInput.value = b.phone || "";
+  birthdayDateInput.value = b.date || "";
+  birthdayNotesInput.value = b.notes || "";
+  setBirthdayGender(b.gender || "");
+  birthdayModalTitle.textContent = s.modalEditBirthdayTitle;
+  deleteBirthdayBtn.style.display = "block";
+  birthdayOverlay.classList.add("open");
+  ensureHistoryPushed();
+}
+
+function closeBirthdayModal() {
+  birthdayOverlay.classList.remove("open");
+  releaseHistoryIfAllClosed();
+}
+
+document.getElementById("cancelBirthdayBtn").addEventListener("click", closeBirthdayModal);
+birthdayOverlay.addEventListener("click", (e) => {
+  if (e.target === birthdayOverlay) closeBirthdayModal();
+});
+
+function showBirthdayError(msg) {
+  birthdayErrorMsg.textContent = msg;
+  birthdayErrorMsg.style.display = "block";
+}
+
+async function saveBirthday() {
+  const s = t();
+  const name = birthdayNameInput.value.trim();
+  const phone = birthdayPhoneInput.value.trim();
+  const date = birthdayDateInput.value;
+  const notes = birthdayNotesInput.value.trim();
+  birthdayErrorMsg.style.display = "none";
+
+  if (!name) { showBirthdayError(s.errorName); return; }
+  if (!date) { showBirthdayError(s.errorDate); return; }
+  if (phone && !/^[+\d][\d\s\-()]{4,}$/.test(phone)) { showBirthdayError(s.errorPhone); return; }
+
+  const payload = { name, gender: bSelectedGender, date, phone, notes };
+
+  try {
+    let res, saved;
+    if (editingBirthdayId) {
+      res = await fetch(`${BIRTHDAYS_API}/${editingBirthdayId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+    } else {
+      res = await fetch(BIRTHDAYS_API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+    }
+    if (!res.ok) {
+      const data = await res.json();
+      showBirthdayError(data.error || s.errorAdd);
+      return;
+    }
+    saved = await res.json();
+    if (editingBirthdayId) {
+      birthdays = birthdays.map(b => b.id === editingBirthdayId ? saved : b);
+    } else {
+      birthdays.push(saved);
+    }
+    closeBirthdayModal();
+    renderBirthdays();
+  } catch (e) {
+    showBirthdayError(s.errorNetwork);
+  }
+}
+
+document.getElementById("saveBirthdayBtn").addEventListener("click", saveBirthday);
+
+async function deleteBirthdayById(id) {
+  const s = t();
+  try {
+    await fetch(`${BIRTHDAYS_API}/${id}`, { method: "DELETE" });
+    birthdays = birthdays.filter(b => b.id !== id);
+    renderBirthdays();
+    return true;
+  } catch (e) {
+    alert(s.deleteFailed);
+    return false;
+  }
+}
+
+async function deleteBirthdayFromRow(id) {
+  const s = t();
+  const b = birthdays.find(x => x.id === id);
+  if (!b) return;
+  if (!confirm(s.deleteBirthdayRowConfirm(b.name))) return;
+  await deleteBirthdayById(id);
+}
+
+deleteBirthdayBtn.addEventListener("click", async () => {
+  const s = t();
+  if (!editingBirthdayId) return;
+  if (!confirm(s.deleteBirthdayConfirm)) return;
+  const ok = await deleteBirthdayById(editingBirthdayId);
+  if (ok) closeBirthdayModal();
+});
+
+[birthdayNameInput, birthdayPhoneInput, birthdayDateInput].forEach(el => {
+  el.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); saveBirthday(); } });
+});
+
 /* ---------- Customer detail (view) modal ---------- */
 const detailOverlay = document.getElementById("detailOverlay");
 let detailCustomerId = null;
@@ -2025,10 +2704,12 @@ function openDetailModal(id) {
   }
 
   detailOverlay.classList.add("open");
+  ensureHistoryPushed();
 }
 
 function closeDetailModal() {
   detailOverlay.classList.remove("open");
+  releaseHistoryIfAllClosed();
 }
 
 document.getElementById("detailCloseBtn").addEventListener("click", closeDetailModal);
@@ -2192,6 +2873,7 @@ function openAddModal() {
   customerModalTitle.textContent = s.modalAddTitle;
   deleteCustomerBtn.style.display = "none";
   customerOverlay.classList.add("open");
+  ensureHistoryPushed();
 }
 
 function openEditModal(id) {
@@ -2216,10 +2898,12 @@ function openEditModal(id) {
   customerModalTitle.textContent = s.modalEditTitle;
   deleteCustomerBtn.style.display = "block";
   customerOverlay.classList.add("open");
+  ensureHistoryPushed();
 }
 
 function closeCustomerModal() {
   customerOverlay.classList.remove("open");
+  releaseHistoryIfAllClosed();
 }
 
 document.getElementById("cancelCustomerBtn").addEventListener("click", closeCustomerModal);
@@ -2370,6 +3054,64 @@ document.getElementById("appTitleInput").addEventListener("input", (e) => {
   document.getElementById("title").textContent = displayTitle;
 });
 
+document.getElementById("appSubtitleInput").addEventListener("input", (e) => {
+  prefs.appSubtitle = e.target.value;
+  savePrefs();
+  const s = t();
+  document.getElementById("subtitle").textContent = (prefs.appSubtitle && prefs.appSubtitle.trim()) || s.subtitle;
+});
+
+const DEFAULT_ICON_SVG = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-text)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`;
+
+function updateIconBadge() {
+  const badge = document.getElementById("iconBadge");
+  const preview = document.getElementById("iconUploadPreview");
+  if (prefs.customIcon) {
+    badge.innerHTML = `<img src="${prefs.customIcon}" alt="" />`;
+    preview.innerHTML = `<img src="${prefs.customIcon}" alt="" />`;
+  } else {
+    badge.innerHTML = DEFAULT_ICON_SVG;
+    preview.textContent = "👤";
+  }
+}
+
+document.getElementById("iconUploadInput").addEventListener("change", (e) => {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+  const s = t();
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const img = new Image();
+    img.onload = () => {
+      const size = 128;
+      const canvas = document.createElement("canvas");
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext("2d");
+      const scale = Math.max(size / img.width, size / img.height);
+      const w = img.width * scale;
+      const h = img.height * scale;
+      ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
+      const dataUrl = canvas.toDataURL("image/png", 0.9);
+      if (dataUrl.length > 900000) {
+        alert(s.iconTooLargeError);
+        return;
+      }
+      prefs.customIcon = dataUrl;
+      savePrefs();
+      updateIconBadge();
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+});
+
+document.getElementById("iconResetBtn").addEventListener("click", () => {
+  prefs.customIcon = "";
+  savePrefs();
+  updateIconBadge();
+});
+
 /* ---------- wish modal ---------- */
 const wishOverlay = document.getElementById("wishOverlay");
 const wishSubtitleEl = document.getElementById("wishSubtitle");
@@ -2389,12 +3131,18 @@ function pickWish() {
 }
 
 function openWishModal(id) {
-  const c = customers.find(x => x.id === id);
-  if (!c) return;
+  openWishModalFor("customer", id);
+}
+
+function openWishModalFor(sourceType, id) {
+  const person = sourceType === "birthday"
+    ? birthdays.find(x => x.id === id)
+    : customers.find(x => x.id === id);
+  if (!person) return;
   const s = t();
-  wishCustomerName = c.name;
-  wishCustomerPhone = c.phone || "";
-  wishSubtitleEl.textContent = s.wishSubtitle(c.name);
+  wishCustomerName = person.name;
+  wishCustomerPhone = person.phone || "";
+  wishSubtitleEl.textContent = s.wishSubtitle(person.name);
   copyLabelEl.textContent = s.copy;
   pickWish();
   if (wishCustomerPhone) {
@@ -2406,10 +3154,12 @@ function openWishModal(id) {
     noPhoneHint.textContent = s.noPhoneHint;
   }
   wishOverlay.classList.add("open");
+  ensureHistoryPushed();
 }
 
 function closeWishModal() {
   wishOverlay.classList.remove("open");
+  releaseHistoryIfAllClosed();
 }
 
 document.getElementById("shuffleBtn").addEventListener("click", pickWish);
@@ -2441,6 +3191,7 @@ setCategory("new");
 applyPrefs();
 loadCustomers();
 loadProspects();
+loadBirthdays();
 </script>
 </body>
 </html>
