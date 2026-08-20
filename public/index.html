@@ -2380,7 +2380,7 @@ prospectDetailOverlay.addEventListener("click", (e) => {
   if (e.target === prospectDetailOverlay) closeProspectDetailModal();
 });
 document.getElementById("prospectDetailEditBtn").addEventListener("click", () => {
-  closeProspectDetailModal();
+  prospectDetailOverlay.classList.remove("open");
   openEditProspectModal(detailProspectId);
 });
 
@@ -2636,7 +2636,7 @@ birthdayDetailOverlay.addEventListener("click", (e) => {
   if (e.target === birthdayDetailOverlay) closeBirthdayDetailModal();
 });
 document.getElementById("birthdayDetailEditBtn").addEventListener("click", () => {
-  closeBirthdayDetailModal();
+  birthdayDetailOverlay.classList.remove("open");
   openEditBirthdayModal(detailBirthdayId);
 });
 
@@ -2899,7 +2899,7 @@ detailOverlay.addEventListener("click", (e) => {
 });
 document.getElementById("detailEditBtn").addEventListener("click", () => {
   if (!detailCustomerId) return;
-  closeDetailModal();
+  detailOverlay.classList.remove("open");
   openEditModal(detailCustomerId);
 });
 
