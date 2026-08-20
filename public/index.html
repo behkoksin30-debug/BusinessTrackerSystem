@@ -591,7 +591,7 @@
     flex-shrink: 0;
   }
 
-  select#statusSelect {
+  select {
     width: 100%;
     padding: 10px 14px;
     border-radius: 12px;
@@ -602,7 +602,7 @@
     color: var(--text);
     outline: none;
   }
-  select#statusSelect:focus {
+  select:focus {
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
   }
 
@@ -1148,8 +1148,15 @@
       <label class="field-label" id="phoneFieldLabel">电话号码</label>
       <input id="phoneInput" type="tel" />
 
-      <label class="field-label" id="birthdayFieldLabel">生日</label>
-      <input id="dateInput" type="date" />
+      <label class="field-label" id="birthdayFieldLabel">生日(选填,不需要年份)</label>
+      <div class="two-col">
+        <div>
+          <select id="dateMonthSelect"></select>
+        </div>
+        <div>
+          <select id="dateDaySelect"></select>
+        </div>
+      </div>
 
       <label class="field-label" id="lastMeetingFieldLabel">最后一次见面(选填)</label>
       <input id="lastMeetingInput" type="date" />
@@ -1260,7 +1267,10 @@
         </div>
         <div>
           <label class="field-label" id="prospectBirthdayFieldLabel">生日(选填)</label>
-          <input id="prospectDateInput" type="date" />
+          <div class="two-col">
+            <select id="prospectDateMonthSelect"></select>
+            <select id="prospectDateDaySelect"></select>
+          </div>
         </div>
       </div>
 
@@ -1350,8 +1360,11 @@
         <button class="gender-btn active" data-gender="" type="button"><span id="birthdayGenderUnsetLabel">不设置</span></button>
       </div>
 
-      <label class="field-label" id="birthdayDateFieldLabel">生日</label>
-      <input id="birthdayDateInput" type="date" />
+      <label class="field-label" id="birthdayDateFieldLabel">生日(不需要年份)</label>
+      <div class="two-col">
+        <select id="birthdayDateMonthSelect"></select>
+        <select id="birthdayDateDaySelect"></select>
+      </div>
 
       <label class="field-label" id="birthdayPhoneFieldLabel">电话号码(选填)</label>
       <input id="birthdayPhoneInput" type="tel" />
@@ -1421,12 +1434,17 @@ const I18N = {
     deleteFailed: "删除失败,请重试",
     errorName: "请输入顾客姓名",
     errorDate: "请选择生日日期",
+    errorIncompleteDate: "请把生日的月和日都选好,或者两个都留空",
     errorPhone: "电话号码格式不正确",
     errorAdd: "保存失败",
     errorNetwork: "网络错误,请重试",
     todayBirthday: "今天生日!",
     daysAfter: (n) => `${n} 天后`,
-    willTurn: (n) => `将满 ${n} 岁`,
+    monthPlaceholder: "月",
+    dayPlaceholder: "日",
+    monthOptionLabel: (m) => `${m}月`,
+    dayOptionLabel: (d) => `${d}日`,
+    noBirthdayHint: "未设置生日",
     monthDay: (m, d) => `${m}月${d}日`,
     footerCount: (n) => `共 ${n} 位顾客 · 按生日临近顺序排列`,
     deleteLabel: "删除",
@@ -1447,7 +1465,7 @@ const I18N = {
     whatsappSend: "WhatsApp 发送",
     noPhoneHint: "该顾客未填写电话号码,无法通过 WhatsApp 发送",
     phoneFieldLabel: "电话号码(选填)",
-    birthdayFieldLabel: "生日",
+    birthdayFieldLabel: "生日(选填,不需要年份)",
     lastMeetingFieldLabel: "最后一次见面(选填)",
     sawDemoFieldLabel: "看过示范吗",
     sawDemoYes: "看过",
@@ -1565,12 +1583,17 @@ const I18N = {
     deleteFailed: "Failed to delete. Please try again.",
     errorName: "Please enter a customer name",
     errorDate: "Please select a birthday",
+    errorIncompleteDate: "Please pick both month and day, or leave both blank",
     errorPhone: "Please enter a valid phone number",
     errorAdd: "Failed to save",
     errorNetwork: "Network error, please try again",
     todayBirthday: "Birthday today!",
     daysAfter: (n) => `in ${n} day${n === 1 ? "" : "s"}`,
-    willTurn: (n) => `Turning ${n}`,
+    monthPlaceholder: "Month",
+    dayPlaceholder: "Day",
+    monthOptionLabel: (m) => ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][m-1],
+    dayOptionLabel: (d) => String(d),
+    noBirthdayHint: "No birthday set",
     monthDay: (m, d) => {
       const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
       return `${months[m-1]} ${d}`;
@@ -1594,7 +1617,7 @@ const I18N = {
     whatsappSend: "Send via WhatsApp",
     noPhoneHint: "No phone number on file for this customer — WhatsApp isn't available",
     phoneFieldLabel: "Phone number (optional)",
-    birthdayFieldLabel: "Birthday",
+    birthdayFieldLabel: "Birthday (optional, no year needed)",
     lastMeetingFieldLabel: "Last meeting (optional)",
     sawDemoFieldLabel: "Seen the demo?",
     sawDemoYes: "Yes",
@@ -1753,6 +1776,9 @@ function statusLabel(status) {
 
 function applyLanguage() {
   const s = t();
+  populateMonthDaySelect("dateMonthSelect", "dateDaySelect", true);
+  populateMonthDaySelect("prospectDateMonthSelect", "prospectDateDaySelect", true);
+  populateMonthDaySelect("birthdayDateMonthSelect", "birthdayDateDaySelect", true);
   document.getElementById("addBtnLabel").textContent = s.addBtnLabel;
   document.getElementById("nameInput").placeholder = s.namePlaceholder;
   document.getElementById("phoneInput").placeholder = s.phonePlaceholder;
@@ -1878,20 +1904,79 @@ function applyLanguage() {
 }
 
 function daysUntilNextBirthday(dateStr) {
+  if (!dateStr) return Infinity;
   const today = new Date();
   today.setHours(0,0,0,0);
-  const [, m, d] = dateStr.split("-").map(Number);
+  const [m, d] = dateStr.split("-").map(Number);
   let next = new Date(today.getFullYear(), m - 1, d);
   if (next < today) next = new Date(today.getFullYear() + 1, m - 1, d);
   return Math.round((next - today) / 86400000);
 }
 
-function ageTurning(dateStr) {
-  const today = new Date();
-  const [y, m, d] = dateStr.split("-").map(Number);
-  let next = new Date(today.getFullYear(), m - 1, d);
-  if (next < today) next.setFullYear(today.getFullYear() + 1);
-  return next.getFullYear() - y;
+function parseMonthDay(dateStr) {
+  const [m, d] = dateStr.split("-").map(Number);
+  return [m, d];
+}
+
+function populateMonthDaySelect(monthId, dayId, allowEmpty) {
+  const monthSel = document.getElementById(monthId);
+  const daySel = document.getElementById(dayId);
+  if (!monthSel || !daySel) return;
+  const s = t();
+  const prevMonth = monthSel.value;
+  const prevDay = daySel.value;
+  monthSel.innerHTML = "";
+  daySel.innerHTML = "";
+  if (allowEmpty) {
+    const opt = document.createElement("option");
+    opt.value = "";
+    opt.textContent = s.monthPlaceholder;
+    monthSel.appendChild(opt);
+    const opt2 = document.createElement("option");
+    opt2.value = "";
+    opt2.textContent = s.dayPlaceholder;
+    daySel.appendChild(opt2);
+  }
+  for (let m = 1; m <= 12; m++) {
+    const opt = document.createElement("option");
+    opt.value = String(m).padStart(2, "0");
+    opt.textContent = s.monthOptionLabel(m);
+    monthSel.appendChild(opt);
+  }
+  for (let d = 1; d <= 31; d++) {
+    const opt = document.createElement("option");
+    opt.value = String(d).padStart(2, "0");
+    opt.textContent = s.dayOptionLabel(d);
+    daySel.appendChild(opt);
+  }
+  monthSel.value = prevMonth;
+  daySel.value = prevDay;
+}
+
+function getMonthDayValue(monthId, dayId) {
+  const monthSel = document.getElementById(monthId);
+  const daySel = document.getElementById(dayId);
+  if (!monthSel || !daySel) return "";
+  const m = monthSel.value;
+  const d = daySel.value;
+  if (!m || !d) return "";
+  return `${m}-${d}`;
+}
+
+function setMonthDayValue(monthId, dayId, mmdd) {
+  const monthSel = document.getElementById(monthId);
+  const daySel = document.getElementById(dayId);
+  if (!monthSel || !daySel) return;
+  if (!mmdd) {
+    monthSel.value = "";
+    daySel.value = "";
+    return;
+  }
+  let md = mmdd;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(mmdd)) md = mmdd.slice(5);
+  const [m, d] = md.split("-");
+  monthSel.value = m;
+  daySel.value = d;
 }
 
 function lastPurchaseDate(purchases) {
@@ -1942,8 +2027,9 @@ function render() {
     .sort((a, b) => a.days - b.days);
 
   const rows = sorted.map(c => {
-    const isToday = c.days === 0;
-    const [, mm, dd] = c.date.split("-").map(Number);
+    const hasBirthday = !!c.date;
+    const isToday = hasBirthday && c.days === 0;
+    const [mm, dd] = hasBirthday ? parseMonthDay(c.date) : [0, 0];
     const purchases = Array.isArray(c.purchases) ? c.purchases : [];
     const category = c.category || "new";
 
@@ -1985,14 +2071,14 @@ function render() {
               <span class="category-badge ${category}">${categoryLabel(category)}</span>
               ${c.notes ? `<span class="notes-dot" title="${escapeAttr(c.notes)}">📝</span>` : ""}
             </div>
-            <p class="cust-meta">${s.monthDay(mm, dd)} · ${s.willTurn(ageTurning(c.date))}${c.phone ? " · " + escapeHtml(c.phone) : ""}</p>
+            <p class="cust-meta">${hasBirthday ? s.monthDay(mm, dd) + (c.phone ? " · " + escapeHtml(c.phone) : "") : (c.phone ? escapeHtml(c.phone) : s.noBirthdayHint)}</p>
             ${purchaseLine}
             ${extraLine}
             ${warnLine}
           </div>
         </div>
         <div class="row-right">
-          <span class="days-left">${isToday ? s.todayBirthday : s.daysAfter(c.days)}</span>
+          ${hasBirthday ? `<span class="days-left">${isToday ? s.todayBirthday : s.daysAfter(c.days)}</span>` : ""}
           ${whatsappIcon}
           <button class="icon-btn" onclick="event.stopPropagation(); openWishModal('${c.id}')" aria-label="${s.sendWishLabel}">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
@@ -2186,7 +2272,6 @@ const prospectOverlay = document.getElementById("prospectOverlay");
 const prospectModalTitle = document.getElementById("prospectModalTitle");
 const prospectNameInput = document.getElementById("prospectNameInput");
 const prospectPhoneInput = document.getElementById("prospectPhoneInput");
-const prospectDateInput = document.getElementById("prospectDateInput");
 const oppDateInput = document.getElementById("oppDateInput");
 const backgroundInput = document.getElementById("backgroundInput");
 const prospectNotesInput = document.getElementById("prospectNotesInput");
@@ -2273,7 +2358,7 @@ document.getElementById("addFollowUpBtn").addEventListener("click", () => addFol
 function resetProspectForm() {
   prospectNameInput.value = "";
   prospectPhoneInput.value = "";
-  prospectDateInput.value = "";
+  setMonthDayValue("prospectDateMonthSelect", "prospectDateDaySelect", "");
   oppDateInput.value = "";
   backgroundInput.value = "";
   prospectNotesInput.value = "";
@@ -2316,7 +2401,7 @@ function openProspectDetailModal(id) {
 
   const birthdayLine = document.getElementById("prospectDetailBirthdayLine");
   if (p.date) {
-    const [, mm, dd] = p.date.split("-").map(Number);
+    const [mm, dd] = parseMonthDay(p.date);
     birthdayLine.style.display = "flex";
     birthdayLine.textContent = `🎂 ${s.monthDay(mm, dd)}`;
   } else {
@@ -2392,7 +2477,7 @@ function openEditProspectModal(id) {
   prospectErrorMsg.style.display = "none";
   prospectNameInput.value = p.name || "";
   prospectPhoneInput.value = p.phone || "";
-  prospectDateInput.value = p.date || "";
+  setMonthDayValue("prospectDateMonthSelect", "prospectDateDaySelect", p.date || "");
   oppDateInput.value = p.oppDate || "";
   backgroundInput.value = p.background || "";
   prospectNotesInput.value = p.notes || "";
@@ -2428,7 +2513,8 @@ async function saveProspect() {
   const s = t();
   const name = prospectNameInput.value.trim();
   const phone = prospectPhoneInput.value.trim();
-  const date = prospectDateInput.value;
+  const dateMonth = document.getElementById("prospectDateMonthSelect").value;
+  const dateDay = document.getElementById("prospectDateDaySelect").value;
   const oppDate = oppDateInput.value;
   const background = backgroundInput.value.trim();
   const notes = prospectNotesInput.value.trim();
@@ -2436,7 +2522,9 @@ async function saveProspect() {
   prospectErrorMsg.style.display = "none";
 
   if (!name) { showProspectError(s.errorName); return; }
+  if ((dateMonth && !dateDay) || (!dateMonth && dateDay)) { showProspectError(s.errorIncompleteDate); return; }
   if (phone && !/^[+\d][\d\s\-()]{4,}$/.test(phone)) { showProspectError(s.errorPhone); return; }
+  const date = dateMonth && dateDay ? `${dateMonth}-${dateDay}` : "";
 
   syncFollowUpRowsFromDOM();
   const followUps = followUpRows
@@ -2509,7 +2597,7 @@ deleteProspectBtn.addEventListener("click", async () => {
   if (ok) closeProspectModal();
 });
 
-[prospectNameInput, prospectPhoneInput, prospectDateInput, oppDateInput].forEach(el => {
+[prospectNameInput, prospectPhoneInput, oppDateInput].forEach(el => {
   el.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); saveProspect(); } });
 });
 
@@ -2547,7 +2635,7 @@ function renderBirthdays() {
 
   const rows = sorted.map(b => {
     const isToday = b.days === 0;
-    const [, mm, dd] = b.date.split("-").map(Number);
+    const [mm, dd] = parseMonthDay(b.date);
     const whatsappIcon = b.phone
       ? `<button class="icon-btn whatsapp-icon" onclick="event.stopPropagation(); openWhatsAppChatBirthday('${b.id}')" aria-label="${s.whatsappChatLabel}">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38a9.9 9.9 0 0 0 4.74 1.21h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.86 9.86 0 0 0 12.04 2zm5.8 14.15c-.24.68-1.4 1.3-1.93 1.38-.5.08-1.11.11-1.79-.11a13 13 0 0 1-1.86-.7c-2.83-1.22-4.67-4.08-4.81-4.27-.14-.19-1.15-1.53-1.15-2.92 0-1.39.73-2.07.98-2.35.26-.28.56-.35.75-.35.19 0 .37 0 .53.01.17.01.4-.06.62.48.24.58.8 2 .87 2.14.07.14.12.31.02.5-.09.19-.14.31-.28.47-.14.16-.29.36-.42.48-.14.14-.28.29-.12.57.16.28.71 1.18 1.53 1.91 1.05.94 1.94 1.24 2.22 1.38.28.14.44.12.6-.07.16-.19.68-.79.87-1.06.19-.28.37-.23.62-.14.26.09 1.63.77 1.91.91.28.14.47.21.53.33.07.12.07.68-.17 1.36z"/></svg>
@@ -2562,7 +2650,7 @@ function renderBirthdays() {
               <p class="cust-name">${escapeHtml(b.name)}</p>
               ${b.notes ? `<span class="notes-dot" title="${escapeAttr(b.notes)}">📝</span>` : ""}
             </div>
-            <p class="cust-meta">${s.monthDay(mm, dd)} · ${s.willTurn(ageTurning(b.date))}${b.phone ? " · " + escapeHtml(b.phone) : ""}</p>
+            <p class="cust-meta">${s.monthDay(mm, dd)}${b.phone ? " · " + escapeHtml(b.phone) : ""}</p>
           </div>
         </div>
         <div class="row-right">
@@ -2603,8 +2691,8 @@ function openBirthdayDetailModal(id) {
   document.getElementById("birthdayDetailAvatar").textContent = genderAvatar(b);
   document.getElementById("birthdayDetailName").textContent = b.name;
 
-  const [, mm, dd] = b.date.split("-").map(Number);
-  document.getElementById("birthdayDetailBirthdayLine").textContent = `🎂 ${s.monthDay(mm, dd)} · ${s.willTurn(ageTurning(b.date))}`;
+  const [mm, dd] = parseMonthDay(b.date);
+  document.getElementById("birthdayDetailBirthdayLine").textContent = `🎂 ${s.monthDay(mm, dd)}`;
 
   const phoneLine = document.getElementById("birthdayDetailPhoneLine");
   if (b.phone) {
@@ -2645,7 +2733,6 @@ const birthdayOverlay = document.getElementById("birthdayOverlay");
 const birthdayModalTitle = document.getElementById("birthdayModalTitle");
 const birthdayNameInput = document.getElementById("birthdayNameInput");
 const birthdayPhoneInput = document.getElementById("birthdayPhoneInput");
-const birthdayDateInput = document.getElementById("birthdayDateInput");
 const birthdayNotesInput = document.getElementById("birthdayNotesInput");
 const birthdayErrorMsg = document.getElementById("birthdayErrorMsg");
 const deleteBirthdayBtn = document.getElementById("deleteBirthdayBtn");
@@ -2676,7 +2763,7 @@ document.querySelectorAll("#birthdayGenderToggle .gender-btn").forEach(btn => {
 function resetBirthdayForm() {
   birthdayNameInput.value = "";
   birthdayPhoneInput.value = "";
-  birthdayDateInput.value = "";
+  setMonthDayValue("birthdayDateMonthSelect", "birthdayDateDaySelect", "");
   birthdayNotesInput.value = "";
   setBirthdayGender("");
   birthdayErrorMsg.style.display = "none";
@@ -2700,7 +2787,7 @@ function openEditBirthdayModal(id) {
   birthdayErrorMsg.style.display = "none";
   birthdayNameInput.value = b.name || "";
   birthdayPhoneInput.value = b.phone || "";
-  birthdayDateInput.value = b.date || "";
+  setMonthDayValue("birthdayDateMonthSelect", "birthdayDateDaySelect", b.date || "");
   birthdayNotesInput.value = b.notes || "";
   setBirthdayGender(b.gender || "");
   birthdayModalTitle.textContent = s.modalEditBirthdayTitle;
@@ -2728,7 +2815,7 @@ async function saveBirthday() {
   const s = t();
   const name = birthdayNameInput.value.trim();
   const phone = birthdayPhoneInput.value.trim();
-  const date = birthdayDateInput.value;
+  const date = getMonthDayValue("birthdayDateMonthSelect", "birthdayDateDaySelect");
   const notes = birthdayNotesInput.value.trim();
   birthdayErrorMsg.style.display = "none";
 
@@ -2802,7 +2889,7 @@ deleteBirthdayBtn.addEventListener("click", async () => {
   if (ok) closeBirthdayModal();
 });
 
-[birthdayNameInput, birthdayPhoneInput, birthdayDateInput].forEach(el => {
+[birthdayNameInput, birthdayPhoneInput].forEach(el => {
   el.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); saveBirthday(); } });
 });
 
@@ -2823,8 +2910,14 @@ function openDetailModal(id) {
   badge.textContent = categoryLabel(category);
   badge.className = `category-badge ${category}`;
 
-  const [, mm, dd] = c.date.split("-").map(Number);
-  document.getElementById("detailBirthdayLine").textContent = `🎂 ${s.monthDay(mm, dd)} · ${s.willTurn(ageTurning(c.date))}`;
+  const birthdayLine = document.getElementById("detailBirthdayLine");
+  if (c.date) {
+    const [mm, dd] = parseMonthDay(c.date);
+    birthdayLine.style.display = "flex";
+    birthdayLine.textContent = `🎂 ${s.monthDay(mm, dd)}`;
+  } else {
+    birthdayLine.style.display = "none";
+  }
 
   const phoneLine = document.getElementById("detailPhoneLine");
   if (c.phone) {
@@ -2908,7 +3001,6 @@ const customerOverlay = document.getElementById("customerOverlay");
 const customerModalTitle = document.getElementById("customerModalTitle");
 const nameInput = document.getElementById("nameInput");
 const phoneInput = document.getElementById("phoneInput");
-const dateInput = document.getElementById("dateInput");
 const notesInput = document.getElementById("notesInput");
 const errorMsg = document.getElementById("errorMsg");
 const deleteCustomerBtn = document.getElementById("deleteCustomerBtn");
@@ -3036,7 +3128,7 @@ document.getElementById("addPurchaseBtn").addEventListener("click", () => addPur
 function resetCustomerForm() {
   nameInput.value = "";
   phoneInput.value = "";
-  dateInput.value = "";
+  setMonthDayValue("dateMonthSelect", "dateDaySelect", "");
   notesInput.value = "";
   document.getElementById("lastMeetingInput").value = "";
   purchaseRows = [];
@@ -3065,7 +3157,7 @@ function openEditModal(id) {
   errorMsg.style.display = "none";
   nameInput.value = c.name || "";
   phoneInput.value = c.phone || "";
-  dateInput.value = c.date || "";
+  setMonthDayValue("dateMonthSelect", "dateDaySelect", c.date || "");
   notesInput.value = c.notes || "";
   document.getElementById("lastMeetingInput").value = c.lastMeeting || "";
   purchaseRows = (Array.isArray(c.purchases) ? c.purchases : []).map(p => {
@@ -3101,14 +3193,16 @@ async function saveCustomer() {
   const s = t();
   const name = nameInput.value.trim();
   const phone = phoneInput.value.trim();
-  const date = dateInput.value;
+  const dateMonth = document.getElementById("dateMonthSelect").value;
+  const dateDay = document.getElementById("dateDaySelect").value;
   const notes = notesInput.value.trim();
   const lastMeeting = document.getElementById("lastMeetingInput").value;
   errorMsg.style.display = "none";
 
   if (!name) { showError(s.errorName); return; }
-  if (!date) { showError(s.errorDate); return; }
+  if ((dateMonth && !dateDay) || (!dateMonth && dateDay)) { showError(s.errorIncompleteDate); return; }
   if (phone && !/^[+\d][\d\s\-()]{4,}$/.test(phone)) { showError(s.errorPhone); return; }
+  const date = dateMonth && dateDay ? `${dateMonth}-${dateDay}` : "";
 
   syncPurchaseRowsFromDOM();
   const purchases = purchaseRows
