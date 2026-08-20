@@ -10,6 +10,7 @@ const DATA_DIR = process.env.DATA_DIR || __dirname;
 const DATA_FILE = path.join(DATA_DIR, "data.json");
 const PROSPECTS_FILE = path.join(DATA_DIR, "prospects.json");
 const BIRTHDAYS_FILE = path.join(DATA_DIR, "birthdays.json");
+const ABOS_FILE = path.join(DATA_DIR, "abos.json");
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
@@ -56,6 +57,16 @@ function sanitizeSawDemo(val) {
   return VALID_SAW_DEMO.includes(val) ? val : "";
 }
 
+// 通用的"是/否/不确定"三态字段,复用同一套校验规则(对产品有兴趣、关系健康等)
+function sanitizeYesNo(val) {
+  return VALID_SAW_DEMO.includes(val) ? val : "";
+}
+
+// 新ABO清单项目:简单的勾选(是/否)
+function sanitizeChecklistBool(val) {
+  return val === true || val === "true";
+}
+
 function isValidDateOrEmpty(d) {
   return !d || /^\d{4}-\d{2}-\d{2}$/.test(d);
 }
@@ -95,6 +106,9 @@ function migrateCustomer(c) {
   if (typeof next.sawDemo !== "string") {
     next = { ...next, sawDemo: "" };
   }
+  if (typeof next.preference !== "string") {
+    next = { ...next, preference: "" };
+  }
   const migratedDate = toMonthDay(next.date);
   if (migratedDate !== next.date) {
     next = { ...next, date: migratedDate };
@@ -132,6 +146,8 @@ function readProspects() {
       notes: p.notes || "",
       status: sanitizeProspectStatus(p.status),
       followUps: sanitizeFollowUps(p.followUps),
+      interested: sanitizeYesNo(p.interested),
+      relationshipHealthy: sanitizeYesNo(p.relationshipHealthy),
     }));
   } catch (e) {
     return [];
@@ -165,6 +181,69 @@ function writeBirthdays(birthdays) {
   fs.writeFileSync(BIRTHDAYS_FILE, JSON.stringify(birthdays, null, 2), "utf-8");
 }
 
+// ---------- 跟进对象(新ABO / 刚OPP完成的伙伴)----------
+
+function readAbos() {
+  try {
+    const raw = fs.readFileSync(ABOS_FILE, "utf-8");
+    const parsed = JSON.parse(raw);
+    return parsed.map((a) => ({
+      id: a.id,
+      name: a.name || "",
+      gender: sanitizeGender(a.gender),
+      phone: a.phone || "",
+      class2: sanitizeChecklistBool(a.class2),
+      hasList: sanitizeChecklistBool(a.hasList),
+      watchedDemo: sanitizeChecklistBool(a.watchedDemo),
+      visitedHQ: sanitizeChecklistBool(a.visitedHQ),
+      centerMeeting: sanitizeChecklistBool(a.centerMeeting),
+      houseMeeting: sanitizeChecklistBool(a.houseMeeting),
+      abcUpline: sanitizeChecklistBool(a.abcUpline),
+      audioListened: a.audioListened || "",
+      meetingsAttended: a.meetingsAttended || "",
+      currentStatus: a.currentStatus || "",
+      notes: a.notes || "",
+    }));
+  } catch (e) {
+    return [];
+  }
+}
+
+function writeAbos(abos) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+  fs.writeFileSync(ABOS_FILE, JSON.stringify(abos, null, 2), "utf-8");
+}
+
+function aboValidationError(body) {
+  const { name } = body;
+  if (!name || !name.trim()) return "姓名不能为空";
+  return null;
+}
+
+function buildAboFields(body) {
+  const {
+    name, gender, phone,
+    class2, hasList, watchedDemo, visitedHQ, centerMeeting, houseMeeting, abcUpline,
+    audioListened, meetingsAttended, currentStatus, notes,
+  } = body;
+  return {
+    name: name.trim(),
+    gender: sanitizeGender(gender),
+    phone: (phone || "").toString().trim(),
+    class2: sanitizeChecklistBool(class2),
+    hasList: sanitizeChecklistBool(hasList),
+    watchedDemo: sanitizeChecklistBool(watchedDemo),
+    visitedHQ: sanitizeChecklistBool(visitedHQ),
+    centerMeeting: sanitizeChecklistBool(centerMeeting),
+    houseMeeting: sanitizeChecklistBool(houseMeeting),
+    abcUpline: sanitizeChecklistBool(abcUpline),
+    audioListened: (audioListened || "").toString().trim(),
+    meetingsAttended: (meetingsAttended || "").toString().trim(),
+    currentStatus: (currentStatus || "").toString().trim(),
+    notes: (notes || "").toString().trim(),
+  };
+}
+
 function birthdayValidationError(body) {
   const { name, date } = body;
   if (!name || !name.trim()) return "姓名不能为空";
@@ -192,7 +271,7 @@ function prospectValidationError(body) {
 }
 
 function buildProspectFields(body) {
-  const { name, gender, background, date, phone, oppDate, notes, status, followUps } = body;
+  const { name, gender, background, date, phone, oppDate, notes, status, followUps, interested, relationshipHealthy } = body;
   return {
     name: name.trim(),
     gender: sanitizeGender(gender),
@@ -203,6 +282,8 @@ function buildProspectFields(body) {
     notes: (notes || "").toString().trim(),
     status: sanitizeProspectStatus(status),
     followUps: sanitizeFollowUps(followUps),
+    interested: sanitizeYesNo(interested),
+    relationshipHealthy: sanitizeYesNo(relationshipHealthy),
   };
 }
 
@@ -214,7 +295,7 @@ function validationError(body) {
 }
 
 function buildCustomerFields(body) {
-  const { name, date, phone, emoji, gender, purchases, notes, category, lastMeeting, sawDemo } = body;
+  const { name, date, phone, emoji, gender, purchases, notes, category, lastMeeting, sawDemo, preference } = body;
   return {
     name: name.trim(),
     date: toMonthDay(date),
@@ -226,6 +307,7 @@ function buildCustomerFields(body) {
     category: sanitizeCategory(category),
     lastMeeting: isValidDateOrEmpty(lastMeeting) ? (lastMeeting || "") : "",
     sawDemo: sanitizeSawDemo(sawDemo),
+    preference: (preference || "").toString().trim(),
   };
 }
 
@@ -371,6 +453,55 @@ app.delete("/api/birthdays/:id", (req, res) => {
     return res.status(404).json({ error: "未找到该记录" });
   }
   writeBirthdays(filtered);
+  res.status(204).end();
+});
+
+// ---------- 跟进对象(新ABO / 刚OPP完成的伙伴)----------
+
+// 获取所有跟进对象
+app.get("/api/abos", (req, res) => {
+  res.json(readAbos());
+});
+
+// 新增跟进对象
+app.post("/api/abos", (req, res) => {
+  const err = aboValidationError(req.body);
+  if (err) return res.status(400).json({ error: err });
+  const abos = readAbos();
+  const newAbo = {
+    id: Date.now().toString(),
+    ...buildAboFields(req.body),
+  };
+  abos.push(newAbo);
+  writeAbos(abos);
+  res.status(201).json(newAbo);
+});
+
+// 更新跟进对象
+app.put("/api/abos/:id", (req, res) => {
+  const err = aboValidationError(req.body);
+  if (err) return res.status(400).json({ error: err });
+  const abos = readAbos();
+  const idx = abos.findIndex((a) => a.id === req.params.id);
+  if (idx === -1) {
+    return res.status(404).json({ error: "未找到该记录" });
+  }
+  abos[idx] = {
+    id: abos[idx].id,
+    ...buildAboFields(req.body),
+  };
+  writeAbos(abos);
+  res.json(abos[idx]);
+});
+
+// 删除跟进对象
+app.delete("/api/abos/:id", (req, res) => {
+  const abos = readAbos();
+  const filtered = abos.filter((a) => a.id !== req.params.id);
+  if (filtered.length === abos.length) {
+    return res.status(404).json({ error: "未找到该记录" });
+  }
+  writeAbos(filtered);
   res.status(204).end();
 });
 
