@@ -534,6 +534,60 @@
     overflow: hidden;
   }
 
+  .status-badge {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 999px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    flex-shrink: 0;
+  }
+  .status-badge.pending { background: rgba(138,122,114,0.15); color: var(--muted); }
+  .status-badge.considering { background: rgba(192,138,46,0.18); color: #C08A2E; }
+  .status-badge.not_interested { background: rgba(196,99,90,0.15); color: #C4635A; }
+  .status-badge.joined { background: rgba(47,143,132,0.18); color: #2F8F84; }
+  .status-badge.customer { background: rgba(91,95,199,0.15); color: #5B5FC7; }
+  .status-badge.unreachable { background: rgba(138,122,114,0.2); color: var(--muted); }
+
+  .opp-date-badge {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--muted-light);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  select#statusSelect {
+    width: 100%;
+    padding: 10px 14px;
+    border-radius: 12px;
+    border: 1px solid var(--input-border);
+    background: var(--input-bg);
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--text);
+    outline: none;
+  }
+  select#statusSelect:focus {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+  }
+
+  .app-title-input {
+    width: 100%;
+    padding: 8px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--input-border);
+    background: var(--input-bg);
+    font-size: 13px;
+    font-family: inherit;
+    color: var(--text);
+    outline: none;
+  }
+  .app-title-input:focus {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+  }
+
   .error-msg {
     font-size: 12px;
     color: var(--accent);
@@ -865,6 +919,10 @@
               <button class="lang-btn" data-lang="en">English</button>
             </div>
           </div>
+          <div class="settings-section">
+            <p class="settings-label" id="appTitleLabel">标题</p>
+            <input type="text" class="app-title-input" id="appTitleInput" maxlength="20" />
+          </div>
         </div>
       </div>
     </div>
@@ -1036,6 +1094,16 @@
         </div>
       </div>
 
+      <label class="field-label" id="statusFieldLabel">讲 OPP 之后的反应</label>
+      <select id="statusSelect">
+        <option value="pending" id="statusPendingOpt">待跟进</option>
+        <option value="considering" id="statusConsideringOpt">在考虑</option>
+        <option value="not_interested" id="statusNotInterestedOpt">没兴趣</option>
+        <option value="joined" id="statusJoinedOpt">已加入</option>
+        <option value="customer" id="statusCustomerOpt">已成为顾客</option>
+        <option value="unreachable" id="statusUnreachableOpt">联系不上</option>
+      </select>
+
       <label class="field-label" id="prospectNotesFieldLabel">备注</label>
       <textarea id="prospectNotesInput"></textarea>
 
@@ -1149,6 +1217,14 @@ const I18N = {
     deleteProspectConfirm: "确定要删除这条记录吗?此操作无法撤销。",
     deleteProspectLabel: "删除这条记录",
     noOppDateHint: "未记录日期",
+    statusFieldLabel: "讲 OPP 之后的反应",
+    statusPending: "待跟进",
+    statusConsidering: "在考虑",
+    statusNotInterested: "没兴趣",
+    statusJoined: "已加入",
+    statusCustomer: "已成为顾客",
+    statusUnreachable: "联系不上",
+    appTitleLabel: "标题",
     categoryFieldLabel: "顾客分类",
     categoryNew: "新顾客",
     categoryRegular: "一般",
@@ -1258,6 +1334,14 @@ const I18N = {
     deleteProspectConfirm: "Delete this record? This cannot be undone.",
     deleteProspectLabel: "Delete this record",
     noOppDateHint: "No date recorded",
+    statusFieldLabel: "Reaction after OPP",
+    statusPending: "Follow up",
+    statusConsidering: "Considering",
+    statusNotInterested: "Not interested",
+    statusJoined: "Joined",
+    statusCustomer: "Became customer",
+    statusUnreachable: "Unreachable",
+    appTitleLabel: "Title",
     categoryFieldLabel: "Category",
     categoryNew: "New",
     categoryRegular: "Regular",
@@ -1300,7 +1384,7 @@ const I18N = {
 };
 
 const PREFS_KEY = "birthday-app-prefs";
-let prefs = { color: "#C4635A", dark: false, lang: "zh" };
+let prefs = { color: "#C4635A", dark: false, lang: "zh", appTitle: "" };
 try {
   const saved = JSON.parse(localStorage.getItem(PREFS_KEY) || "{}");
   prefs = { ...prefs, ...saved };
@@ -1339,10 +1423,21 @@ function genderAvatar(c) {
   return c.emoji || "👤";
 }
 
+function statusLabel(status) {
+  const s = t();
+  const map = {
+    pending: s.statusPending,
+    considering: s.statusConsidering,
+    not_interested: s.statusNotInterested,
+    joined: s.statusJoined,
+    customer: s.statusCustomer,
+    unreachable: s.statusUnreachable,
+  };
+  return map[status] || s.statusPending;
+}
+
 function applyLanguage() {
   const s = t();
-  document.title = s.title;
-  document.getElementById("title").textContent = s.title;
   document.getElementById("subtitle").textContent = s.subtitle;
   document.getElementById("addBtnLabel").textContent = s.addBtnLabel;
   document.getElementById("nameInput").placeholder = s.namePlaceholder;
@@ -1387,6 +1482,22 @@ function applyLanguage() {
   document.getElementById("saveProspectLabel").textContent = s.saveLabel;
   document.getElementById("deleteProspectLabel").textContent = s.deleteProspectLabel;
   document.getElementById("prospectModalSubtitle").textContent = s.prospectModalSubtitle;
+  document.getElementById("statusFieldLabel").textContent = s.statusFieldLabel;
+  document.getElementById("statusPendingOpt").textContent = s.statusPending;
+  document.getElementById("statusConsideringOpt").textContent = s.statusConsidering;
+  document.getElementById("statusNotInterestedOpt").textContent = s.statusNotInterested;
+  document.getElementById("statusJoinedOpt").textContent = s.statusJoined;
+  document.getElementById("statusCustomerOpt").textContent = s.statusCustomer;
+  document.getElementById("statusUnreachableOpt").textContent = s.statusUnreachable;
+  document.getElementById("appTitleLabel").textContent = s.appTitleLabel;
+  const appTitleInput = document.getElementById("appTitleInput");
+  appTitleInput.placeholder = s.title;
+  if (document.activeElement !== appTitleInput) {
+    appTitleInput.value = prefs.appTitle || "";
+  }
+  const displayTitle = (prefs.appTitle && prefs.appTitle.trim()) || s.title;
+  document.title = displayTitle;
+  document.getElementById("title").textContent = displayTitle;
   document.getElementById("purchasesFieldLabel").textContent = s.purchasesFieldLabel;
   document.getElementById("addPurchaseLabel").textContent = s.addPurchaseLabel;
   document.getElementById("notesFieldLabel").textContent = s.notesFieldLabel;
@@ -1625,6 +1736,7 @@ function renderProspects() {
         </button>`
       : "";
     const oppDateText = p.oppDate ? escapeHtml(p.oppDate) : s.noOppDateHint;
+    const status = p.status || "pending";
     return `
       <div class="row" onclick="openEditProspectModal('${p.id}')">
         <div class="row-left">
@@ -1632,13 +1744,15 @@ function renderProspects() {
           <div class="info">
             <div class="cust-name-row">
               <p class="cust-name">${escapeHtml(p.name)}</p>
+              <span class="status-badge ${status}">${statusLabel(status)}</span>
               ${p.notes ? `<span class="notes-dot" title="${escapeAttr(p.notes)}">📝</span>` : ""}
             </div>
-            <p class="cust-meta">${oppDateText}${p.phone ? " · " + escapeHtml(p.phone) : ""}</p>
+            ${p.phone ? `<p class="cust-meta">${escapeHtml(p.phone)}</p>` : ""}
             ${p.background ? `<p class="background-line">${escapeHtml(p.background)}</p>` : ""}
           </div>
         </div>
         <div class="row-right">
+          <span class="opp-date-badge">${oppDateText}</span>
           ${whatsappIcon}
           <button class="icon-btn" onclick="event.stopPropagation(); deleteProspectFromRow('${p.id}')" aria-label="${s.deleteLabel}">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
@@ -1701,6 +1815,7 @@ function resetProspectForm() {
   oppDateInput.value = "";
   backgroundInput.value = "";
   prospectNotesInput.value = "";
+  document.getElementById("statusSelect").value = "pending";
   setProspectGender("");
   prospectErrorMsg.style.display = "none";
 }
@@ -1726,6 +1841,7 @@ function openEditProspectModal(id) {
   oppDateInput.value = p.oppDate || "";
   backgroundInput.value = p.background || "";
   prospectNotesInput.value = p.notes || "";
+  document.getElementById("statusSelect").value = p.status || "pending";
   setProspectGender(p.gender || "");
   prospectModalTitle.textContent = s.modalEditProspectTitle;
   deleteProspectBtn.style.display = "block";
@@ -1754,12 +1870,13 @@ async function saveProspect() {
   const oppDate = oppDateInput.value;
   const background = backgroundInput.value.trim();
   const notes = prospectNotesInput.value.trim();
+  const status = document.getElementById("statusSelect").value;
   prospectErrorMsg.style.display = "none";
 
   if (!name) { showProspectError(s.errorName); return; }
   if (phone && !/^[+\d][\d\s\-()]{4,}$/.test(phone)) { showProspectError(s.errorPhone); return; }
 
-  const payload = { name, gender: pSelectedGender, background, date, phone, oppDate, notes };
+  const payload = { name, gender: pSelectedGender, background, date, phone, oppDate, notes, status };
 
   try {
     let res, saved;
@@ -2242,6 +2359,15 @@ document.querySelectorAll(".lang-btn").forEach(btn => {
     savePrefs();
     applyPrefs();
   });
+});
+
+document.getElementById("appTitleInput").addEventListener("input", (e) => {
+  prefs.appTitle = e.target.value;
+  savePrefs();
+  const s = t();
+  const displayTitle = (prefs.appTitle && prefs.appTitle.trim()) || s.title;
+  document.title = displayTitle;
+  document.getElementById("title").textContent = displayTitle;
 });
 
 /* ---------- wish modal ---------- */
