@@ -9,6 +9,7 @@ const PORT = process.env.PORT || 3000;
 const DATA_DIR = process.env.DATA_DIR || __dirname;
 const DATA_FILE = path.join(DATA_DIR, "data.json");
 const PROSPECTS_FILE = path.join(DATA_DIR, "prospects.json");
+const BIRTHDAYS_FILE = path.join(DATA_DIR, "birthdays.json");
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
@@ -112,6 +113,46 @@ function readProspects() {
 function writeProspects(prospects) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
   fs.writeFileSync(PROSPECTS_FILE, JSON.stringify(prospects, null, 2), "utf-8");
+}
+
+function readBirthdays() {
+  try {
+    const raw = fs.readFileSync(BIRTHDAYS_FILE, "utf-8");
+    const parsed = JSON.parse(raw);
+    return parsed.map((b) => ({
+      id: b.id,
+      name: b.name || "",
+      gender: sanitizeGender(b.gender),
+      date: isValidDateOrEmpty(b.date) ? (b.date || "") : "",
+      phone: b.phone || "",
+      notes: b.notes || "",
+    }));
+  } catch (e) {
+    return [];
+  }
+}
+
+function writeBirthdays(birthdays) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+  fs.writeFileSync(BIRTHDAYS_FILE, JSON.stringify(birthdays, null, 2), "utf-8");
+}
+
+function birthdayValidationError(body) {
+  const { name, date } = body;
+  if (!name || !name.trim()) return "姓名不能为空";
+  if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return "生日日期格式不正确";
+  return null;
+}
+
+function buildBirthdayFields(body) {
+  const { name, gender, date, phone, notes } = body;
+  return {
+    name: name.trim(),
+    gender: sanitizeGender(gender),
+    date,
+    phone: (phone || "").toString().trim(),
+    notes: (notes || "").toString().trim(),
+  };
 }
 
 function prospectValidationError(body) {
@@ -252,6 +293,55 @@ app.delete("/api/prospects/:id", (req, res) => {
     return res.status(404).json({ error: "未找到该记录" });
   }
   writeProspects(filtered);
+  res.status(204).end();
+});
+
+// ---------- 生日名单(不一定是顾客,任何人的生日)----------
+
+// 获取所有生日名单
+app.get("/api/birthdays", (req, res) => {
+  res.json(readBirthdays());
+});
+
+// 新增生日
+app.post("/api/birthdays", (req, res) => {
+  const err = birthdayValidationError(req.body);
+  if (err) return res.status(400).json({ error: err });
+  const birthdays = readBirthdays();
+  const newBirthday = {
+    id: Date.now().toString(),
+    ...buildBirthdayFields(req.body),
+  };
+  birthdays.push(newBirthday);
+  writeBirthdays(birthdays);
+  res.status(201).json(newBirthday);
+});
+
+// 更新生日
+app.put("/api/birthdays/:id", (req, res) => {
+  const err = birthdayValidationError(req.body);
+  if (err) return res.status(400).json({ error: err });
+  const birthdays = readBirthdays();
+  const idx = birthdays.findIndex((b) => b.id === req.params.id);
+  if (idx === -1) {
+    return res.status(404).json({ error: "未找到该记录" });
+  }
+  birthdays[idx] = {
+    id: birthdays[idx].id,
+    ...buildBirthdayFields(req.body),
+  };
+  writeBirthdays(birthdays);
+  res.json(birthdays[idx]);
+});
+
+// 删除生日
+app.delete("/api/birthdays/:id", (req, res) => {
+  const birthdays = readBirthdays();
+  const filtered = birthdays.filter((b) => b.id !== req.params.id);
+  if (filtered.length === birthdays.length) {
+    return res.status(404).json({ error: "未找到该记录" });
+  }
+  writeBirthdays(filtered);
   res.status(204).end();
 });
 
