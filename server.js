@@ -26,6 +26,16 @@ function sanitizePurchases(purchases) {
     .filter((p) => p.date || p.product || p.amount || p.note);
 }
 
+function sanitizeFollowUps(followUps) {
+  if (!Array.isArray(followUps)) return [];
+  return followUps
+    .map((f) => ({
+      date: f && f.date ? String(f.date).trim() : "",
+      note: f && f.note ? String(f.note).trim() : "",
+    }))
+    .filter((f) => f.date || f.note);
+}
+
 const VALID_CATEGORIES = ["new", "regular", "vip"];
 function sanitizeCategory(category) {
   return VALID_CATEGORIES.includes(category) ? category : "new";
@@ -104,6 +114,7 @@ function readProspects() {
       oppDate: isValidDateOrEmpty(p.oppDate) ? (p.oppDate || "") : "",
       notes: p.notes || "",
       status: sanitizeProspectStatus(p.status),
+      followUps: sanitizeFollowUps(p.followUps),
     }));
   } catch (e) {
     return [];
@@ -164,7 +175,7 @@ function prospectValidationError(body) {
 }
 
 function buildProspectFields(body) {
-  const { name, gender, background, date, phone, oppDate, notes, status } = body;
+  const { name, gender, background, date, phone, oppDate, notes, status, followUps } = body;
   return {
     name: name.trim(),
     gender: sanitizeGender(gender),
@@ -174,6 +185,7 @@ function buildProspectFields(body) {
     oppDate: isValidDateOrEmpty(oppDate) ? (oppDate || "") : "",
     notes: (notes || "").toString().trim(),
     status: sanitizeProspectStatus(status),
+    followUps: sanitizeFollowUps(followUps),
   };
 }
 
