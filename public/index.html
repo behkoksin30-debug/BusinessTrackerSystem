@@ -864,6 +864,30 @@
   }
   .modal-back-btn:hover { color: var(--accent); border-color: var(--accent); }
   .modal-close:hover { color: var(--muted); }
+  .move-section {
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid var(--card-border);
+  }
+  .move-label {
+    font-size: 11px;
+    color: var(--muted-light);
+    text-align: center;
+    margin: 0 0 8px;
+  }
+  .move-buttons { display: flex; gap: 8px; }
+  .move-btn {
+    flex: 1;
+    padding: 8px 0;
+    border-radius: 10px;
+    border: 1px dashed var(--input-border);
+    background: none;
+    color: var(--muted);
+    font-size: 12px;
+    font-family: inherit;
+    cursor: pointer;
+  }
+  .move-btn:hover { color: var(--accent); border-color: var(--accent); }
 
   /* purchases section (edit modal) */
   .purchases-section {
@@ -1316,6 +1340,13 @@
         <button id="detailCloseBtn" type="button"><span id="detailCloseLabel">关闭</span></button>
         <button class="primary-btn" id="detailEditBtn" type="button"><span id="detailEditLabel">编辑资料</span></button>
       </div>
+      <div class="move-section">
+        <p class="move-label" id="moveCustomerSectionLabel">移动到其他名单</p>
+        <div class="move-buttons">
+          <button class="move-btn" id="moveCustomerToProspectBtn" type="button" onclick="moveRecord('customer', detailCustomerId, 'prospect')"></button>
+          <button class="move-btn" id="moveCustomerToPartnerBtn" type="button" onclick="moveRecord('customer', detailCustomerId, 'partner')"></button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -1441,6 +1472,13 @@
       <div class="modal-actions">
         <button id="prospectDetailCloseBtn" type="button"><span id="prospectDetailCloseLabel">关闭</span></button>
         <button class="primary-btn" id="prospectDetailEditBtn" type="button"><span id="prospectDetailEditLabel">编辑资料</span></button>
+      </div>
+      <div class="move-section">
+        <p class="move-label" id="moveProspectSectionLabel">移动到其他名单</p>
+        <div class="move-buttons">
+          <button class="move-btn" id="moveProspectToCustomerBtn" type="button" onclick="moveRecord('prospect', detailProspectId, 'customer')"></button>
+          <button class="move-btn" id="moveProspectToPartnerBtn" type="button" onclick="moveRecord('prospect', detailProspectId, 'partner')"></button>
+        </div>
       </div>
     </div>
   </div>
@@ -1760,6 +1798,13 @@
         <button id="partnerDetailCloseBtn" type="button"><span id="partnerDetailCloseLabel">关闭</span></button>
         <button class="primary-btn" id="partnerDetailEditBtn" type="button"><span id="partnerDetailEditLabel">编辑资料</span></button>
       </div>
+      <div class="move-section">
+        <p class="move-label" id="movePartnerSectionLabel">移动到其他名单</p>
+        <div class="move-buttons">
+          <button class="move-btn" id="movePartnerToCustomerBtn" type="button" onclick="moveRecord('partner', detailPartnerId, 'customer')"></button>
+          <button class="move-btn" id="movePartnerToProspectBtn" type="button" onclick="moveRecord('partner', detailPartnerId, 'prospect')"></button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -1780,11 +1825,7 @@
       <div class="two-col-tight">
         <div>
           <label class="field-label" id="partnerAdaFieldLabel">ADA</label>
-          <select id="partnerAdaSelect">
-            <option value="" id="partnerAdaUnsetOpt">不确定</option>
-            <option value="yes" id="partnerAdaYesOpt">有 ADA</option>
-            <option value="no" id="partnerAdaNoOpt">没有 ADA</option>
-          </select>
+          <input id="partnerAdaInput" type="text" />
         </div>
         <div>
           <label class="field-label" id="partnerTypeFieldLabel">类型</label>
@@ -1958,9 +1999,7 @@ const I18N = {
     partnerModalSubtitle: "记录正式合伙人的资料",
     partnerPhoneFieldLabel: "电话号码(选填)",
     partnerAdaFieldLabel: "ADA",
-    partnerAdaYes: "有 ADA",
-    partnerAdaNo: "没有 ADA",
-    partnerAdaUnset: "不确定",
+    partnerAdaPlaceholder: "填写 ADA 号码",
     partnerTypeFieldLabel: "类型",
     partnerTypeNewStart: "New Start",
     partnerTypeBuilder: "Builder",
@@ -1975,7 +2014,7 @@ const I18N = {
     deletePartnerLabel: "删除这条记录",
     partnerStatsCountLabel: "ABO 总数量",
     partnerGoalPrompt: "设定 ABO 总数量目标(留空表示不设定目标):",
-    partnerAdaDetailLine: (yes) => (yes ? "✅ 有 ADA" : "❌ 没有 ADA"),
+    partnerAdaDetailLine: (ada) => `📋 ADA: ${ada}`,
     sortByType: "按类型",
     oppStatsThisMonthLabel: "本月做了几场 OPP",
     oppStatsTotalLabel: "累计做了几场 OPP",
@@ -1983,6 +2022,15 @@ const I18N = {
     oppMonthGoalPrompt: "设定本月 OPP 目标场数(留空表示不设定目标):",
     customerMonthGoalPrompt: "设定本月顾客消费目标 (RM,留空表示不设定目标):",
     customerCountGoalPrompt: "设定顾客总数量目标(留空表示不设定目标):",
+    moveTargetCustomer: "顾客",
+    moveTargetProspect: "OPP 名单",
+    moveTargetPartner: "ABO",
+    moveSectionLabel: "移动到其他名单",
+    moveToProspectLabel: "移到 OPP 名单",
+    moveToPartnerLabel: "移到 ABO",
+    moveToCustomerLabel: "移到顾客",
+    moveConfirm: (name, target) => `确定要把「${name}」移动到${target}吗?移动后,原本这里的资料会被删除,资料会转移过去。`,
+    moveFailed: "移动失败,请重试",
     customerTotalGoalPrompt: "设定累计顾客消费目标 (RM,留空表示不设定目标):",
     birthdaysStatsMonthLabel: "本月生日人数",
     birthdaysStatsTotalLabel: "累计生日人数",
@@ -2195,9 +2243,7 @@ const I18N = {
     partnerModalSubtitle: "Track a formal business partner",
     partnerPhoneFieldLabel: "Phone number (optional)",
     partnerAdaFieldLabel: "ADA",
-    partnerAdaYes: "Has ADA",
-    partnerAdaNo: "No ADA",
-    partnerAdaUnset: "Not sure",
+    partnerAdaPlaceholder: "Enter ADA number",
     partnerTypeFieldLabel: "Type",
     partnerTypeNewStart: "New Start",
     partnerTypeBuilder: "Builder",
@@ -2212,7 +2258,7 @@ const I18N = {
     deletePartnerLabel: "Delete this record",
     partnerStatsCountLabel: "Total ABOs",
     partnerGoalPrompt: "Set a target number of ABOs (leave blank for no goal):",
-    partnerAdaDetailLine: (yes) => (yes ? "✅ Has ADA" : "❌ No ADA"),
+    partnerAdaDetailLine: (ada) => `📋 ADA: ${ada}`,
     sortByType: "By type",
     oppStatsThisMonthLabel: "OPPs this month",
     oppStatsTotalLabel: "OPPs total",
@@ -2220,6 +2266,15 @@ const I18N = {
     oppMonthGoalPrompt: "Set this month's OPP goal (leave blank for no goal):",
     customerMonthGoalPrompt: "Set this month's customer spending goal (RM, leave blank for no goal):",
     customerCountGoalPrompt: "Set a target number of customers (leave blank for no goal):",
+    moveTargetCustomer: "Customers",
+    moveTargetProspect: "OPP List",
+    moveTargetPartner: "ABO",
+    moveSectionLabel: "Move to another list",
+    moveToProspectLabel: "Move to OPP List",
+    moveToPartnerLabel: "Move to ABO",
+    moveToCustomerLabel: "Move to Customers",
+    moveConfirm: (name, target) => `Move "${name}" to ${target}? The record here will be deleted and the data moved over.`,
+    moveFailed: "Move failed, please try again",
     customerTotalGoalPrompt: "Set total customer spending goal (RM, leave blank for no goal):",
     birthdaysStatsMonthLabel: "Birthdays this month",
     birthdaysStatsTotalLabel: "Total birthdays",
@@ -2453,6 +2508,9 @@ function applyLanguage() {
   document.getElementById("prospectModalSubtitle").textContent = s.prospectModalSubtitle;
   document.getElementById("prospectDetailCloseLabel").textContent = s.prospectDetailCloseLabel;
   document.getElementById("prospectDetailEditLabel").textContent = s.prospectDetailEditLabel;
+  document.getElementById("moveProspectSectionLabel").textContent = s.moveSectionLabel;
+  document.getElementById("moveProspectToCustomerBtn").textContent = s.moveToCustomerLabel;
+  document.getElementById("moveProspectToPartnerBtn").textContent = s.moveToPartnerLabel;
   document.getElementById("prospectDetailBackgroundTitle").textContent = s.backgroundFieldLabel;
   document.getElementById("prospectDetailNotesTitle").textContent = s.notesFieldLabel;
   document.getElementById("statusFieldLabel").textContent = s.statusFieldLabel;
@@ -2536,9 +2594,7 @@ function applyLanguage() {
   document.getElementById("partnerPhoneFieldLabel").textContent = s.partnerPhoneFieldLabel;
   document.getElementById("partnerPhoneInput").placeholder = s.phonePlaceholder;
   document.getElementById("partnerAdaFieldLabel").textContent = s.partnerAdaFieldLabel;
-  document.getElementById("partnerAdaUnsetOpt").textContent = s.partnerAdaUnset;
-  document.getElementById("partnerAdaYesOpt").textContent = s.partnerAdaYes;
-  document.getElementById("partnerAdaNoOpt").textContent = s.partnerAdaNo;
+  document.getElementById("partnerAdaInput").placeholder = s.partnerAdaPlaceholder;
   document.getElementById("partnerTypeFieldLabel").textContent = s.partnerTypeFieldLabel;
   document.getElementById("partnerTypeNewStartOpt").textContent = s.partnerTypeNewStart;
   document.getElementById("partnerTypeBuilderOpt").textContent = s.partnerTypeBuilder;
@@ -2554,6 +2610,9 @@ function applyLanguage() {
   document.getElementById("partnerModalSubtitle").textContent = s.partnerModalSubtitle;
   document.getElementById("partnerDetailCloseLabel").textContent = s.detailCloseLabel;
   document.getElementById("partnerDetailEditLabel").textContent = s.detailEditLabel;
+  document.getElementById("movePartnerSectionLabel").textContent = s.moveSectionLabel;
+  document.getElementById("movePartnerToCustomerBtn").textContent = s.moveToCustomerLabel;
+  document.getElementById("movePartnerToProspectBtn").textContent = s.moveToProspectLabel;
   document.getElementById("partnerDetailNotesTitle").textContent = s.notesFieldLabel;
   renderPartners();
   document.getElementById("appTitleLabel").textContent = s.appTitleLabel;
@@ -2590,6 +2649,9 @@ function applyLanguage() {
   document.getElementById("whatsappLabel").textContent = s.whatsappSend;
   document.getElementById("detailCloseLabel").textContent = s.detailCloseLabel;
   document.getElementById("detailEditLabel").textContent = s.detailEditLabel;
+  document.getElementById("moveCustomerSectionLabel").textContent = s.moveSectionLabel;
+  document.getElementById("moveCustomerToProspectBtn").textContent = s.moveToProspectLabel;
+  document.getElementById("moveCustomerToPartnerBtn").textContent = s.moveToPartnerLabel;
   document.getElementById("detailNotesTitle").textContent = s.notesLabel;
   document.getElementById("detailPreferenceTitle").textContent = s.preferenceLabel;
   document.getElementById("detailHistoryTitle").textContent = s.purchasesFieldLabel;
@@ -4376,9 +4438,9 @@ function openPartnerDetailModal(id) {
   }
 
   const adaLine = document.getElementById("partnerDetailAdaLine");
-  if (p.ada === "yes" || p.ada === "no") {
+  if (p.ada) {
     adaLine.style.display = "flex";
-    adaLine.textContent = s.partnerAdaDetailLine(p.ada === "yes");
+    adaLine.textContent = s.partnerAdaDetailLine(p.ada);
   } else {
     adaLine.style.display = "none";
   }
@@ -4424,7 +4486,7 @@ let editingPartnerId = null;
 function resetPartnerForm() {
   partnerNameInput.value = "";
   partnerPhoneInput.value = "";
-  document.getElementById("partnerAdaSelect").value = "";
+  document.getElementById("partnerAdaInput").value = "";
   document.getElementById("partnerTypeSelect").value = "new_start";
   setMonthDayValue("partnerDateMonthSelect", "partnerDateDaySelect", "");
   partnerPinInput.value = "";
@@ -4450,7 +4512,7 @@ function openEditPartnerModal(id) {
   partnerErrorMsg.style.display = "none";
   partnerNameInput.value = p.name || "";
   partnerPhoneInput.value = p.phone || "";
-  document.getElementById("partnerAdaSelect").value = p.ada || "";
+  document.getElementById("partnerAdaInput").value = p.ada || "";
   document.getElementById("partnerTypeSelect").value = p.partnerType || "new_start";
   setMonthDayValue("partnerDateMonthSelect", "partnerDateDaySelect", p.date || "");
   partnerPinInput.value = p.pin || "";
@@ -4480,7 +4542,7 @@ async function savePartner() {
   const s = t();
   const name = partnerNameInput.value.trim();
   const phone = partnerPhoneInput.value.trim();
-  const ada = document.getElementById("partnerAdaSelect").value;
+  const ada = document.getElementById("partnerAdaInput").value.trim();
   const partnerType = document.getElementById("partnerTypeSelect").value;
   const dateMonth = document.getElementById("partnerDateMonthSelect").value;
   const dateDay = document.getElementById("partnerDateDaySelect").value;
@@ -4559,7 +4621,7 @@ deletePartnerBtn.addEventListener("click", async () => {
   if (ok) closePartnerModal();
 });
 
-[partnerNameInput, partnerPhoneInput, partnerPinInput].forEach(el => {
+[partnerNameInput, partnerPhoneInput, document.getElementById("partnerAdaInput"), partnerPinInput].forEach(el => {
   el.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); savePartner(); } });
 });
 
@@ -5194,6 +5256,69 @@ whatsappBtn.addEventListener("click", () => {
   const url = `https://wa.me/${digits}?text=${encodeURIComponent(wishTextarea.value)}`;
   window.open(url, "_blank");
 });
+
+/* ============================================================
+   移动到其他名单(顾客 / OPP名单 / ABO 之间互相转移)
+   ============================================================ */
+function moveTargetLabel(type) {
+  const s = t();
+  if (type === "customer") return s.moveTargetCustomer;
+  if (type === "prospect") return s.moveTargetProspect;
+  return s.moveTargetPartner;
+}
+
+function moveApiFor(type) {
+  if (type === "customer") return API;
+  if (type === "prospect") return PROSPECTS_API;
+  return PARTNERS_API;
+}
+
+async function moveRecord(sourceType, id, targetType) {
+  const s = t();
+  const sourceList = sourceType === "customer" ? customers : sourceType === "prospect" ? prospects : partners;
+  const record = sourceList.find(x => x.id === id);
+  if (!record) return;
+  if (!confirm(s.moveConfirm(record.name, moveTargetLabel(targetType)))) return;
+
+  const shared = {
+    name: record.name,
+    phone: record.phone || "",
+    date: record.date || "",
+    notes: record.notes || "",
+  };
+  if (targetType !== "partner" && typeof record.gender === "string") {
+    shared.gender = record.gender;
+  }
+
+  try {
+    const createRes = await fetch(moveApiFor(targetType), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(shared),
+    });
+    if (!createRes.ok) {
+      alert(s.moveFailed);
+      return;
+    }
+    const saved = await createRes.json();
+    await fetch(`${moveApiFor(sourceType)}/${id}`, { method: "DELETE" });
+
+    if (sourceType === "customer") { customers = customers.filter(x => x.id !== id); closeDetailModal(); }
+    else if (sourceType === "prospect") { prospects = prospects.filter(x => x.id !== id); closeProspectDetailModal(); }
+    else { partners = partners.filter(x => x.id !== id); closePartnerDetailModal(); }
+
+    if (targetType === "customer") customers.push(saved);
+    else if (targetType === "prospect") prospects.push(saved);
+    else partners.push(saved);
+
+    render();
+    renderProspects();
+    renderPartners();
+    switchTab(targetType === "customer" ? "customers" : targetType === "prospect" ? "prospects" : "partners");
+  } catch (e) {
+    alert(s.moveFailed);
+  }
+}
 
 setCategory("new");
 applyPrefs();
