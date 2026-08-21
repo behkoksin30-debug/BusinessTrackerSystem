@@ -521,7 +521,7 @@
   }
   .tab-btn {
     flex: 1;
-    padding: 10px 0;
+    padding: 12px 0;
     border-radius: 10px;
     border: none;
     background: none;
@@ -530,6 +530,9 @@
     font-weight: 600;
     font-family: inherit;
     cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
   .tab-btn.active { background: var(--accent); color: var(--accent-text); }
   .tab-count {
@@ -541,11 +544,12 @@
 
   .opp-stats-bar {
     display: flex;
+    flex-wrap: wrap;
     gap: 10px;
     margin-bottom: 16px;
   }
   .opp-stat-chip {
-    flex: 1;
+    flex: 1 1 100px;
     background: var(--card);
     border: 1px solid var(--card-border);
     border-radius: 14px;
@@ -1115,17 +1119,17 @@
     <p class="subtitle" id="subtitle">记录顾客资料、购买记录与生日,轻松跟进每一位顾客</p>
 
     <div class="tab-switcher">
-      <button class="tab-btn active" id="tabCustomersBtn" type="button" onclick="switchTab('customers')">
-        <span id="tabCustomersLabel">顾客</span>
+      <button class="tab-btn active" id="tabCustomersBtn" type="button" onclick="switchTab('customers')" aria-label="顾客">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
       </button>
-      <button class="tab-btn" id="tabProspectsBtn" type="button" onclick="switchTab('prospects')">
-        <span id="tabProspectsLabel">OPP 名单</span>
+      <button class="tab-btn" id="tabProspectsBtn" type="button" onclick="switchTab('prospects')" aria-label="OPP 名单">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>
       </button>
-      <button class="tab-btn" id="tabBirthdaysBtn" type="button" onclick="switchTab('birthdays')">
-        <span id="tabBirthdaysLabel">生日</span>
+      <button class="tab-btn" id="tabBirthdaysBtn" type="button" onclick="switchTab('birthdays')" aria-label="生日">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8"/><path d="M4 16s.5-1 2-1 2.5 2 4 2 2.5-2 4-2 2.5 2 4 2 2-1 2-1"/><path d="M2 21h20"/><path d="M7 8v3"/><path d="M12 8v3"/><path d="M17 8v3"/><path d="M7 4h.01"/><path d="M12 4h.01"/><path d="M17 4h.01"/></svg>
       </button>
-      <button class="tab-btn" id="tabAbosBtn" type="button" onclick="switchTab('abos')">
-        <span id="tabAbosLabel">跟进对象</span>
+      <button class="tab-btn" id="tabAbosBtn" type="button" onclick="switchTab('abos')" aria-label="跟进对象">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/><path d="M8 2v4"/><path d="M16 2v4"/><path d="m9 16 2 2 4-4"/></svg>
       </button>
     </div>
 
@@ -1144,6 +1148,11 @@
         </select>
       </div>
       <div class="opp-stats-bar" id="customerStatsBar" style="display:none;">
+        <div class="opp-stat-chip opp-stat-chip-editable" onclick="editCustomerGoal('count')">
+          <span class="opp-stat-number" id="customerStatsCountNum">0</span>
+          <span class="opp-stat-label" id="customerStatsCountLabel"></span>
+          <svg class="opp-stat-edit-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+        </div>
         <div class="opp-stat-chip opp-stat-chip-editable" onclick="editCustomerGoal('month')">
           <span class="opp-stat-number" id="customerStatsMonthNum">0</span>
           <span class="opp-stat-label" id="customerStatsMonthLabel"></span>
@@ -1824,6 +1833,7 @@ const I18N = {
     oppGoalPrompt: "设定你的累计 OPP 目标场数(留空表示不设定目标):",
     oppMonthGoalPrompt: "设定本月 OPP 目标场数(留空表示不设定目标):",
     customerMonthGoalPrompt: "设定本月顾客消费目标 (RM,留空表示不设定目标):",
+    customerCountGoalPrompt: "设定顾客总数量目标(留空表示不设定目标):",
     customerTotalGoalPrompt: "设定累计顾客消费目标 (RM,留空表示不设定目标):",
     birthdaysStatsMonthLabel: "本月生日人数",
     birthdaysStatsTotalLabel: "累计生日人数",
@@ -1832,6 +1842,7 @@ const I18N = {
     abosStatsTotalLabel: "累计跟进对象",
     abosGoalPrompt: "设定累计跟进对象目标(留空表示不设定目标):",
     customerStatsMonthLabel: "本月顾客消费 (RM)",
+    customerStatsCountLabel: "顾客总数量",
     customerStatsTotalLabel: "累计顾客消费 (RM)",
     addBirthdayBtnLabel: "添加生日",
     modalAddBirthdayTitle: "添加生日",
@@ -2032,6 +2043,7 @@ const I18N = {
     oppGoalPrompt: "Set your total OPP goal (leave blank for no goal):",
     oppMonthGoalPrompt: "Set this month's OPP goal (leave blank for no goal):",
     customerMonthGoalPrompt: "Set this month's customer spending goal (RM, leave blank for no goal):",
+    customerCountGoalPrompt: "Set a target number of customers (leave blank for no goal):",
     customerTotalGoalPrompt: "Set total customer spending goal (RM, leave blank for no goal):",
     birthdaysStatsMonthLabel: "Birthdays this month",
     birthdaysStatsTotalLabel: "Total birthdays",
@@ -2040,6 +2052,7 @@ const I18N = {
     abosStatsTotalLabel: "Total follow-ups",
     abosGoalPrompt: "Set your total follow-ups goal (leave blank for no goal):",
     customerStatsMonthLabel: "Customer spending this month (RM)",
+    customerStatsCountLabel: "Total customers",
     customerStatsTotalLabel: "Total customer spending (RM)",
     addBirthdayBtnLabel: "Add Birthday",
     modalAddBirthdayTitle: "Add Birthday",
@@ -2147,7 +2160,7 @@ const I18N = {
 };
 
 const PREFS_KEY = "birthday-app-prefs";
-let prefs = { color: "#C4635A", dark: false, lang: "zh", appTitle: "", appSubtitle: "", customIcon: "", oppMonthGoal: 0, oppGoal: 0, customerMonthGoal: 0, customerTotalGoal: 0, abosGoal: 0, birthdaysGoal: 0 };
+let prefs = { color: "#C4635A", dark: false, lang: "zh", appTitle: "", appSubtitle: "", customIcon: "", oppMonthGoal: 0, oppGoal: 0, customerCountGoal: 0, customerMonthGoal: 0, customerTotalGoal: 0, abosGoal: 0, birthdaysGoal: 0 };
 try {
   const saved = JSON.parse(localStorage.getItem(PREFS_KEY) || "{}");
   prefs = { ...prefs, ...saved };
@@ -2244,8 +2257,6 @@ function applyLanguage() {
   document.getElementById("sawDemoUnsetOpt").textContent = s.sawDemoUnset;
   document.getElementById("sawDemoYesOpt").textContent = s.sawDemoYes;
   document.getElementById("sawDemoNoOpt").textContent = s.sawDemoNo;
-  document.getElementById("tabCustomersLabel").textContent = s.tabCustomers;
-  document.getElementById("tabProspectsLabel").textContent = s.tabProspects;
   document.getElementById("prospectsLoadingLabel").textContent = s.loading;
   document.getElementById("prospectNameInput").placeholder = s.namePlaceholder;
   document.getElementById("backgroundFieldLabel").textContent = s.backgroundFieldLabel;
@@ -2288,7 +2299,6 @@ function applyLanguage() {
   document.getElementById("statusJoinedOpt").textContent = s.statusJoined;
   document.getElementById("statusCustomerOpt").textContent = s.statusCustomer;
   document.getElementById("statusUnreachableOpt").textContent = s.statusUnreachable;
-  document.getElementById("tabBirthdaysLabel").textContent = s.tabBirthdays;
   document.getElementById("birthdaysLoadingLabel").textContent = s.loading;
   document.getElementById("birthdayNameInput").placeholder = s.namePlaceholder;
   document.getElementById("birthdayGenderUnsetOpt").textContent = s.genderUnset;
@@ -2306,7 +2316,6 @@ function applyLanguage() {
   document.getElementById("birthdayDetailCloseLabel").textContent = s.birthdayDetailCloseLabel;
   document.getElementById("birthdayDetailEditLabel").textContent = s.birthdayDetailEditLabel;
   document.getElementById("birthdayDetailNotesTitle").textContent = s.notesFieldLabel;
-  document.getElementById("tabAbosLabel").textContent = s.tabAbos;
   document.getElementById("abosLoadingLabel").textContent = s.loading;
   document.getElementById("aboNameInput").placeholder = s.namePlaceholder;
   document.getElementById("aboGenderUnsetOpt").textContent = s.genderUnset;
@@ -2517,7 +2526,7 @@ function render() {
     if (Array.isArray(c.purchases)) c.purchases.forEach(p => allPurchases.push(p));
   });
   const withAmount = allPurchases.filter(p => p.amount);
-  if (withAmount.length > 0 || prefs.customerMonthGoal > 0 || prefs.customerTotalGoal > 0) {
+  if (customers.length > 0 || withAmount.length > 0 || prefs.customerCountGoal > 0 || prefs.customerMonthGoal > 0 || prefs.customerTotalGoal > 0) {
     const now = new Date();
     const thisMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
     const sumAmount = (list) => list.reduce((sum, p) => {
@@ -2528,6 +2537,10 @@ function render() {
     const thisMonthTotal = sumAmount(withAmount.filter(p => p.date && p.date.startsWith(thisMonthKey)));
     const grandTotal = sumAmount(withAmount);
     customerStatsBar.style.display = "flex";
+    document.getElementById("customerStatsCountNum").textContent = prefs.customerCountGoal > 0
+      ? `${customers.length}/${prefs.customerCountGoal}`
+      : String(customers.length);
+    document.getElementById("customerStatsCountLabel").textContent = s.customerStatsCountLabel;
     document.getElementById("customerStatsMonthNum").textContent = prefs.customerMonthGoal > 0
       ? `${fmt(thisMonthTotal)}/${prefs.customerMonthGoal}`
       : fmt(thisMonthTotal);
@@ -2639,15 +2652,15 @@ function render() {
 
 function editCustomerGoal(which) {
   const s = t();
-  const key = which === "month" ? "customerMonthGoal" : "customerTotalGoal";
-  const promptText = which === "month" ? s.customerMonthGoalPrompt : s.customerTotalGoalPrompt;
+  const key = which === "count" ? "customerCountGoal" : which === "month" ? "customerMonthGoal" : "customerTotalGoal";
+  const promptText = which === "count" ? s.customerCountGoalPrompt : which === "month" ? s.customerMonthGoalPrompt : s.customerTotalGoalPrompt;
   const val = prompt(promptText, prefs[key] > 0 ? String(prefs[key]) : "");
   if (val === null) return;
   const trimmed = val.trim();
   if (trimmed === "") {
     prefs[key] = 0;
   } else {
-    const n = parseFloat(trimmed);
+    const n = which === "count" ? parseInt(trimmed, 10) : parseFloat(trimmed);
     if (!isNaN(n) && n >= 0) {
       prefs[key] = n;
     }
