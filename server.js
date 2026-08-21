@@ -1,21 +1,212 @@
 const express = require("express");
 const fs = require("fs");
 const path = require("path");
+const crypto = require("crypto");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 // DATA_DIR 可以通过环境变量指定,配合 Railway 的 Volume(持久化卷)使用,
 // 这样每次重新部署时数据不会丢失。本地开发不设置也没关系,默认存在项目目录下。
 const DATA_DIR = process.env.DATA_DIR || __dirname;
-const DATA_FILE = path.join(DATA_DIR, "data.json");
-const PROSPECTS_FILE = path.join(DATA_DIR, "prospects.json");
-const BIRTHDAYS_FILE = path.join(DATA_DIR, "birthdays.json");
-const ABOS_FILE = path.join(DATA_DIR, "abos.json");
-const PARTNERS_FILE = path.join(DATA_DIR, "partners.json");
-const DASHBOARD_FILE = path.join(DATA_DIR, "dashboard.json");
+const USERS_FILE = path.join(DATA_DIR, "users.json");
 
 app.use(express.json({ limit: "6mb" }));
 app.use(express.static(path.join(__dirname, "public")));
+
+/* ============================================================
+   账号系统:密码加密、用户读写、登录会话、权限中间件
+   ============================================================ */
+
+function generateSalt() {
+  return crypto.randomBytes(16).toString("hex");
+}
+
+function hashPassword(password, salt) {
+  return crypto.scryptSync(password, salt, 64).toString("hex");
+}
+
+function generateToken() {
+  return crypto.randomBytes(32).toString("hex");
+}
+
+function readUsers() {
+  try {
+    const raw = fs.readFileSync(USERS_FILE, "utf-8");
+    return JSON.parse(raw);
+  } catch (e) {
+    return [];
+  }
+}
+
+function writeUsers(users) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+  fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2), "utf-8");
+}
+
+function findUser(username) {
+  return readUsers().find((u) => u.username === username);
+}
+
+// 登录会话存在内存里(服务器重启后需要重新登录,属于合理的简化做法)
+const sessions = {}; // token -> username
+
+function userDataDir(username) {
+  return path.join(DATA_DIR, "users", username);
+}
+
+function userFilePath(username, filename) {
+  return path.join(userDataDir(username), filename);
+}
+
+// 需要登录才能访问的接口,统一用这个中间件检查
+function authMiddleware(req, res, next) {
+  const authHeader = req.headers["authorization"] || "";
+  const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+  const username = token ? sessions[token] : null;
+  if (!token || !username) {
+    return res.status(401).json({ error: "未登录或登录已过期,请重新登录" });
+  }
+  const user = findUser(username);
+  if (!user) {
+    delete sessions[token];
+    return res.status(401).json({ error: "账号不存在,请重新登录" });
+  }
+  req.user = { username: user.username, role: user.role };
+  next();
+}
+
+// 决定这次请求实际要读/写"谁"的资料。
+// allowViewAs=true 时(只有查看/GET 用),如果是管理员而且带了 ?viewAs=下线用户名,
+// 而且这个下线确实是他自己开的账号,就改成读那个下线的资料(仍然只能读,不能写)。
+function resolveDataUsername(req, allowViewAs) {
+  if (allowViewAs && req.user.role === "admin" && req.query.viewAs) {
+    const target = String(req.query.viewAs);
+    const targetUser = findUser(target);
+    if (targetUser && targetUser.upline === req.user.username) {
+      return target;
+    }
+  }
+  return req.user.username;
+}
+
+/* ============================================================
+   账号相关 API(设置管理员、登录、登出、管理下线账号)
+   ============================================================ */
+
+// 检查是否已经有账号(决定前端要显示"设置管理员"还是"登录")
+app.get("/api/auth/status", (req, res) => {
+  const users = readUsers();
+  res.json({ hasUsers: users.length > 0 });
+});
+
+// 第一次使用时,设置管理员(上线)账号。只有在完全没有账号时才能用这个接口。
+app.post("/api/auth/setup", (req, res) => {
+  const users = readUsers();
+  if (users.length > 0) {
+    return res.status(400).json({ error: "已经设置过管理员账号了" });
+  }
+  const { username, password } = req.body || {};
+  if (!username || !username.trim() || !password || password.length < 4) {
+    return res.status(400).json({ error: "请填写用户名,密码至少 4 位" });
+  }
+  const salt = generateSalt();
+  const newUser = {
+    username: username.trim(),
+    salt,
+    passwordHash: hashPassword(password, salt),
+    role: "admin",
+    upline: null,
+    createdAt: new Date().toISOString(),
+  };
+  writeUsers([newUser]);
+  const token = generateToken();
+  sessions[token] = newUser.username;
+  res.status(201).json({ token, username: newUser.username, role: newUser.role });
+});
+
+// 登录
+app.post("/api/auth/login", (req, res) => {
+  const { username, password } = req.body || {};
+  const user = findUser((username || "").trim());
+  if (!user || hashPassword(password || "", user.salt) !== user.passwordHash) {
+    return res.status(401).json({ error: "用户名或密码不正确" });
+  }
+  const token = generateToken();
+  sessions[token] = user.username;
+  res.json({ token, username: user.username, role: user.role });
+});
+
+// 确认目前登录状态(前端刷新页面时用来检查 token 还有没有效)
+app.get("/api/auth/me", authMiddleware, (req, res) => {
+  res.json({ username: req.user.username, role: req.user.role });
+});
+
+// 登出
+app.post("/api/auth/logout", authMiddleware, (req, res) => {
+  const authHeader = req.headers["authorization"] || "";
+  const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+  delete sessions[token];
+  res.status(204).end();
+});
+
+// 查看自己开的下线账号列表(只有管理员/上线能用)
+app.get("/api/auth/downlines", authMiddleware, (req, res) => {
+  if (req.user.role !== "admin") {
+    return res.status(403).json({ error: "没有权限" });
+  }
+  const users = readUsers();
+  const downlines = users
+    .filter((u) => u.upline === req.user.username)
+    .map((u) => ({ username: u.username, createdAt: u.createdAt }));
+  res.json(downlines);
+});
+
+// 新增一个下线账号(只有管理员/上线能用)
+app.post("/api/auth/downlines", authMiddleware, (req, res) => {
+  if (req.user.role !== "admin") {
+    return res.status(403).json({ error: "没有权限" });
+  }
+  const { username, password } = req.body || {};
+  const cleanUsername = (username || "").trim();
+  if (!cleanUsername || !password || password.length < 4) {
+    return res.status(400).json({ error: "请填写用户名,密码至少 4 位" });
+  }
+  const users = readUsers();
+  if (users.some((u) => u.username === cleanUsername)) {
+    return res.status(400).json({ error: "这个用户名已经有人用了" });
+  }
+  const salt = generateSalt();
+  const newUser = {
+    username: cleanUsername,
+    salt,
+    passwordHash: hashPassword(password, salt),
+    role: "downline",
+    upline: req.user.username,
+    createdAt: new Date().toISOString(),
+  };
+  users.push(newUser);
+  writeUsers(users);
+  res.status(201).json({ username: newUser.username, createdAt: newUser.createdAt });
+});
+
+// 删除一个下线账号(只有管理员/上线能用,而且只能删自己开的)
+app.delete("/api/auth/downlines/:username", authMiddleware, (req, res) => {
+  if (req.user.role !== "admin") {
+    return res.status(403).json({ error: "没有权限" });
+  }
+  const users = readUsers();
+  const target = users.find((u) => u.username === req.params.username);
+  if (!target || target.upline !== req.user.username) {
+    return res.status(404).json({ error: "未找到该下线账号" });
+  }
+  const filtered = users.filter((u) => u.username !== req.params.username);
+  writeUsers(filtered);
+  res.status(204).end();
+});
+
+/* ============================================================
+   各种资料的读写函数(全部改成"每个账号自己一份")
+   ============================================================ */
 
 function sanitizePurchases(purchases) {
   if (!Array.isArray(purchases)) return [];
@@ -118,9 +309,9 @@ function migrateCustomer(c) {
   return next;
 }
 
-function readData() {
+function readData(username) {
   try {
-    const raw = fs.readFileSync(DATA_FILE, "utf-8");
+    const raw = fs.readFileSync(userFilePath(username, "data.json"), "utf-8");
     const parsed = JSON.parse(raw);
     return parsed.map(migrateCustomer);
   } catch (e) {
@@ -128,14 +319,14 @@ function readData() {
   }
 }
 
-function writeData(customers) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-  fs.writeFileSync(DATA_FILE, JSON.stringify(customers, null, 2), "utf-8");
+function writeData(username, customers) {
+  fs.mkdirSync(userDataDir(username), { recursive: true });
+  fs.writeFileSync(userFilePath(username, "data.json"), JSON.stringify(customers, null, 2), "utf-8");
 }
 
-function readProspects() {
+function readProspects(username) {
   try {
-    const raw = fs.readFileSync(PROSPECTS_FILE, "utf-8");
+    const raw = fs.readFileSync(userFilePath(username, "prospects.json"), "utf-8");
     const parsed = JSON.parse(raw);
     return parsed.map((p) => ({
       id: p.id,
@@ -155,14 +346,14 @@ function readProspects() {
   }
 }
 
-function writeProspects(prospects) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-  fs.writeFileSync(PROSPECTS_FILE, JSON.stringify(prospects, null, 2), "utf-8");
+function writeProspects(username, prospects) {
+  fs.mkdirSync(userDataDir(username), { recursive: true });
+  fs.writeFileSync(userFilePath(username, "prospects.json"), JSON.stringify(prospects, null, 2), "utf-8");
 }
 
-function readBirthdays() {
+function readBirthdays(username) {
   try {
-    const raw = fs.readFileSync(BIRTHDAYS_FILE, "utf-8");
+    const raw = fs.readFileSync(userFilePath(username, "birthdays.json"), "utf-8");
     const parsed = JSON.parse(raw);
     return parsed.map((b) => ({
       id: b.id,
@@ -177,16 +368,16 @@ function readBirthdays() {
   }
 }
 
-function writeBirthdays(birthdays) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-  fs.writeFileSync(BIRTHDAYS_FILE, JSON.stringify(birthdays, null, 2), "utf-8");
+function writeBirthdays(username, birthdays) {
+  fs.mkdirSync(userDataDir(username), { recursive: true });
+  fs.writeFileSync(userFilePath(username, "birthdays.json"), JSON.stringify(birthdays, null, 2), "utf-8");
 }
 
 // ---------- ABO(正式合伙人:名字/电话/ADA/生日/PIN/类型)----------
 
-function readPartners() {
+function readPartners(username) {
   try {
-    const raw = fs.readFileSync(PARTNERS_FILE, "utf-8");
+    const raw = fs.readFileSync(userFilePath(username, "partners.json"), "utf-8");
     const parsed = JSON.parse(raw);
     return parsed.map((p) => ({
       id: p.id,
@@ -203,9 +394,9 @@ function readPartners() {
   }
 }
 
-function writePartners(partners) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-  fs.writeFileSync(PARTNERS_FILE, JSON.stringify(partners, null, 2), "utf-8");
+function writePartners(username, partners) {
+  fs.mkdirSync(userDataDir(username), { recursive: true });
+  fs.writeFileSync(userFilePath(username, "partners.json"), JSON.stringify(partners, null, 2), "utf-8");
 }
 
 function partnerValidationError(body) {
@@ -230,9 +421,9 @@ function buildPartnerFields(body) {
 
 // ---------- 跟进对象(新ABO / 刚OPP完成的伙伴)----------
 
-function readAbos() {
+function readAbos(username) {
   try {
-    const raw = fs.readFileSync(ABOS_FILE, "utf-8");
+    const raw = fs.readFileSync(userFilePath(username, "abos.json"), "utf-8");
     const parsed = JSON.parse(raw);
     return parsed.map((a) => ({
       id: a.id,
@@ -257,9 +448,9 @@ function readAbos() {
   }
 }
 
-function writeAbos(abos) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-  fs.writeFileSync(ABOS_FILE, JSON.stringify(abos, null, 2), "utf-8");
+function writeAbos(username, abos) {
+  fs.mkdirSync(userDataDir(username), { recursive: true });
+  fs.writeFileSync(userFilePath(username, "abos.json"), JSON.stringify(abos, null, 2), "utf-8");
 }
 
 function aboValidationError(body) {
@@ -360,9 +551,9 @@ function buildCustomerFields(body) {
 
 // ---------- Dashboard 展示区(海报 + 标语 + 公告)----------
 
-function readDashboard() {
+function readDashboard(username) {
   try {
-    const raw = fs.readFileSync(DASHBOARD_FILE, "utf-8");
+    const raw = fs.readFileSync(userFilePath(username, "dashboard.json"), "utf-8");
     const parsed = JSON.parse(raw);
     return {
       poster: parsed.poster || "",
@@ -374,289 +565,230 @@ function readDashboard() {
   }
 }
 
-function writeDashboard(data) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
+function writeDashboard(username, data) {
+  fs.mkdirSync(userDataDir(username), { recursive: true });
   const safe = {
     poster: (data.poster || "").toString(),
     tagline: (data.tagline || "").toString().trim(),
     announcement: (data.announcement || "").toString().trim(),
   };
-  fs.writeFileSync(DASHBOARD_FILE, JSON.stringify(safe, null, 2), "utf-8");
+  fs.writeFileSync(userFilePath(username, "dashboard.json"), JSON.stringify(safe, null, 2), "utf-8");
   return safe;
 }
 
-// 获取所有顾客
-app.get("/api/customers", (req, res) => {
-  res.json(readData());
+/* ============================================================
+   顾客 API(全部需要登录;GET 支持上线用 ?viewAs= 查看下线资料,只读)
+   ============================================================ */
+
+app.get("/api/customers", authMiddleware, (req, res) => {
+  res.json(readData(resolveDataUsername(req, true)));
 });
 
-// 新增顾客
-app.post("/api/customers", (req, res) => {
+app.post("/api/customers", authMiddleware, (req, res) => {
   const err = validationError(req.body);
   if (err) return res.status(400).json({ error: err });
-  const customers = readData();
-  const newCustomer = {
-    id: Date.now().toString(),
-    ...buildCustomerFields(req.body),
-  };
+  const username = req.user.username;
+  const customers = readData(username);
+  const newCustomer = { id: Date.now().toString(), ...buildCustomerFields(req.body) };
   customers.push(newCustomer);
-  writeData(customers);
+  writeData(username, customers);
   res.status(201).json(newCustomer);
 });
 
-// 更新顾客(编辑所有字段)
-app.put("/api/customers/:id", (req, res) => {
+app.put("/api/customers/:id", authMiddleware, (req, res) => {
   const err = validationError(req.body);
   if (err) return res.status(400).json({ error: err });
-  const customers = readData();
+  const username = req.user.username;
+  const customers = readData(username);
   const idx = customers.findIndex((c) => c.id === req.params.id);
-  if (idx === -1) {
-    return res.status(404).json({ error: "未找到该顾客" });
-  }
-  customers[idx] = {
-    id: customers[idx].id,
-    ...buildCustomerFields(req.body),
-  };
-  writeData(customers);
+  if (idx === -1) return res.status(404).json({ error: "未找到该记录" });
+  customers[idx] = { id: customers[idx].id, ...buildCustomerFields(req.body) };
+  writeData(username, customers);
   res.json(customers[idx]);
 });
 
-// 删除顾客
-app.delete("/api/customers/:id", (req, res) => {
-  const customers = readData();
+app.delete("/api/customers/:id", authMiddleware, (req, res) => {
+  const username = req.user.username;
+  const customers = readData(username);
   const filtered = customers.filter((c) => c.id !== req.params.id);
-  if (filtered.length === customers.length) {
-    return res.status(404).json({ error: "未找到该顾客" });
-  }
-  writeData(filtered);
+  if (filtered.length === customers.length) return res.status(404).json({ error: "未找到该记录" });
+  writeData(username, filtered);
   res.status(204).end();
 });
 
-// ---------- OPP 名单(讲 OPP 后的联系人)----------
+/* ============================================================
+   OPP 名单 API
+   ============================================================ */
 
-// 获取所有 OPP 名单
-app.get("/api/prospects", (req, res) => {
-  res.json(readProspects());
+app.get("/api/prospects", authMiddleware, (req, res) => {
+  res.json(readProspects(resolveDataUsername(req, true)));
 });
 
-// 新增 OPP 名单
-app.post("/api/prospects", (req, res) => {
+app.post("/api/prospects", authMiddleware, (req, res) => {
   const err = prospectValidationError(req.body);
   if (err) return res.status(400).json({ error: err });
-  const prospects = readProspects();
-  const newProspect = {
-    id: Date.now().toString(),
-    ...buildProspectFields(req.body),
-  };
+  const username = req.user.username;
+  const prospects = readProspects(username);
+  const newProspect = { id: Date.now().toString(), ...buildProspectFields(req.body) };
   prospects.push(newProspect);
-  writeProspects(prospects);
+  writeProspects(username, prospects);
   res.status(201).json(newProspect);
 });
 
-// 更新 OPP 名单
-app.put("/api/prospects/:id", (req, res) => {
+app.put("/api/prospects/:id", authMiddleware, (req, res) => {
   const err = prospectValidationError(req.body);
   if (err) return res.status(400).json({ error: err });
-  const prospects = readProspects();
+  const username = req.user.username;
+  const prospects = readProspects(username);
   const idx = prospects.findIndex((p) => p.id === req.params.id);
-  if (idx === -1) {
-    return res.status(404).json({ error: "未找到该记录" });
-  }
-  prospects[idx] = {
-    id: prospects[idx].id,
-    ...buildProspectFields(req.body),
-  };
-  writeProspects(prospects);
+  if (idx === -1) return res.status(404).json({ error: "未找到该记录" });
+  prospects[idx] = { id: prospects[idx].id, ...buildProspectFields(req.body) };
+  writeProspects(username, prospects);
   res.json(prospects[idx]);
 });
 
-// 删除 OPP 名单
-app.delete("/api/prospects/:id", (req, res) => {
-  const prospects = readProspects();
+app.delete("/api/prospects/:id", authMiddleware, (req, res) => {
+  const username = req.user.username;
+  const prospects = readProspects(username);
   const filtered = prospects.filter((p) => p.id !== req.params.id);
-  if (filtered.length === prospects.length) {
-    return res.status(404).json({ error: "未找到该记录" });
-  }
-  writeProspects(filtered);
+  if (filtered.length === prospects.length) return res.status(404).json({ error: "未找到该记录" });
+  writeProspects(username, filtered);
   res.status(204).end();
 });
 
-// ---------- 生日名单(不一定是顾客,任何人的生日)----------
+/* ============================================================
+   生日名单 API
+   ============================================================ */
 
-// 获取所有生日名单
-app.get("/api/birthdays", (req, res) => {
-  res.json(readBirthdays());
+app.get("/api/birthdays", authMiddleware, (req, res) => {
+  res.json(readBirthdays(resolveDataUsername(req, true)));
 });
 
-// 新增生日
-app.post("/api/birthdays", (req, res) => {
+app.post("/api/birthdays", authMiddleware, (req, res) => {
   const err = birthdayValidationError(req.body);
   if (err) return res.status(400).json({ error: err });
-  const birthdays = readBirthdays();
-  const newBirthday = {
-    id: Date.now().toString(),
-    ...buildBirthdayFields(req.body),
-  };
+  const username = req.user.username;
+  const birthdays = readBirthdays(username);
+  const newBirthday = { id: Date.now().toString(), ...buildBirthdayFields(req.body) };
   birthdays.push(newBirthday);
-  writeBirthdays(birthdays);
+  writeBirthdays(username, birthdays);
   res.status(201).json(newBirthday);
 });
 
-// 更新生日
-app.put("/api/birthdays/:id", (req, res) => {
+app.put("/api/birthdays/:id", authMiddleware, (req, res) => {
   const err = birthdayValidationError(req.body);
   if (err) return res.status(400).json({ error: err });
-  const birthdays = readBirthdays();
+  const username = req.user.username;
+  const birthdays = readBirthdays(username);
   const idx = birthdays.findIndex((b) => b.id === req.params.id);
-  if (idx === -1) {
-    return res.status(404).json({ error: "未找到该记录" });
-  }
-  birthdays[idx] = {
-    id: birthdays[idx].id,
-    ...buildBirthdayFields(req.body),
-  };
-  writeBirthdays(birthdays);
+  if (idx === -1) return res.status(404).json({ error: "未找到该记录" });
+  birthdays[idx] = { id: birthdays[idx].id, ...buildBirthdayFields(req.body) };
+  writeBirthdays(username, birthdays);
   res.json(birthdays[idx]);
 });
 
-// 删除生日
-app.delete("/api/birthdays/:id", (req, res) => {
-  const birthdays = readBirthdays();
+app.delete("/api/birthdays/:id", authMiddleware, (req, res) => {
+  const username = req.user.username;
+  const birthdays = readBirthdays(username);
   const filtered = birthdays.filter((b) => b.id !== req.params.id);
-  if (filtered.length === birthdays.length) {
-    return res.status(404).json({ error: "未找到该记录" });
-  }
-  writeBirthdays(filtered);
+  if (filtered.length === birthdays.length) return res.status(404).json({ error: "未找到该记录" });
+  writeBirthdays(username, filtered);
   res.status(204).end();
 });
 
-// ---------- 跟进对象(新ABO / 刚OPP完成的伙伴)----------
+/* ============================================================
+   跟进对象(新ABO / 刚OPP完成的伙伴)API
+   ============================================================ */
 
-// 获取所有跟进对象
-app.get("/api/abos", (req, res) => {
-  res.json(readAbos());
+app.get("/api/abos", authMiddleware, (req, res) => {
+  res.json(readAbos(resolveDataUsername(req, true)));
 });
 
-// 新增跟进对象
-app.post("/api/abos", (req, res) => {
+app.post("/api/abos", authMiddleware, (req, res) => {
   const err = aboValidationError(req.body);
   if (err) return res.status(400).json({ error: err });
-  const abos = readAbos();
-  const newAbo = {
-    id: Date.now().toString(),
-    createdAt: new Date().toISOString(),
-    ...buildAboFields(req.body),
-  };
+  const username = req.user.username;
+  const abos = readAbos(username);
+  const newAbo = { id: Date.now().toString(), createdAt: new Date().toISOString(), ...buildAboFields(req.body) };
   abos.push(newAbo);
-  writeAbos(abos);
+  writeAbos(username, abos);
   res.status(201).json(newAbo);
 });
 
-// 更新跟进对象
-app.put("/api/abos/:id", (req, res) => {
+app.put("/api/abos/:id", authMiddleware, (req, res) => {
   const err = aboValidationError(req.body);
   if (err) return res.status(400).json({ error: err });
-  const abos = readAbos();
+  const username = req.user.username;
+  const abos = readAbos(username);
   const idx = abos.findIndex((a) => a.id === req.params.id);
-  if (idx === -1) {
-    return res.status(404).json({ error: "未找到该记录" });
-  }
-  abos[idx] = {
-    id: abos[idx].id,
-    createdAt: abos[idx].createdAt || new Date().toISOString(),
-    ...buildAboFields(req.body),
-  };
-  writeAbos(abos);
+  if (idx === -1) return res.status(404).json({ error: "未找到该记录" });
+  abos[idx] = { id: abos[idx].id, createdAt: abos[idx].createdAt || new Date().toISOString(), ...buildAboFields(req.body) };
+  writeAbos(username, abos);
   res.json(abos[idx]);
 });
 
-// 删除跟进对象
-app.delete("/api/abos/:id", (req, res) => {
-  const abos = readAbos();
+app.delete("/api/abos/:id", authMiddleware, (req, res) => {
+  const username = req.user.username;
+  const abos = readAbos(username);
   const filtered = abos.filter((a) => a.id !== req.params.id);
-  if (filtered.length === abos.length) {
-    return res.status(404).json({ error: "未找到该记录" });
-  }
-  writeAbos(filtered);
+  if (filtered.length === abos.length) return res.status(404).json({ error: "未找到该记录" });
+  writeAbos(username, filtered);
   res.status(204).end();
 });
 
-// ---------- ABO(正式合伙人)----------
+/* ============================================================
+   ABO(正式合伙人)API
+   ============================================================ */
 
-// 获取所有 ABO
-app.get("/api/partners", (req, res) => {
-  res.json(readPartners());
+app.get("/api/partners", authMiddleware, (req, res) => {
+  res.json(readPartners(resolveDataUsername(req, true)));
 });
 
-// 新增 ABO
-app.post("/api/partners", (req, res) => {
+app.post("/api/partners", authMiddleware, (req, res) => {
   const err = partnerValidationError(req.body);
   if (err) return res.status(400).json({ error: err });
-  const partners = readPartners();
-  const newPartner = {
-    id: Date.now().toString(),
-    ...buildPartnerFields(req.body),
-  };
+  const username = req.user.username;
+  const partners = readPartners(username);
+  const newPartner = { id: Date.now().toString(), ...buildPartnerFields(req.body) };
   partners.push(newPartner);
-  writePartners(partners);
+  writePartners(username, partners);
   res.status(201).json(newPartner);
 });
 
-// 更新 ABO
-app.put("/api/partners/:id", (req, res) => {
+app.put("/api/partners/:id", authMiddleware, (req, res) => {
   const err = partnerValidationError(req.body);
   if (err) return res.status(400).json({ error: err });
-  const partners = readPartners();
+  const username = req.user.username;
+  const partners = readPartners(username);
   const idx = partners.findIndex((p) => p.id === req.params.id);
-  if (idx === -1) {
-    return res.status(404).json({ error: "未找到该记录" });
-  }
-  partners[idx] = {
-    id: partners[idx].id,
-    ...buildPartnerFields(req.body),
-  };
-  writePartners(partners);
+  if (idx === -1) return res.status(404).json({ error: "未找到该记录" });
+  partners[idx] = { id: partners[idx].id, ...buildPartnerFields(req.body) };
+  writePartners(username, partners);
   res.json(partners[idx]);
 });
 
-// 删除 ABO
-app.delete("/api/partners/:id", (req, res) => {
-  const partners = readPartners();
+app.delete("/api/partners/:id", authMiddleware, (req, res) => {
+  const username = req.user.username;
+  const partners = readPartners(username);
   const filtered = partners.filter((p) => p.id !== req.params.id);
-  if (filtered.length === partners.length) {
-    return res.status(404).json({ error: "未找到该记录" });
-  }
-  writePartners(filtered);
+  if (filtered.length === partners.length) return res.status(404).json({ error: "未找到该记录" });
+  writePartners(username, filtered);
   res.status(204).end();
 });
 
-// ---------- Dashboard 展示区 ----------
+/* ============================================================
+   Dashboard 展示区 API
+   ============================================================ */
 
-// 获取 Dashboard 内容
-app.get("/api/dashboard", (req, res) => {
-  res.json(readDashboard());
+app.get("/api/dashboard", authMiddleware, (req, res) => {
+  res.json(readDashboard(resolveDataUsername(req, true)));
 });
 
-// 保存 Dashboard 内容(海报 / 标语 / 公告)
-app.put("/api/dashboard", (req, res) => {
-  const saved = writeDashboard(req.body || {});
+app.put("/api/dashboard", authMiddleware, (req, res) => {
+  const saved = writeDashboard(req.user.username, req.body || {});
   res.json(saved);
 });
 
 app.listen(PORT, () => {
-  console.log(`顾客记录系统已启动: http://localhost:${PORT}`);
-  console.log(`[诊断] DATA_DIR 环境变量原始值: ${process.env.DATA_DIR || "(未设置)"}`);
-  console.log(`[诊断] 实际使用的数据目录: ${DATA_DIR}`);
-  console.log(`[诊断] 顾客数据文件路径: ${DATA_FILE}`);
-  try {
-    const exists = fs.existsSync(DATA_FILE);
-    console.log(`[诊断] 该文件是否存在: ${exists}`);
-    if (exists) {
-      const raw = fs.readFileSync(DATA_FILE, "utf-8");
-      const parsed = JSON.parse(raw);
-      console.log(`[诊断] 该文件里的顾客数量: ${parsed.length}`);
-    }
-  } catch (e) {
-    console.log(`[诊断] 读取文件时出错: ${e.message}`);
-  }
+  console.log(`服务器已启动,监听端口 ${PORT}`);
 });
