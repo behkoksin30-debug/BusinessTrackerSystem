@@ -1666,9 +1666,6 @@
       <label class="field-label" id="backgroundFieldLabel">背景</label>
       <textarea id="backgroundInput"></textarea>
 
-      <label class="field-label" id="oppDateFieldLabel">讲 OPP 的日期</label>
-      <input id="oppDateInput" type="date" />
-
       <div class="three-col-tight">
         <div>
           <label class="field-label" id="phoneFieldLabel2" style="margin-top:0;">电话号码(选填)</label>
@@ -1686,7 +1683,11 @@
 
       <div class="two-col-tight">
         <div>
-          <label class="field-label" id="statusFieldLabel">讲 OPP 之后的反应</label>
+          <label class="field-label" id="oppDateFieldLabel" style="margin-top:0;">讲 OPP 的日期</label>
+          <input id="oppDateInput" type="date" />
+        </div>
+        <div>
+          <label class="field-label" id="statusFieldLabel" style="margin-top:0;">讲 OPP 之后的反应</label>
           <select id="statusSelect">
             <option value="pending" id="statusPendingOpt">待跟进</option>
             <option value="considering" id="statusConsideringOpt">在考虑</option>
@@ -1697,13 +1698,9 @@
             <option value="unreachable" id="statusUnreachableOpt">联系不上</option>
           </select>
         </div>
-        <div>
-          <label class="field-label" id="interestedFieldLabel">对产品有兴趣吗</label>
-          <input id="interestedInput" type="text" />
-        </div>
       </div>
 
-      <label class="field-label" id="rejectionReasonFieldLabel">拒绝的原因</label>
+      <label class="field-label" id="rejectionReasonFieldLabel">拒绝原因/想了解产品</label>
       <select id="rejectionReasonSelect">
         <option value="" id="rejectionReasonNoneOpt">-</option>
         <option value="没有时间" id="rejectionReasonNoTimeOpt">没有时间</option>
@@ -1711,6 +1708,8 @@
         <option value="不感兴趣" id="rejectionReasonNotInterestedOpt">不感兴趣</option>
         <option value="对行业有负面印象" id="rejectionReasonNegativeOpt">对行业有负面印象</option>
         <option value="家人反对" id="rejectionReasonFamilyOpt">家人反对</option>
+        <option value="想先了解产品" id="rejectionReasonWantLearnOpt">想先了解产品</option>
+        <option value="想试用产品看看" id="rejectionReasonWantTryOpt">想试用产品看看</option>
         <option value="other" id="rejectionReasonOtherOpt">其他(自己填写)</option>
       </select>
       <input id="rejectionReasonOtherInput" type="text" style="display:none; margin-top:8px;" />
@@ -2263,14 +2262,15 @@ const I18N = {
     deleteProspectLabel: "删除这条记录",
     noOppDateHint: "未记录日期",
     statusFieldLabel: "讲 OPP 之后的反应",
-    interestedFieldLabel: "对产品有兴趣吗",
-    rejectionReasonFieldLabel: "拒绝的原因",
+    rejectionReasonFieldLabel: "拒绝原因/想了解产品",
     rejectionReasonNone: "-",
     rejectionReasonNoTime: "没有时间",
     rejectionReasonNoMoney: "没有资金",
     rejectionReasonNotInterested: "不感兴趣",
     rejectionReasonNegative: "对行业有负面印象",
     rejectionReasonFamily: "家人反对",
+    rejectionReasonWantLearn: "想先了解产品",
+    rejectionReasonWantTry: "想试用产品看看",
     rejectionReasonOther: "其他(自己填写)",
     statusOtherMember: "其他人的会员",
     followUpsFieldLabel: "跟进记录",
@@ -2519,14 +2519,15 @@ const I18N = {
     deleteProspectLabel: "Delete this record",
     noOppDateHint: "No date recorded",
     statusFieldLabel: "Reaction after OPP",
-    interestedFieldLabel: "Interested in products?",
-    rejectionReasonFieldLabel: "Reason for rejection",
+    rejectionReasonFieldLabel: "Reason for rejection / wants to learn more",
     rejectionReasonNone: "-",
     rejectionReasonNoTime: "No time",
     rejectionReasonNoMoney: "No money",
     rejectionReasonNotInterested: "Not interested",
     rejectionReasonNegative: "Negative view of the industry",
     rejectionReasonFamily: "Family objects",
+    rejectionReasonWantLearn: "Wants to learn about the product",
+    rejectionReasonWantTry: "Wants to try the product",
     rejectionReasonOther: "Other (type your own)",
     statusOtherMember: "Someone else's member",
     followUpsFieldLabel: "Follow-up records",
@@ -2717,7 +2718,8 @@ function applyLanguage() {
   document.getElementById("prospectDetailBackgroundTitle").textContent = s.backgroundFieldLabel;
   document.getElementById("prospectDetailNotesTitle").textContent = s.notesFieldLabel;
   document.getElementById("statusFieldLabel").textContent = s.statusFieldLabel;
-  document.getElementById("interestedFieldLabel").textContent = s.interestedFieldLabel;
+  document.getElementById("rejectionReasonWantLearnOpt").textContent = s.rejectionReasonWantLearn;
+  document.getElementById("rejectionReasonWantTryOpt").textContent = s.rejectionReasonWantTry;
   document.getElementById("rejectionReasonFieldLabel").textContent = s.rejectionReasonFieldLabel;
   document.getElementById("rejectionReasonNoneOpt").textContent = s.rejectionReasonNone;
   document.getElementById("rejectionReasonNoTimeOpt").textContent = s.rejectionReasonNoTime;
@@ -3509,7 +3511,6 @@ function resetProspectForm() {
   backgroundInput.value = "";
   prospectNotesInput.value = "";
   document.getElementById("statusSelect").value = "pending";
-  document.getElementById("interestedInput").value = "";
   setRejectionReasonValue("");
   followUpRows = [];
   renderFollowUpRows();
@@ -3566,8 +3567,7 @@ function openProspectDetailModal(id) {
 
   const flagsLine = document.getElementById("prospectDetailFlagsLine");
   const flagBits = [];
-  if (p.interested) flagBits.push(`💬 ${escapeHtml(p.interested)}`);
-  if (p.rejectionReason) flagBits.push(`❌ ${escapeHtml(p.rejectionReason)}`);
+  if (p.rejectionReason) flagBits.push(`📌 ${escapeHtml(p.rejectionReason)}`);
   if (flagBits.length > 0) {
     flagsLine.style.display = "flex";
     flagsLine.innerHTML = flagBits.join(" · ");
@@ -3641,7 +3641,6 @@ function openEditProspectModal(id) {
   backgroundInput.value = p.background || "";
   prospectNotesInput.value = p.notes || "";
   document.getElementById("statusSelect").value = p.status || "pending";
-  document.getElementById("interestedInput").value = p.interested || "";
   setRejectionReasonValue(p.rejectionReason || "");
   followUpRows = (Array.isArray(p.followUps) ? p.followUps : []).map(f => {
     followUpKeyCounter += 1;
@@ -3680,7 +3679,6 @@ async function saveProspect() {
   const background = backgroundInput.value.trim();
   const notes = prospectNotesInput.value.trim();
   const status = document.getElementById("statusSelect").value;
-  const interested = document.getElementById("interestedInput").value.trim();
   const rejectionReason = getRejectionReasonValue();
   prospectErrorMsg.style.display = "none";
 
@@ -3694,7 +3692,7 @@ async function saveProspect() {
     .map(r => ({ date: r.date.trim(), note: r.note.trim() }))
     .filter(f => f.date || f.note);
 
-  const payload = { name, gender: pSelectedGender, background, date, phone, oppDate, notes, status, followUps, interested, rejectionReason };
+  const payload = { name, gender: pSelectedGender, background, date, phone, oppDate, notes, status, followUps, rejectionReason };
 
   try {
     let res, saved;
