@@ -12,8 +12,9 @@ const PROSPECTS_FILE = path.join(DATA_DIR, "prospects.json");
 const BIRTHDAYS_FILE = path.join(DATA_DIR, "birthdays.json");
 const ABOS_FILE = path.join(DATA_DIR, "abos.json");
 const PARTNERS_FILE = path.join(DATA_DIR, "partners.json");
+const DASHBOARD_FILE = path.join(DATA_DIR, "dashboard.json");
 
-app.use(express.json());
+app.use(express.json({ limit: "6mb" }));
 app.use(express.static(path.join(__dirname, "public")));
 
 function sanitizePurchases(purchases) {
@@ -359,6 +360,33 @@ function buildCustomerFields(body) {
   };
 }
 
+// ---------- Dashboard 展示区(海报 + 标语 + 公告)----------
+
+function readDashboard() {
+  try {
+    const raw = fs.readFileSync(DASHBOARD_FILE, "utf-8");
+    const parsed = JSON.parse(raw);
+    return {
+      poster: parsed.poster || "",
+      tagline: parsed.tagline || "",
+      announcement: parsed.announcement || "",
+    };
+  } catch (e) {
+    return { poster: "", tagline: "", announcement: "" };
+  }
+}
+
+function writeDashboard(data) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+  const safe = {
+    poster: (data.poster || "").toString(),
+    tagline: (data.tagline || "").toString().trim(),
+    announcement: (data.announcement || "").toString().trim(),
+  };
+  fs.writeFileSync(DASHBOARD_FILE, JSON.stringify(safe, null, 2), "utf-8");
+  return safe;
+}
+
 // 获取所有顾客
 app.get("/api/customers", (req, res) => {
   res.json(readData());
@@ -602,6 +630,19 @@ app.delete("/api/partners/:id", (req, res) => {
   }
   writePartners(filtered);
   res.status(204).end();
+});
+
+// ---------- Dashboard 展示区 ----------
+
+// 获取 Dashboard 内容
+app.get("/api/dashboard", (req, res) => {
+  res.json(readDashboard());
+});
+
+// 保存 Dashboard 内容(海报 / 标语 / 公告)
+app.put("/api/dashboard", (req, res) => {
+  const saved = writeDashboard(req.body || {});
+  res.json(saved);
 });
 
 app.listen(PORT, () => {
