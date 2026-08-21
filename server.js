@@ -58,11 +58,6 @@ function sanitizeSawDemo(val) {
   return VALID_SAW_DEMO.includes(val) ? val : "";
 }
 
-const VALID_ADA = ["yes", "no"];
-function sanitizeAda(val) {
-  return VALID_ADA.includes(val) ? val : "";
-}
-
 const VALID_PARTNER_TYPE = ["new_start", "builder", "leader"];
 function sanitizePartnerType(val) {
   return VALID_PARTNER_TYPE.includes(val) ? val : "new_start";
@@ -197,7 +192,7 @@ function readPartners() {
       id: p.id,
       name: p.name || "",
       phone: p.phone || "",
-      ada: sanitizeAda(p.ada),
+      ada: p.ada || "",
       date: toMonthDay(p.date),
       pin: p.pin || "",
       partnerType: sanitizePartnerType(p.partnerType),
@@ -225,7 +220,7 @@ function buildPartnerFields(body) {
   return {
     name: name.trim(),
     phone: (phone || "").toString().trim(),
-    ada: sanitizeAda(ada),
+    ada: (ada || "").toString().trim(),
     date: toMonthDay(date),
     pin: (pin || "").toString().trim(),
     partnerType: sanitizePartnerType(partnerType),
