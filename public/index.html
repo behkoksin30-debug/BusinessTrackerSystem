@@ -1265,6 +1265,25 @@
       </div>
     </div>
 
+    <div class="opp-stats-bar" id="dashboardQuickStats">
+      <div class="opp-stat-chip">
+        <span class="opp-stat-number" id="quickStatsCustomerCount">0</span>
+        <span class="opp-stat-label" id="quickStatsCustomerLabel"></span>
+      </div>
+      <div class="opp-stat-chip">
+        <span class="opp-stat-number" id="quickStatsOppMonth">0</span>
+        <span class="opp-stat-label" id="quickStatsOppMonthLabel"></span>
+      </div>
+      <div class="opp-stat-chip">
+        <span class="opp-stat-number" id="quickStatsOppTotal">0</span>
+        <span class="opp-stat-label" id="quickStatsOppTotalLabel"></span>
+      </div>
+      <div class="opp-stat-chip">
+        <span class="opp-stat-number" id="quickStatsBirthdaySoon">0</span>
+        <span class="opp-stat-label" id="quickStatsBirthdayLabel"></span>
+      </div>
+    </div>
+
     <button class="enter-app-btn" id="enterAppBtn" type="button" onclick="enterMainApp()">
       <span id="enterAppLabel">进入</span>
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
@@ -2195,6 +2214,7 @@ const I18N = {
     dashboardPosterTooLarge: "图片太大,请选择小一点的图片",
     enterAppLabel: "进入",
     backToHomeLabel: "返回首页",
+    quickStatsBirthdayLabel: "未来 7 天内生日",
     customerTotalGoalPrompt: "设定累计顾客消费目标 (RM,留空表示不设定目标):",
     birthdaysStatsMonthLabel: "本月生日人数",
     birthdaysStatsTotalLabel: "累计生日人数",
@@ -2450,6 +2470,7 @@ const I18N = {
     dashboardPosterTooLarge: "Image too large, please pick a smaller one",
     enterAppLabel: "Enter",
     backToHomeLabel: "Back to Home",
+    quickStatsBirthdayLabel: "Birthdays in next 7 days",
     customerTotalGoalPrompt: "Set total customer spending goal (RM, leave blank for no goal):",
     birthdaysStatsMonthLabel: "Birthdays this month",
     birthdaysStatsTotalLabel: "Total birthdays",
@@ -2972,6 +2993,7 @@ function escapeAttr(str) {
 
 function render() {
   const s = t();
+  renderQuickStats();
 
   const customerStatsBar = document.getElementById("customerStatsBar");
   let allPurchases = [];
@@ -3174,6 +3196,36 @@ window.addEventListener("popstate", () => {
    ============================================================ */
 let currentTab = "customers";
 
+function renderQuickStats() {
+  const bar = document.getElementById("dashboardQuickStats");
+  if (!bar) return;
+  const s = t();
+
+  document.getElementById("quickStatsCustomerCount").textContent = prefs.customerCountGoal > 0
+    ? `${customers.length}/${prefs.customerCountGoal}`
+    : String(customers.length);
+  document.getElementById("quickStatsCustomerLabel").textContent = s.customerStatsCountLabel;
+
+  const withOppDate = prospects.filter(p => p.oppDate);
+  const now = new Date();
+  const thisMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const thisMonthCount = withOppDate.filter(p => p.oppDate.startsWith(thisMonthKey)).length;
+  document.getElementById("quickStatsOppMonth").textContent = prefs.oppMonthGoal > 0
+    ? `${thisMonthCount}/${prefs.oppMonthGoal}`
+    : String(thisMonthCount);
+  document.getElementById("quickStatsOppMonthLabel").textContent = s.oppStatsThisMonthLabel;
+  document.getElementById("quickStatsOppTotal").textContent = prefs.oppGoal > 0
+    ? `${withOppDate.length}/${prefs.oppGoal}`
+    : String(withOppDate.length);
+  document.getElementById("quickStatsOppTotalLabel").textContent = s.oppStatsTotalLabel;
+
+  const soonThreshold = 7;
+  const peopleWithBirthdays = [...customers, ...birthdays].filter(p => p.date);
+  const soonCount = peopleWithBirthdays.filter(p => daysUntilNextBirthday(p.date) <= soonThreshold).length;
+  document.getElementById("quickStatsBirthdaySoon").textContent = String(soonCount);
+  document.getElementById("quickStatsBirthdayLabel").textContent = s.quickStatsBirthdayLabel;
+}
+
 function enterMainApp() {
   document.getElementById("page1View").style.display = "none";
   document.getElementById("page2View").style.display = "block";
@@ -3243,6 +3295,7 @@ document.getElementById("prospectSortSelect").addEventListener("change", renderP
 function renderProspects() {
   if (!prospectsContentEl) return;
   const s = t();
+  renderQuickStats();
 
   const oppStatsBar = document.getElementById("oppStatsBar");
   const withOppDate = prospects.filter(p => p.oppDate);
@@ -3728,6 +3781,7 @@ document.getElementById("birthdaySortSelect").addEventListener("change", renderB
 function renderBirthdays() {
   if (!birthdaysContentEl) return;
   const s = t();
+  renderQuickStats();
 
   const birthdaysStatsBar = document.getElementById("birthdaysStatsBar");
   if (birthdays.length > 0 || prefs.birthdaysGoal > 0) {
