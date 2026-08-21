@@ -226,6 +226,16 @@
   }
   .add-btn:hover { filter: brightness(0.94); }
 
+  .downline-switcher-wrap { margin-bottom: 12px; }
+  .viewing-as-banner {
+    background: color-mix(in srgb, var(--warn) 16%, var(--card));
+    color: var(--warn);
+    border-radius: 12px;
+    padding: 10px 14px;
+    font-size: 12px;
+    margin-bottom: 16px;
+    font-weight: 600;
+  }
   .dashboard-section { margin-bottom: 20px; }
   .dashboard-poster-wrap {
     position: relative;
@@ -492,6 +502,26 @@
     overflow-y: auto;
   }
   .modal-overlay.open { display: flex; }
+
+  .auth-view {
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    z-index: 9999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .auth-box {
+    width: 100%;
+    max-width: 380px;
+  }
+  .auth-submit-btn {
+    width: 100%;
+    margin-top: 16px;
+  }
+
   .modal-box {
     background: var(--card);
     border-radius: 18px;
@@ -852,6 +882,69 @@
   }
   .icon-upload-reset:hover { color: var(--accent); }
 
+  .downline-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 10px;
+    border-radius: 10px;
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    margin-bottom: 6px;
+    font-size: 12px;
+  }
+  .downline-item .downline-name { color: var(--text); font-weight: 600; }
+  .downline-item button {
+    padding: 4px 8px;
+    border-radius: 6px;
+    border: none;
+    background: none;
+    color: var(--muted-light);
+    font-size: 11px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .downline-item button:hover { color: var(--accent); }
+  .downline-add-row {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 8px;
+  }
+  .downline-add-row input {
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--input-border);
+    background: var(--input-bg);
+    color: var(--text);
+    font-size: 12px;
+    font-family: inherit;
+    outline: none;
+  }
+  .downline-add-row button {
+    padding: 8px 0;
+    border-radius: 8px;
+    border: none;
+    background: var(--accent);
+    color: var(--accent-text);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .logout-btn {
+    width: 100%;
+    padding: 10px 0;
+    border-radius: 10px;
+    border: 1px solid var(--input-border);
+    background: none;
+    color: var(--muted);
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+  }
+  .logout-btn:hover { color: var(--accent); border-color: var(--accent); }
+
   .error-msg {
     font-size: 12px;
     color: var(--accent);
@@ -1181,6 +1274,36 @@
 </style>
 </head>
 <body>
+  <div id="authView" class="auth-view">
+    <div class="auth-box">
+      <div class="icon-badge" style="margin: 0 auto 16px;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-text)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      </div>
+
+      <div id="authSetupForm" style="display:none;">
+        <p class="modal-title" id="authSetupTitle" style="text-align:center;">创建你的账号</p>
+        <p class="modal-subtitle" id="authSetupSubtitle" style="text-align:center; margin-bottom:20px;">这是你的管理员账号,之后可以在设置里帮下线开账号</p>
+        <label class="field-label" id="authSetupUsernameLabel" style="margin-top:0;">用户名</label>
+        <input id="setupUsernameInput" type="text" autocomplete="username" />
+        <label class="field-label" id="authSetupPasswordLabel">密码(至少 4 位)</label>
+        <input id="setupPasswordInput" type="password" autocomplete="new-password" />
+        <button class="primary-btn auth-submit-btn" id="setupSubmitBtn" type="button"><span id="authSetupSubmitLabel">创建账号</span></button>
+      </div>
+
+      <div id="authLoginForm" style="display:none;">
+        <p class="modal-title" id="authLoginTitle" style="text-align:center;">登录</p>
+        <p class="modal-subtitle" id="authLoginSubtitle" style="text-align:center; margin-bottom:20px;">请输入你的账号密码</p>
+        <label class="field-label" id="authLoginUsernameLabel" style="margin-top:0;">用户名</label>
+        <input id="loginUsernameInput" type="text" autocomplete="username" />
+        <label class="field-label" id="authLoginPasswordLabel">密码</label>
+        <input id="loginPasswordInput" type="password" autocomplete="current-password" />
+        <button class="primary-btn auth-submit-btn" id="loginSubmitBtn" type="button"><span id="authLoginSubmitLabel">登录</span></button>
+      </div>
+
+      <p class="error-msg" id="authErrorMsg" style="display:none;"></p>
+    </div>
+  </div>
+
   <div class="wrap">
     <div id="page1View">
     <div class="header">
@@ -1241,10 +1364,34 @@
               <button class="icon-upload-reset" id="iconResetBtn" type="button">重置</button>
             </div>
           </div>
+          <div class="settings-section" id="downlineManageSection" style="display:none;">
+            <p class="settings-label" id="downlineManageLabel">管理下线账号</p>
+            <div id="downlineManageList"></div>
+            <div class="downline-add-row">
+              <input type="text" id="newDownlineUsernameInput" />
+              <input type="password" id="newDownlinePasswordInput" />
+              <button type="button" id="addDownlineBtn"><span id="addDownlineBtnLabel">新增</span></button>
+            </div>
+            <p class="error-msg" id="downlineManageError" style="display:none;"></p>
+          </div>
+          <div class="settings-section">
+            <button class="logout-btn" id="logoutBtn" type="button"><span id="logoutBtnLabel">退出登录</span></button>
+          </div>
         </div>
       </div>
     </div>
     <p class="subtitle" id="subtitle">记录顾客资料、购买记录与生日,轻松跟进每一位顾客</p>
+
+    <div class="downline-switcher-wrap" id="downlineSwitcherWrap" style="display:none;">
+      <label class="field-label" id="downlineSwitcherLabel" style="margin-top:0;">查看资料</label>
+      <select id="downlineSwitcherSelect">
+        <option value="" id="downlineSwitcherSelfOpt">我自己</option>
+      </select>
+    </div>
+
+    <div class="viewing-as-banner" id="viewingAsBanner" style="display:none;">
+      <span id="viewingAsBannerText"></span>
+    </div>
 
     <div class="dashboard-section">
       <div class="dashboard-poster-wrap" id="dashboardPosterWrap" onclick="triggerPosterUpload()">
@@ -2077,6 +2224,172 @@
   </div>
 
 <script>
+/* ============================================================
+   账号系统:登录状态、fetch 拦截器(自动带上登录令牌)、登录/设置账号画面
+   ============================================================ */
+let authToken = localStorage.getItem("authToken") || "";
+let currentUser = null; // { username, role }
+let viewingAsUser = null; // 上线正在查看的下线用户名,自己查看自己时是 null
+
+// 拦截所有 fetch 请求,自动带上登录令牌;查看下线资料时,GET 请求自动带上 viewAs 参数
+const _rawFetch = window.fetch.bind(window);
+window.fetch = function (url, options) {
+  const opts = Object.assign({}, options || {});
+  opts.headers = Object.assign({}, opts.headers || {});
+  if (authToken) {
+    opts.headers["Authorization"] = "Bearer " + authToken;
+  }
+  const isDataApi = /^\/api\/(customers|prospects|birthdays|abos|partners|dashboard)(\/|$|\?)/.test(url);
+  if (viewingAsUser && isDataApi && (!opts.method || opts.method === "GET")) {
+    const sep = url.indexOf("?") === -1 ? "?" : "&";
+    url = url + sep + "viewAs=" + encodeURIComponent(viewingAsUser);
+  }
+  return _rawFetch(url, opts);
+};
+
+const authView = document.getElementById("authView");
+
+function showAuthError(msg) {
+  const el = document.getElementById("authErrorMsg");
+  el.textContent = msg;
+  el.style.display = "block";
+}
+
+function hideAuthError() {
+  document.getElementById("authErrorMsg").style.display = "none";
+}
+
+function showSetupForm() {
+  authView.style.display = "flex";
+  document.getElementById("authSetupForm").style.display = "block";
+  document.getElementById("authLoginForm").style.display = "none";
+  hideAuthError();
+}
+
+function showLoginForm() {
+  authView.style.display = "flex";
+  document.getElementById("authLoginForm").style.display = "block";
+  document.getElementById("authSetupForm").style.display = "none";
+  hideAuthError();
+}
+
+function showApp() {
+  authView.style.display = "none";
+  initAppAfterLogin();
+}
+
+async function checkAuthStatus() {
+  if (authToken) {
+    try {
+      const res = await fetch("/api/auth/me");
+      if (res.ok) {
+        currentUser = await res.json();
+        showApp();
+        return;
+      }
+    } catch (e) {}
+    authToken = "";
+    localStorage.removeItem("authToken");
+  }
+  try {
+    const res = await fetch("/api/auth/status");
+    const data = await res.json();
+    if (data.hasUsers) {
+      showLoginForm();
+    } else {
+      showSetupForm();
+    }
+  } catch (e) {
+    showLoginForm();
+  }
+}
+
+async function submitSetup() {
+  const username = document.getElementById("setupUsernameInput").value.trim();
+  const password = document.getElementById("setupPasswordInput").value;
+  hideAuthError();
+  if (!username || !password || password.length < 4) {
+    showAuthError("请填写用户名,密码至少 4 位");
+    return;
+  }
+  try {
+    const res = await fetch("/api/auth/setup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      showAuthError(data.error || "创建账号失败,请重试");
+      return;
+    }
+    authToken = data.token;
+    localStorage.setItem("authToken", authToken);
+    currentUser = { username: data.username, role: data.role };
+    showApp();
+  } catch (e) {
+    showAuthError("网络错误,请重试");
+  }
+}
+
+async function submitLogin() {
+  const username = document.getElementById("loginUsernameInput").value.trim();
+  const password = document.getElementById("loginPasswordInput").value;
+  hideAuthError();
+  if (!username || !password) {
+    showAuthError("请填写用户名和密码");
+    return;
+  }
+  try {
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      showAuthError(data.error || "用户名或密码不正确");
+      return;
+    }
+    authToken = data.token;
+    localStorage.setItem("authToken", authToken);
+    currentUser = { username: data.username, role: data.role };
+    showApp();
+  } catch (e) {
+    showAuthError("网络错误,请重试");
+  }
+}
+
+document.getElementById("setupSubmitBtn").addEventListener("click", submitSetup);
+document.getElementById("loginSubmitBtn").addEventListener("click", submitLogin);
+[document.getElementById("setupUsernameInput"), document.getElementById("setupPasswordInput")].forEach(el => {
+  el.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); submitSetup(); } });
+});
+[document.getElementById("loginUsernameInput"), document.getElementById("loginPasswordInput")].forEach(el => {
+  el.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); submitLogin(); } });
+});
+
+async function logout() {
+  try {
+    await fetch("/api/auth/logout", { method: "POST" });
+  } catch (e) {}
+  authToken = "";
+  currentUser = null;
+  viewingAsUser = null;
+  localStorage.removeItem("authToken");
+  location.reload();
+}
+
+// 正在查看下线资料时,禁止任何新增/编辑/删除操作(只读)。
+// 在每个保存/删除函数最前面调用,true 表示已阻止、直接 return。
+function blockIfViewingDownline() {
+  if (viewingAsUser) {
+    alert(t().viewingDownlineBlocked);
+    return true;
+  }
+  return false;
+}
+
 const API = "/api/customers";
 let customers = [];
 const INACTIVE_DAYS_THRESHOLD = 60; // 约 2 个月
@@ -2209,6 +2522,26 @@ const I18N = {
     moveToCustomerLabel: "移到顾客",
     moveConfirm: (name, target) => `确定要把「${name}」移动到${target}吗?移动后,原本这里的资料会被删除,资料会转移过去。`,
     moveFailed: "移动失败,请重试",
+    viewingDownlineBlocked: "正在查看下线的资料,无法编辑。请先切换回「我自己」。",
+    downlineSwitcherLabel: "查看资料",
+    downlineSwitcherSelf: "我自己",
+    viewingAsBannerText: (username) => `正在查看「${username}」的资料(只读,无法编辑)`,
+    downlineManageLabel: "管理下线账号",
+    downlineEmptyHint: "还没有开任何下线账号",
+    downlineAddError: "请填写用户名,密码至少 4 位",
+    deleteDownlineConfirm: (username) => `确定要删除「${username}」这个账号吗?删除后他将无法再登录,但他的资料会保留(不会被删除)。`,
+    logoutConfirm: "确定要退出登录吗?",
+    authSetupTitle: "创建你的账号",
+    authSetupSubtitleText: "这是你的管理员账号,之后可以在设置里帮下线开账号",
+    authSetupUsernameLabel: "用户名",
+    authSetupPasswordLabel: "密码(至少 4 位)",
+    authSetupSubmitLabel: "创建账号",
+    authLoginTitle: "登录",
+    authLoginSubtitleText: "请输入你的账号密码",
+    authLoginPasswordLabel: "密码",
+    authLoginSubmitLabel: "登录",
+    addDownlineBtnLabel: "新增",
+    logoutBtnLabel: "退出登录",
     dashboardPosterPlaceholder: "点击上传海报",
     dashboardPosterChangeLabel: "更换",
     dashboardPosterRemoveLabel: "删除",
@@ -2466,6 +2799,26 @@ const I18N = {
     moveToCustomerLabel: "Move to Customers",
     moveConfirm: (name, target) => `Move "${name}" to ${target}? The record here will be deleted and the data moved over.`,
     moveFailed: "Move failed, please try again",
+    viewingDownlineBlocked: "You're viewing a downline's data and can't edit it. Switch back to \"Myself\" first.",
+    downlineSwitcherLabel: "View data",
+    downlineSwitcherSelf: "Myself",
+    viewingAsBannerText: (username) => `Viewing "${username}"'s data (read-only, cannot edit)`,
+    downlineManageLabel: "Manage Downline Accounts",
+    downlineEmptyHint: "No downline accounts yet",
+    downlineAddError: "Please fill in username, password at least 4 characters",
+    deleteDownlineConfirm: (username) => `Delete the account "${username}"? They will no longer be able to log in, but their data will be kept (not deleted).`,
+    logoutConfirm: "Are you sure you want to log out?",
+    authSetupTitle: "Create Your Account",
+    authSetupSubtitleText: "This is your admin account. You can create downline accounts later in Settings.",
+    authSetupUsernameLabel: "Username",
+    authSetupPasswordLabel: "Password (at least 4 characters)",
+    authSetupSubmitLabel: "Create Account",
+    authLoginTitle: "Log In",
+    authLoginSubtitleText: "Enter your username and password",
+    authLoginPasswordLabel: "Password",
+    authLoginSubmitLabel: "Log In",
+    addDownlineBtnLabel: "Add",
+    logoutBtnLabel: "Log Out",
     dashboardPosterPlaceholder: "Click to upload a poster",
     dashboardPosterChangeLabel: "Change",
     dashboardPosterRemoveLabel: "Remove",
@@ -2822,6 +3175,23 @@ function applyLanguage() {
   renderPartners();
   document.getElementById("dashboardTextModalTitle").textContent = s.dashboardTextModalTitle;
   document.getElementById("enterAppLabel").textContent = s.enterAppLabel;
+  document.getElementById("downlineSwitcherLabel").textContent = s.downlineSwitcherLabel;
+  document.getElementById("downlineManageLabel").textContent = s.downlineManageLabel;
+  document.getElementById("newDownlineUsernameInput").placeholder = s.authSetupUsernameLabel;
+  document.getElementById("newDownlinePasswordInput").placeholder = s.authSetupPasswordLabel;
+  document.getElementById("addDownlineBtnLabel").textContent = s.addDownlineBtnLabel;
+  document.getElementById("logoutBtnLabel").textContent = s.logoutBtnLabel;
+  document.getElementById("authSetupTitle").textContent = s.authSetupTitle;
+  document.getElementById("authSetupSubtitle").textContent = s.authSetupSubtitleText;
+  document.getElementById("authSetupUsernameLabel").textContent = s.authSetupUsernameLabel;
+  document.getElementById("authSetupPasswordLabel").textContent = s.authSetupPasswordLabel;
+  document.getElementById("authSetupSubmitLabel").textContent = s.authSetupSubmitLabel;
+  document.getElementById("authLoginTitle").textContent = s.authLoginTitle;
+  document.getElementById("authLoginSubtitle").textContent = s.authLoginSubtitleText;
+  document.getElementById("authLoginUsernameLabel").textContent = s.authSetupUsernameLabel;
+  document.getElementById("authLoginPasswordLabel").textContent = s.authLoginPasswordLabel;
+  document.getElementById("authLoginSubmitLabel").textContent = s.authLoginSubmitLabel;
+  if (currentUser) loadDownlines();
   document.getElementById("backToHomeLabel").textContent = s.backToHomeLabel;
   document.getElementById("dashboardTaglineFieldLabel").textContent = s.dashboardTaglineFieldLabel;
   document.getElementById("dashboardAnnouncementFieldLabel").textContent = s.dashboardAnnouncementFieldLabel;
@@ -3267,6 +3637,7 @@ function switchTab(tab) {
 }
 
 document.getElementById("openAddBtn").addEventListener("click", () => {
+  if (blockIfViewingDownline()) return;
   if (currentTab === "prospects") {
     openAddProspectModal();
   } else if (currentTab === "birthdays") {
@@ -3670,6 +4041,7 @@ function showProspectError(msg) {
 }
 
 async function saveProspect() {
+  if (blockIfViewingDownline()) return;
   const s = t();
   const name = prospectNameInput.value.trim();
   const phone = prospectPhoneInput.value.trim();
@@ -3730,6 +4102,7 @@ async function saveProspect() {
 document.getElementById("saveProspectBtn").addEventListener("click", saveProspect);
 
 async function deleteProspectById(id) {
+  if (blockIfViewingDownline()) return false;
   const s = t();
   try {
     await fetch(`${PROSPECTS_API}/${id}`, { method: "DELETE" });
@@ -3743,6 +4116,7 @@ async function deleteProspectById(id) {
 }
 
 async function deleteProspectFromRow(id) {
+  if (blockIfViewingDownline()) return;
   const s = t();
   const p = prospects.find(x => x.id === id);
   if (!p) return;
@@ -4018,6 +4392,7 @@ function showBirthdayError(msg) {
 }
 
 async function saveBirthday() {
+  if (blockIfViewingDownline()) return;
   const s = t();
   const name = birthdayNameInput.value.trim();
   const phone = birthdayPhoneInput.value.trim();
@@ -4067,6 +4442,7 @@ async function saveBirthday() {
 document.getElementById("saveBirthdayBtn").addEventListener("click", saveBirthday);
 
 async function deleteBirthdayById(id) {
+  if (blockIfViewingDownline()) return false;
   const s = t();
   try {
     await fetch(`${BIRTHDAYS_API}/${id}`, { method: "DELETE" });
@@ -4080,6 +4456,7 @@ async function deleteBirthdayById(id) {
 }
 
 async function deleteBirthdayFromRow(id) {
+  if (blockIfViewingDownline()) return;
   const s = t();
   const b = birthdays.find(x => x.id === id);
   if (!b) return;
@@ -4437,6 +4814,7 @@ function showAboError(msg) {
 }
 
 async function saveAbo() {
+  if (blockIfViewingDownline()) return;
   const s = t();
   const name = aboNameInput.value.trim();
   const phone = aboPhoneInput.value.trim();
@@ -4488,6 +4866,7 @@ async function saveAbo() {
 document.getElementById("saveAboBtn").addEventListener("click", saveAbo);
 
 async function deleteAboById(id) {
+  if (blockIfViewingDownline()) return false;
   const s = t();
   try {
     await fetch(`${ABOS_API}/${id}`, { method: "DELETE" });
@@ -4501,6 +4880,7 @@ async function deleteAboById(id) {
 }
 
 async function deleteAboFromRow(id) {
+  if (blockIfViewingDownline()) return;
   const s = t();
   const a = abos.find(x => x.id === id);
   if (!a) return;
@@ -4791,6 +5171,7 @@ function showPartnerError(msg) {
 }
 
 async function savePartner() {
+  if (blockIfViewingDownline()) return;
   const s = t();
   const name = partnerNameInput.value.trim();
   const phone = partnerPhoneInput.value.trim();
@@ -4845,6 +5226,7 @@ async function savePartner() {
 document.getElementById("savePartnerBtn").addEventListener("click", savePartner);
 
 async function deletePartnerById(id) {
+  if (blockIfViewingDownline()) return false;
   const s = t();
   try {
     await fetch(`${PARTNERS_API}/${id}`, { method: "DELETE" });
@@ -4858,6 +5240,7 @@ async function deletePartnerById(id) {
 }
 
 async function deletePartnerFromRow(id) {
+  if (blockIfViewingDownline()) return;
   const s = t();
   const p = partners.find(x => x.id === id);
   if (!p) return;
@@ -5218,6 +5601,7 @@ function showError(msg) {
 }
 
 async function saveCustomer() {
+  if (blockIfViewingDownline()) return;
   const s = t();
   const name = nameInput.value.trim();
   const phone = phoneInput.value.trim();
@@ -5276,6 +5660,7 @@ async function saveCustomer() {
 document.getElementById("saveCustomerBtn").addEventListener("click", saveCustomer);
 
 async function deleteCustomerById(id) {
+  if (blockIfViewingDownline()) return false;
   const s = t();
   try {
     await fetch(`${API}/${id}`, { method: "DELETE" });
@@ -5289,6 +5674,7 @@ async function deleteCustomerById(id) {
 }
 
 async function deleteCustomerFromRow(id) {
+  if (blockIfViewingDownline()) return;
   const s = t();
   const c = customers.find(x => x.id === id);
   if (!c) return;
@@ -5557,6 +5943,7 @@ function renderDashboard() {
 }
 
 function triggerPosterUpload() {
+  if (blockIfViewingDownline()) return;
   document.getElementById("dashboardPosterInput").click();
 }
 
@@ -5592,6 +5979,7 @@ document.getElementById("dashboardPosterInput").addEventListener("change", (e) =
 });
 
 function removeDashboardPoster() {
+  if (blockIfViewingDownline()) return;
   dashboardData.poster = "";
   saveDashboard();
 }
@@ -5613,6 +6001,7 @@ async function saveDashboard() {
 const dashboardTextOverlay = document.getElementById("dashboardTextOverlay");
 
 function openDashboardTextModal() {
+  if (blockIfViewingDownline()) return;
   document.getElementById("dashboardTaglineInput").value = dashboardData.tagline || "";
   document.getElementById("dashboardAnnouncementInput").value = dashboardData.announcement || "";
   dashboardTextOverlay.classList.add("open");
@@ -5653,6 +6042,7 @@ function moveApiFor(type) {
 }
 
 async function moveRecord(sourceType, id, targetType) {
+  if (blockIfViewingDownline()) return;
   const s = t();
   const sourceList = sourceType === "customer" ? customers : sourceType === "prospect" ? prospects : partners;
   const record = sourceList.find(x => x.id === id);
@@ -5699,14 +6089,138 @@ async function moveRecord(sourceType, id, targetType) {
   }
 }
 
-setCategory("new");
-applyPrefs();
-loadCustomers();
-loadProspects();
-loadBirthdays();
-loadAbos();
-loadPartners();
-loadDashboard();
+async function loadDownlines() {
+  if (!currentUser || currentUser.role !== "admin") return;
+  document.getElementById("downlineSwitcherWrap").style.display = "block";
+  document.getElementById("downlineManageSection").style.display = "block";
+  try {
+    const res = await fetch("/api/auth/downlines");
+    const downlines = await res.json();
+
+    const select = document.getElementById("downlineSwitcherSelect");
+    const previousValue = select.value;
+    select.innerHTML = "";
+    const selfOpt = document.createElement("option");
+    selfOpt.value = "";
+    selfOpt.id = "downlineSwitcherSelfOpt";
+    selfOpt.textContent = t().downlineSwitcherSelf;
+    select.appendChild(selfOpt);
+    downlines.forEach(d => {
+      const opt = document.createElement("option");
+      opt.value = d.username;
+      opt.textContent = d.username;
+      select.appendChild(opt);
+    });
+    if ([...select.options].some(o => o.value === previousValue)) {
+      select.value = previousValue;
+    }
+
+    renderDownlineManageList(downlines);
+  } catch (e) {}
+}
+
+function renderDownlineManageList(downlines) {
+  const s = t();
+  const listEl = document.getElementById("downlineManageList");
+  if (!downlines || downlines.length === 0) {
+    listEl.innerHTML = `<p class="settings-hint" id="downlineEmptyHint">${s.downlineEmptyHint}</p>`;
+    return;
+  }
+  listEl.innerHTML = downlines.map(d => `
+    <div class="downline-item">
+      <span class="downline-name">${escapeHtml(d.username)}</span>
+      <button type="button" onclick="deleteDownline('${escapeAttr(d.username)}')">${s.deleteLabel}</button>
+    </div>
+  `).join("");
+}
+
+async function addDownline() {
+  const s = t();
+  const usernameInput = document.getElementById("newDownlineUsernameInput");
+  const passwordInput = document.getElementById("newDownlinePasswordInput");
+  const errorEl = document.getElementById("downlineManageError");
+  errorEl.style.display = "none";
+  const username = usernameInput.value.trim();
+  const password = passwordInput.value;
+  if (!username || !password || password.length < 4) {
+    errorEl.textContent = s.downlineAddError;
+    errorEl.style.display = "block";
+    return;
+  }
+  try {
+    const res = await fetch("/api/auth/downlines", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      errorEl.textContent = data.error || s.downlineAddError;
+      errorEl.style.display = "block";
+      return;
+    }
+    usernameInput.value = "";
+    passwordInput.value = "";
+    loadDownlines();
+  } catch (e) {
+    errorEl.textContent = s.errorNetwork;
+    errorEl.style.display = "block";
+  }
+}
+
+document.getElementById("addDownlineBtn").addEventListener("click", addDownline);
+
+async function deleteDownline(username) {
+  const s = t();
+  if (!confirm(s.deleteDownlineConfirm(username))) return;
+  try {
+    await fetch(`/api/auth/downlines/${encodeURIComponent(username)}`, { method: "DELETE" });
+    if (viewingAsUser === username) {
+      switchViewingUser("");
+    }
+    loadDownlines();
+  } catch (e) {
+    alert(s.deleteFailed);
+  }
+}
+
+document.getElementById("logoutBtn").addEventListener("click", () => {
+  if (confirm(t().logoutConfirm)) logout();
+});
+
+function reloadAllData() {
+  loadCustomers();
+  loadProspects();
+  loadBirthdays();
+  loadAbos();
+  loadPartners();
+  loadDashboard();
+}
+
+function switchViewingUser(username) {
+  viewingAsUser = username || null;
+  const banner = document.getElementById("viewingAsBanner");
+  if (viewingAsUser) {
+    banner.style.display = "block";
+    document.getElementById("viewingAsBannerText").textContent = t().viewingAsBannerText(viewingAsUser);
+  } else {
+    banner.style.display = "none";
+  }
+  reloadAllData();
+}
+
+document.getElementById("downlineSwitcherSelect").addEventListener("change", (e) => {
+  switchViewingUser(e.target.value);
+});
+
+function initAppAfterLogin() {
+  setCategory("new");
+  applyPrefs();
+  loadDownlines();
+  reloadAllData();
+}
+
+checkAuthStatus();
 </script>
 </body>
 </html>
