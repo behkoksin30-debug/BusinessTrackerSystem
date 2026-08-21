@@ -16,7 +16,7 @@
 <meta name="apple-mobile-web-app-title" content="顾客记录" />
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
     --bg: #F7F7F8;
@@ -51,7 +51,7 @@
     min-height: 100vh;
     transition: background 0.2s, color 0.2s;
   }
-  .font-display { font-family: 'Fraunces', serif; }
+  .font-display { font-family: 'Manrope', sans-serif; font-weight: 800; }
   .wrap {
     max-width: 680px;
     margin: 0 auto;
@@ -271,9 +271,9 @@
   .dashboard-poster-actions button:hover { background: rgba(0,0,0,0.75); }
   .dashboard-text-wrap { cursor: pointer; }
   .dashboard-tagline {
-    font-family: 'Fraunces', serif;
+    font-family: 'Manrope', sans-serif;
     font-size: 17px;
-    font-weight: 600;
+    font-weight: 700;
     color: var(--text);
     margin: 0 0 4px;
   }
@@ -420,13 +420,13 @@
     letter-spacing: 0.03em;
     flex-shrink: 0;
   }
-  .category-badge.new { background: color-mix(in srgb, var(--accent) 8%, var(--card)); color: var(--accent); }
-  .category-badge.regular { background: color-mix(in srgb, var(--accent) 14%, var(--card)); color: var(--accent); }
-  .category-badge.vip { background: color-mix(in srgb, var(--accent) 24%, var(--card)); color: var(--accent); font-weight: 700; }
-  .category-badge.vvip { background: var(--accent); color: var(--accent-text); font-weight: 800; }
-  .category-badge.new_start { background: color-mix(in srgb, var(--accent) 10%, var(--card)); color: var(--accent); }
-  .category-badge.builder { background: color-mix(in srgb, var(--accent) 18%, var(--card)); color: var(--accent); font-weight: 700; }
-  .category-badge.leader { background: color-mix(in srgb, var(--accent) 28%, var(--card)); color: var(--accent); font-weight: 800; }
+  .category-badge.new { background: color-mix(in srgb, #5B5FC7 18%, var(--card)); color: #5B5FC7; }
+  .category-badge.regular { background: color-mix(in srgb, var(--muted) 16%, var(--card)); color: var(--muted); }
+  .category-badge.vip { background: color-mix(in srgb, #C08A2E 22%, var(--card)); color: #C08A2E; font-weight: 700; }
+  .category-badge.vvip { background: color-mix(in srgb, #9B2C5A 28%, var(--card)); color: #9B2C5A; font-weight: 800; }
+  .category-badge.new_start { background: color-mix(in srgb, #5B5FC7 18%, var(--card)); color: #5B5FC7; }
+  .category-badge.builder { background: color-mix(in srgb, #2F8F84 18%, var(--card)); color: #2F8F84; font-weight: 700; }
+  .category-badge.leader { background: color-mix(in srgb, #C08A2E 24%, var(--card)); color: #C08A2E; font-weight: 800; }
   .cust-meta {
     font-size: 12px;
     color: var(--muted);
@@ -503,9 +503,9 @@
   }
   .modal-title {
     font-size: 17px;
-    font-weight: 600;
+    font-weight: 700;
     margin: 0 0 4px;
-    font-family: 'Fraunces', serif;
+    font-family: 'Manrope', sans-serif;
   }
   .modal-subtitle {
     font-size: 12px;
@@ -661,9 +661,9 @@
     gap: 2px;
   }
   .opp-stat-number {
-    font-family: 'Fraunces', serif;
+    font-family: 'Manrope', sans-serif;
     font-size: 24px;
-    font-weight: 600;
+    font-weight: 800;
     color: var(--accent);
     line-height: 1.1;
   }
@@ -765,13 +765,13 @@
     letter-spacing: 0.03em;
     flex-shrink: 0;
   }
-  .status-badge.pending { background: color-mix(in srgb, var(--muted) 12%, var(--card)); color: var(--muted); }
-  .status-badge.considering { background: color-mix(in srgb, var(--accent) 14%, var(--card)); color: var(--accent); }
-  .status-badge.not_interested { background: color-mix(in srgb, var(--muted) 16%, var(--card)); color: var(--muted); }
-  .status-badge.joined { background: color-mix(in srgb, var(--accent) 22%, var(--card)); color: var(--accent); font-weight: 700; }
-  .status-badge.customer { background: color-mix(in srgb, var(--accent) 28%, var(--card)); color: var(--accent); font-weight: 800; }
-  .status-badge.other_member { background: color-mix(in srgb, var(--muted) 18%, var(--card)); color: var(--muted); }
-  .status-badge.unreachable { background: color-mix(in srgb, var(--muted) 10%, var(--card)); color: var(--muted-light); }
+  .status-badge.pending { background: color-mix(in srgb, var(--muted) 15%, var(--card)); color: var(--muted); }
+  .status-badge.considering { background: color-mix(in srgb, #C08A2E 18%, var(--card)); color: #C08A2E; }
+  .status-badge.not_interested { background: color-mix(in srgb, #C4635A 16%, var(--card)); color: #C4635A; }
+  .status-badge.joined { background: color-mix(in srgb, #2F8F84 20%, var(--card)); color: #2F8F84; font-weight: 700; }
+  .status-badge.customer { background: color-mix(in srgb, #5B5FC7 20%, var(--card)); color: #5B5FC7; font-weight: 800; }
+  .status-badge.other_member { background: color-mix(in srgb, #8A6D3B 20%, var(--card)); color: #8A6D3B; }
+  .status-badge.unreachable { background: color-mix(in srgb, var(--muted) 12%, var(--card)); color: var(--muted-light); }
 
   .opp-date-badge {
     font-size: 11px;
@@ -1092,7 +1092,7 @@
     gap: 8px;
     flex-wrap: wrap;
   }
-  .detail-name { font-size: 17px; font-weight: 600; margin: 0; font-family: 'Fraunces', serif; }
+  .detail-name { font-size: 17px; font-weight: 700; margin: 0; font-family: 'Manrope', sans-serif; }
   .detail-info-line {
     font-size: 13px;
     color: var(--muted);
