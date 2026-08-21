@@ -438,10 +438,13 @@
   }
   input::placeholder, textarea::placeholder { color: var(--muted-light); }
 
-  .emoji-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-  .emoji-row .name-input-wrap { flex: 2 1 140px; }
-  .emoji-row .inline-gender-wrap { flex: 1 1 100px; min-width: 90px; }
+  .emoji-row { display: flex; align-items: center; gap: 8px; }
+  .emoji-row .name-input-wrap { flex: 1 1 0; min-width: 0; }
+  .emoji-row .name-input-wrap input { width: 100%; }
+  .emoji-row .inline-gender-wrap { flex: 0 0 92px; }
+  .emoji-row .inline-gender-wrap select { padding-left: 8px; padding-right: 8px; }
   .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .two-col-tight { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 
   .category-toggle {
     display: flex;
@@ -1322,7 +1325,7 @@
         </div>
       </div>
 
-      <div class="two-col">
+      <div class="two-col-tight">
         <div>
           <label class="field-label" id="lastMeetingFieldLabel" style="margin-top:0;">最后一次见面(选填)</label>
           <input id="lastMeetingInput" type="date" />
@@ -1447,7 +1450,7 @@
         </div>
       </div>
 
-      <div class="two-col">
+      <div class="two-col-tight">
         <div>
           <label class="field-label" id="statusFieldLabel">讲 OPP 之后的反应</label>
           <select id="statusSelect">
@@ -1661,7 +1664,7 @@
         <label class="checklist-item"><input type="checkbox" id="aboAbcUplineCb" /><span id="aboAbcUplineLabel">ABC 上线</span></label>
       </div>
 
-      <div class="two-col">
+      <div class="two-col-tight">
         <div>
           <label class="field-label" id="aboAudioFieldLabel">听了什么 Audio</label>
           <input id="aboAudioInput" type="text" />
