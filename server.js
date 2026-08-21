@@ -148,7 +148,6 @@ function readProspects() {
       notes: p.notes || "",
       status: sanitizeProspectStatus(p.status),
       followUps: sanitizeFollowUps(p.followUps),
-      interested: (p.interested || "").toString().trim(),
       rejectionReason: (p.rejectionReason || "").toString().trim(),
     }));
   } catch (e) {
@@ -320,7 +319,7 @@ function prospectValidationError(body) {
 }
 
 function buildProspectFields(body) {
-  const { name, gender, background, date, phone, oppDate, notes, status, followUps, interested, rejectionReason } = body;
+  const { name, gender, background, date, phone, oppDate, notes, status, followUps, rejectionReason } = body;
   return {
     name: name.trim(),
     gender: sanitizeGender(gender),
@@ -331,7 +330,6 @@ function buildProspectFields(body) {
     notes: (notes || "").toString().trim(),
     status: sanitizeProspectStatus(status),
     followUps: sanitizeFollowUps(followUps),
-    interested: (interested || "").toString().trim(),
     rejectionReason: (rejectionReason || "").toString().trim(),
   };
 }
