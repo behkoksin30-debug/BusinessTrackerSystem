@@ -11,6 +11,7 @@ const DATA_FILE = path.join(DATA_DIR, "data.json");
 const PROSPECTS_FILE = path.join(DATA_DIR, "prospects.json");
 const BIRTHDAYS_FILE = path.join(DATA_DIR, "birthdays.json");
 const ABOS_FILE = path.join(DATA_DIR, "abos.json");
+const PARTNERS_FILE = path.join(DATA_DIR, "partners.json");
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
@@ -37,7 +38,7 @@ function sanitizeFollowUps(followUps) {
     .filter((f) => f.date || f.note);
 }
 
-const VALID_CATEGORIES = ["new", "regular", "vip"];
+const VALID_CATEGORIES = ["new", "regular", "vip", "vvip"];
 function sanitizeCategory(category) {
   return VALID_CATEGORIES.includes(category) ? category : "new";
 }
@@ -55,6 +56,16 @@ function sanitizeGender(gender) {
 const VALID_SAW_DEMO = ["yes", "no"];
 function sanitizeSawDemo(val) {
   return VALID_SAW_DEMO.includes(val) ? val : "";
+}
+
+const VALID_ADA = ["yes", "no"];
+function sanitizeAda(val) {
+  return VALID_ADA.includes(val) ? val : "";
+}
+
+const VALID_PARTNER_TYPE = ["new_start", "builder", "leader"];
+function sanitizePartnerType(val) {
+  return VALID_PARTNER_TYPE.includes(val) ? val : "new_start";
 }
 
 // 新ABO清单项目:简单的勾选(是/否)
@@ -174,6 +185,52 @@ function readBirthdays() {
 function writeBirthdays(birthdays) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
   fs.writeFileSync(BIRTHDAYS_FILE, JSON.stringify(birthdays, null, 2), "utf-8");
+}
+
+// ---------- ABO(正式合伙人:名字/电话/ADA/生日/PIN/类型)----------
+
+function readPartners() {
+  try {
+    const raw = fs.readFileSync(PARTNERS_FILE, "utf-8");
+    const parsed = JSON.parse(raw);
+    return parsed.map((p) => ({
+      id: p.id,
+      name: p.name || "",
+      phone: p.phone || "",
+      ada: sanitizeAda(p.ada),
+      date: toMonthDay(p.date),
+      pin: p.pin || "",
+      partnerType: sanitizePartnerType(p.partnerType),
+      notes: p.notes || "",
+    }));
+  } catch (e) {
+    return [];
+  }
+}
+
+function writePartners(partners) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+  fs.writeFileSync(PARTNERS_FILE, JSON.stringify(partners, null, 2), "utf-8");
+}
+
+function partnerValidationError(body) {
+  const { name, date } = body;
+  if (!name || !name.trim()) return "姓名不能为空";
+  if (date && !isValidMonthDayOrEmpty(date)) return "生日日期格式不正确";
+  return null;
+}
+
+function buildPartnerFields(body) {
+  const { name, phone, ada, date, pin, partnerType, notes } = body;
+  return {
+    name: name.trim(),
+    phone: (phone || "").toString().trim(),
+    ada: sanitizeAda(ada),
+    date: toMonthDay(date),
+    pin: (pin || "").toString().trim(),
+    partnerType: sanitizePartnerType(partnerType),
+    notes: (notes || "").toString().trim(),
+  };
 }
 
 // ---------- 跟进对象(新ABO / 刚OPP完成的伙伴)----------
@@ -500,6 +557,55 @@ app.delete("/api/abos/:id", (req, res) => {
     return res.status(404).json({ error: "未找到该记录" });
   }
   writeAbos(filtered);
+  res.status(204).end();
+});
+
+// ---------- ABO(正式合伙人)----------
+
+// 获取所有 ABO
+app.get("/api/partners", (req, res) => {
+  res.json(readPartners());
+});
+
+// 新增 ABO
+app.post("/api/partners", (req, res) => {
+  const err = partnerValidationError(req.body);
+  if (err) return res.status(400).json({ error: err });
+  const partners = readPartners();
+  const newPartner = {
+    id: Date.now().toString(),
+    ...buildPartnerFields(req.body),
+  };
+  partners.push(newPartner);
+  writePartners(partners);
+  res.status(201).json(newPartner);
+});
+
+// 更新 ABO
+app.put("/api/partners/:id", (req, res) => {
+  const err = partnerValidationError(req.body);
+  if (err) return res.status(400).json({ error: err });
+  const partners = readPartners();
+  const idx = partners.findIndex((p) => p.id === req.params.id);
+  if (idx === -1) {
+    return res.status(404).json({ error: "未找到该记录" });
+  }
+  partners[idx] = {
+    id: partners[idx].id,
+    ...buildPartnerFields(req.body),
+  };
+  writePartners(partners);
+  res.json(partners[idx]);
+});
+
+// 删除 ABO
+app.delete("/api/partners/:id", (req, res) => {
+  const partners = readPartners();
+  const filtered = partners.filter((p) => p.id !== req.params.id);
+  if (filtered.length === partners.length) {
+    return res.status(404).json({ error: "未找到该记录" });
+  }
+  writePartners(filtered);
   res.status(204).end();
 });
 
