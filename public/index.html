@@ -546,6 +546,7 @@
   .emoji-row .inline-gender-wrap select { padding-left: 8px; padding-right: 8px; }
   .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .two-col-tight { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .three-col-tight { display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 8px; }
 
   .category-toggle {
     display: flex;
@@ -1524,16 +1525,21 @@
         </div>
       </div>
 
-      <label class="field-label" id="categoryFieldLabel">顾客分类</label>
-      <select id="categorySelect">
-        <option value="new" id="categoryNewOpt">新顾客</option>
-        <option value="regular" id="categoryRegularOpt">一般</option>
-        <option value="vip" id="categoryVipOpt">VIP</option>
-        <option value="vvip" id="categoryVvipOpt">VVIP</option>
-      </select>
-
-      <label class="field-label" id="phoneFieldLabel">电话号码</label>
-      <input id="phoneInput" type="tel" />
+      <div class="two-col-tight">
+        <div>
+          <label class="field-label" id="categoryFieldLabel" style="margin-top:0;">顾客分类</label>
+          <select id="categorySelect">
+            <option value="new" id="categoryNewOpt">新顾客</option>
+            <option value="regular" id="categoryRegularOpt">一般</option>
+            <option value="vip" id="categoryVipOpt">VIP</option>
+            <option value="vvip" id="categoryVvipOpt">VVIP</option>
+          </select>
+        </div>
+        <div>
+          <label class="field-label" id="phoneFieldLabel" style="margin-top:0;">电话号码</label>
+          <input id="phoneInput" type="tel" />
+        </div>
+      </div>
 
       <label class="field-label" id="birthdayFieldLabel">生日(选填,不需要年份)</label>
       <div class="two-col">
@@ -1660,20 +1666,21 @@
       <label class="field-label" id="backgroundFieldLabel">背景</label>
       <textarea id="backgroundInput"></textarea>
 
-      <label class="field-label" id="phoneFieldLabel2">电话号码(选填)</label>
-      <input id="prospectPhoneInput" type="tel" />
+      <label class="field-label" id="oppDateFieldLabel">讲 OPP 的日期</label>
+      <input id="oppDateInput" type="date" />
 
-      <div class="two-col">
+      <div class="three-col-tight">
         <div>
-          <label class="field-label" id="oppDateFieldLabel">讲 OPP 的日期</label>
-          <input id="oppDateInput" type="date" />
+          <label class="field-label" id="phoneFieldLabel2" style="margin-top:0;">电话号码(选填)</label>
+          <input id="prospectPhoneInput" type="tel" />
         </div>
         <div>
-          <label class="field-label" id="prospectBirthdayFieldLabel">生日(选填)</label>
-          <div class="two-col">
-            <select id="prospectDateMonthSelect"></select>
-            <select id="prospectDateDaySelect"></select>
-          </div>
+          <label class="field-label" id="prospectBirthdayFieldLabel" style="margin-top:0;">生日(选填)</label>
+          <select id="prospectDateMonthSelect"></select>
+        </div>
+        <div>
+          <label class="field-label" style="margin-top:0; visibility:hidden;">日</label>
+          <select id="prospectDateDaySelect"></select>
         </div>
       </div>
 
