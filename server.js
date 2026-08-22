@@ -340,6 +340,8 @@ function readProspects(username) {
       status: sanitizeProspectStatus(p.status),
       followUps: sanitizeFollowUps(p.followUps),
       rejectionReason: (p.rejectionReason || "").toString().trim(),
+      createdAt: p.createdAt || "",
+      updatedAt: p.updatedAt || p.createdAt || "",
     }));
   } catch (e) {
     return [];
@@ -388,6 +390,8 @@ function readPartners(username) {
       pin: p.pin || "",
       partnerType: sanitizePartnerType(p.partnerType),
       notes: p.notes || "",
+      createdAt: p.createdAt || "",
+      updatedAt: p.updatedAt || p.createdAt || "",
     }));
   } catch (e) {
     return [];
@@ -442,6 +446,7 @@ function readAbos(username) {
       currentStatus: a.currentStatus || "",
       notes: a.notes || "",
       createdAt: a.createdAt || "",
+      updatedAt: a.updatedAt || a.createdAt || "",
     }));
   } catch (e) {
     return [];
@@ -589,7 +594,8 @@ app.post("/api/customers", authMiddleware, (req, res) => {
   if (err) return res.status(400).json({ error: err });
   const username = req.user.username;
   const customers = readData(username);
-  const newCustomer = { id: Date.now().toString(), ...buildCustomerFields(req.body) };
+  const now = new Date().toISOString();
+  const newCustomer = { id: Date.now().toString(), ...buildCustomerFields(req.body), createdAt: now, updatedAt: now };
   customers.push(newCustomer);
   writeData(username, customers);
   res.status(201).json(newCustomer);
@@ -602,7 +608,7 @@ app.put("/api/customers/:id", authMiddleware, (req, res) => {
   const customers = readData(username);
   const idx = customers.findIndex((c) => c.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: "未找到该记录" });
-  customers[idx] = { id: customers[idx].id, ...buildCustomerFields(req.body) };
+  customers[idx] = { id: customers[idx].id, ...buildCustomerFields(req.body), createdAt: customers[idx].createdAt || new Date().toISOString(), updatedAt: new Date().toISOString() };
   writeData(username, customers);
   res.json(customers[idx]);
 });
@@ -629,7 +635,8 @@ app.post("/api/prospects", authMiddleware, (req, res) => {
   if (err) return res.status(400).json({ error: err });
   const username = req.user.username;
   const prospects = readProspects(username);
-  const newProspect = { id: Date.now().toString(), ...buildProspectFields(req.body) };
+  const now = new Date().toISOString();
+  const newProspect = { id: Date.now().toString(), ...buildProspectFields(req.body), createdAt: now, updatedAt: now };
   prospects.push(newProspect);
   writeProspects(username, prospects);
   res.status(201).json(newProspect);
@@ -642,7 +649,7 @@ app.put("/api/prospects/:id", authMiddleware, (req, res) => {
   const prospects = readProspects(username);
   const idx = prospects.findIndex((p) => p.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: "未找到该记录" });
-  prospects[idx] = { id: prospects[idx].id, ...buildProspectFields(req.body) };
+  prospects[idx] = { id: prospects[idx].id, ...buildProspectFields(req.body), createdAt: prospects[idx].createdAt || new Date().toISOString(), updatedAt: new Date().toISOString() };
   writeProspects(username, prospects);
   res.json(prospects[idx]);
 });
@@ -709,7 +716,8 @@ app.post("/api/abos", authMiddleware, (req, res) => {
   if (err) return res.status(400).json({ error: err });
   const username = req.user.username;
   const abos = readAbos(username);
-  const newAbo = { id: Date.now().toString(), createdAt: new Date().toISOString(), ...buildAboFields(req.body) };
+  const now = new Date().toISOString();
+  const newAbo = { id: Date.now().toString(), createdAt: now, updatedAt: now, ...buildAboFields(req.body) };
   abos.push(newAbo);
   writeAbos(username, abos);
   res.status(201).json(newAbo);
@@ -722,7 +730,7 @@ app.put("/api/abos/:id", authMiddleware, (req, res) => {
   const abos = readAbos(username);
   const idx = abos.findIndex((a) => a.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: "未找到该记录" });
-  abos[idx] = { id: abos[idx].id, createdAt: abos[idx].createdAt || new Date().toISOString(), ...buildAboFields(req.body) };
+  abos[idx] = { id: abos[idx].id, createdAt: abos[idx].createdAt || new Date().toISOString(), updatedAt: new Date().toISOString(), ...buildAboFields(req.body) };
   writeAbos(username, abos);
   res.json(abos[idx]);
 });
@@ -749,7 +757,8 @@ app.post("/api/partners", authMiddleware, (req, res) => {
   if (err) return res.status(400).json({ error: err });
   const username = req.user.username;
   const partners = readPartners(username);
-  const newPartner = { id: Date.now().toString(), ...buildPartnerFields(req.body) };
+  const now = new Date().toISOString();
+  const newPartner = { id: Date.now().toString(), ...buildPartnerFields(req.body), createdAt: now, updatedAt: now };
   partners.push(newPartner);
   writePartners(username, partners);
   res.status(201).json(newPartner);
@@ -762,7 +771,7 @@ app.put("/api/partners/:id", authMiddleware, (req, res) => {
   const partners = readPartners(username);
   const idx = partners.findIndex((p) => p.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: "未找到该记录" });
-  partners[idx] = { id: partners[idx].id, ...buildPartnerFields(req.body) };
+  partners[idx] = { id: partners[idx].id, ...buildPartnerFields(req.body), createdAt: partners[idx].createdAt || new Date().toISOString(), updatedAt: new Date().toISOString() };
   writePartners(username, partners);
   res.json(partners[idx]);
 });
