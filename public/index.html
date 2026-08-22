@@ -421,6 +421,10 @@
     font-size: 12px;
     flex-shrink: 0;
   }
+  .product-flag-icon {
+    font-size: 12px;
+    flex-shrink: 0;
+  }
   .category-badge {
     font-size: 10px;
     font-weight: 700;
@@ -1474,6 +1478,7 @@
           <option value="birthday" id="customerSortBirthdayOpt">按生日临近</option>
           <option value="name" id="customerSortNameOpt">按姓名 A-Z</option>
           <option value="recent" id="customerSortRecentOpt">最近新增</option>
+          <option value="updated" id="customerSortUpdatedOpt">最新更新</option>
         </select>
       </div>
       <div class="opp-stats-bar" id="customerStatsBar" style="display:none;">
@@ -1506,6 +1511,7 @@
           <option value="oppdate" id="prospectSortOppdateOpt">按讲OPP日期</option>
           <option value="name" id="prospectSortNameOpt">按姓名 A-Z</option>
           <option value="status" id="prospectSortStatusOpt">按反应状态</option>
+          <option value="updated" id="prospectSortUpdatedOpt">最新更新</option>
         </select>
       </div>
       <div class="opp-stats-bar" id="oppStatsBar" style="display:none;">
@@ -1558,6 +1564,7 @@
           <option value="recent" id="aboSortRecentOpt">最近新增</option>
           <option value="name" id="aboSortNameOpt">按姓名 A-Z</option>
           <option value="progress" id="aboSortProgressOpt">按进度最多</option>
+          <option value="updated" id="aboSortUpdatedOpt">最新更新</option>
         </select>
       </div>
       <div class="opp-stats-bar" id="abosStatsBar" style="display:none;">
@@ -1583,6 +1590,7 @@
         <select class="sort-select" id="partnerSortSelect">
           <option value="name" id="partnerSortNameOpt">按姓名 A-Z</option>
           <option value="type" id="partnerSortTypeOpt">按类型</option>
+          <option value="updated" id="partnerSortUpdatedOpt">最新更新</option>
         </select>
       </div>
       <div class="opp-stats-bar" id="partnersStatsBar" style="display:none;">
@@ -2415,6 +2423,7 @@ const I18N = {
     sortByOppDate: "按讲OPP日期",
     sortByStatus: "按反应状态",
     sortByProgress: "按进度最多",
+    sortByUpdated: "最新更新",
     loadFailed: "加载失败,请刷新重试",
     deleteFailed: "删除失败,请重试",
     errorName: "请输入顾客姓名",
@@ -2689,6 +2698,7 @@ const I18N = {
     sortByOppDate: "By OPP date",
     sortByStatus: "By status",
     sortByProgress: "By most progress",
+    sortByUpdated: "Recently updated",
     loadFailed: "Failed to load. Please refresh.",
     deleteFailed: "Failed to delete. Please try again.",
     errorName: "Please enter a customer name",
@@ -3023,10 +3033,12 @@ function applyLanguage() {
   document.getElementById("customerSortBirthdayOpt").textContent = s.sortByBirthday;
   document.getElementById("customerSortNameOpt").textContent = s.sortByName;
   document.getElementById("customerSortRecentOpt").textContent = s.sortByRecent;
+  document.getElementById("customerSortUpdatedOpt").textContent = s.sortByUpdated;
   document.getElementById("prospectSearchInput").placeholder = s.searchPlaceholder;
   document.getElementById("prospectSortOppdateOpt").textContent = s.sortByOppDate;
   document.getElementById("prospectSortNameOpt").textContent = s.sortByName;
   document.getElementById("prospectSortStatusOpt").textContent = s.sortByStatus;
+  document.getElementById("prospectSortUpdatedOpt").textContent = s.sortByUpdated;
   document.getElementById("birthdaySearchInput").placeholder = s.searchPlaceholder;
   document.getElementById("birthdaySortBirthdayOpt").textContent = s.sortByBirthday;
   document.getElementById("birthdaySortNameOpt").textContent = s.sortByName;
@@ -3034,6 +3046,7 @@ function applyLanguage() {
   document.getElementById("aboSortRecentOpt").textContent = s.sortByRecent;
   document.getElementById("aboSortNameOpt").textContent = s.sortByName;
   document.getElementById("aboSortProgressOpt").textContent = s.sortByProgress;
+  document.getElementById("aboSortUpdatedOpt").textContent = s.sortByUpdated;
   document.getElementById("phoneFieldLabel").textContent = s.phoneFieldLabel;
   document.getElementById("birthdayFieldLabel").textContent = s.birthdayFieldLabel;
   document.getElementById("genderUnsetOpt").textContent = s.genderUnset;
@@ -3148,6 +3161,7 @@ function applyLanguage() {
   document.getElementById("partnerSearchInput").placeholder = s.searchPlaceholder;
   document.getElementById("partnerSortNameOpt").textContent = s.sortByName;
   document.getElementById("partnerSortTypeOpt").textContent = s.sortByType;
+  document.getElementById("partnerSortUpdatedOpt").textContent = s.sortByUpdated;
   document.getElementById("partnerNameInput").placeholder = s.namePlaceholder;
   document.getElementById("partnerPhoneFieldLabel").textContent = s.partnerPhoneFieldLabel;
   document.getElementById("partnerPhoneInput").placeholder = s.phonePlaceholder;
@@ -3353,6 +3367,13 @@ function getEspringReminder(purchases) {
   return { lastDate, days, overdue: days >= ESPRING_REMINDER_DAYS };
 }
 
+function hasProductKeyword(purchases, regex) {
+  if (!Array.isArray(purchases)) return false;
+  return purchases.some(p => p.product && regex.test(p.product));
+}
+const NUTRITION_KEYWORD_REGEX = /营养|nutrilite/i;
+const ARTISTRY_KEYWORD_REGEX = /artistry/i;
+
 const contentEl = document.getElementById("content");
 const footerEl = document.getElementById("footerCount");
 
@@ -3424,6 +3445,8 @@ function render() {
     sorted.sort((a, b) => a.name.localeCompare(b.name));
   } else if (sortBy === "recent") {
     sorted.sort((a, b) => parseInt(b.id, 10) - parseInt(a.id, 10));
+  } else if (sortBy === "updated") {
+    sorted.sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
   } else {
     sorted.sort((a, b) => a.days - b.days);
   }
@@ -3454,6 +3477,9 @@ function render() {
 
     const espring = getEspringReminder(purchases);
     const espringLine = espring && espring.overdue ? `<p class="cust-meta warn-line">${s.espringReminder}</p>` : "";
+    const hasEspringPurchase = hasProductKeyword(purchases, /espring/i);
+    const hasNutritionPurchase = hasProductKeyword(purchases, NUTRITION_KEYWORD_REGEX);
+    const hasArtistryPurchase = hasProductKeyword(purchases, ARTISTRY_KEYWORD_REGEX);
 
     const extraBits = [];
     if (c.lastMeeting) extraBits.push(escapeHtml(s.lastMeetingRowLabel(c.lastMeeting)));
@@ -3474,6 +3500,9 @@ function render() {
             <div class="cust-name-row">
               <p class="cust-name">${escapeHtml(c.name)}</p>
               <span class="category-badge ${category}">${categoryLabel(category)}</span>
+              ${hasEspringPurchase ? `<span class="product-flag-icon" title="Espring">💧</span>` : ""}
+              ${hasNutritionPurchase ? `<span class="product-flag-icon" title="营养">🌿</span>` : ""}
+              ${hasArtistryPurchase ? `<span class="product-flag-icon" title="Artistry">💄</span>` : ""}
               ${c.notes ? `<span class="notes-dot" title="${escapeAttr(c.notes)}">📝</span>` : ""}
             </div>
             <p class="cust-meta">${hasBirthday ? s.monthDay(mm, dd) + (c.phone ? " · " + escapeHtml(c.phone) : "") : (c.phone ? escapeHtml(c.phone) : s.noBirthdayHint)}</p>
@@ -3713,6 +3742,8 @@ function renderProspects() {
     sorted.sort((a, b) => a.name.localeCompare(b.name));
   } else if (sortBy === "status") {
     sorted.sort((a, b) => (a.status || "pending").localeCompare(b.status || "pending"));
+  } else if (sortBy === "updated") {
+    sorted.sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
   } else {
     sorted.sort((a, b) => {
       if (a.oppDate && b.oppDate) return b.oppDate.localeCompare(a.oppDate);
@@ -4549,6 +4580,8 @@ function renderAbos() {
     sortedAbos.sort((a, b) => a.name.localeCompare(b.name));
   } else if (sortBy === "progress") {
     sortedAbos.sort((a, b) => aboProgressCount(b).done - aboProgressCount(a).done);
+  } else if (sortBy === "updated") {
+    sortedAbos.sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
   } else {
     sortedAbos.sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
   }
@@ -4956,6 +4989,8 @@ function renderPartners() {
   if (sortBy === "type") {
     const order = { leader: 0, builder: 1, new_start: 2 };
     sorted.sort((a, b) => (order[a.partnerType] ?? 3) - (order[b.partnerType] ?? 3));
+  } else if (sortBy === "updated") {
+    sorted.sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
   } else {
     sorted.sort((a, b) => a.name.localeCompare(b.name));
   }
