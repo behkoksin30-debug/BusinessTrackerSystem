@@ -1,803 +1,800 @@
-const express = require("express");
-const fs = require("fs");
-const path = require("path");
-const crypto = require("crypto");
+const express = require('express');
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
+const multer = require('multer');
+const http = require('http');
+const { WebSocketServer } = require('ws');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
-// DATA_DIR 可以通过环境变量指定,配合 Railway 的 Volume(持久化卷)使用,
-// 这样每次重新部署时数据不会丢失。本地开发不设置也没关系,默认存在项目目录下。
-const DATA_DIR = process.env.DATA_DIR || __dirname;
-const USERS_FILE = path.join(DATA_DIR, "users.json");
+app.use(express.json({ limit: '12mb' }));
 
-app.use(express.json({ limit: "6mb" }));
-app.use(express.static(path.join(__dirname, "public")));
+const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
+const ENTRIES_DIR = path.join(DATA_DIR, 'entries');
+const CONFIG_FILE = path.join(DATA_DIR, 'config.json');
+const PRIZES_FILE = path.join(DATA_DIR, 'prizes.json');
+const DRAWS_FILE = path.join(DATA_DIR, 'draws.json');
+const ARCHIVES_DIR = path.join(DATA_DIR, 'archives');
+const MEDIA_DIR = path.join(DATA_DIR, 'media');
 
-/* ============================================================
-   账号系统:密码加密、用户读写、登录会话、权限中间件
-   ============================================================ */
-
-function generateSalt() {
-  return crypto.randomBytes(16).toString("hex");
+function defaultConfig() {
+  return {
+    title: '幸运抽奖登记',
+    subtitle: '上传订单截图，填写资料，登记您的抽奖资格',
+    conversionRate: 100,
+    tiers: [],
+    maxWinsPerPerson: 0,
+    guaranteedGiftThreshold: 0,
+    maxTicketsPerPerson: 0,
+    registrationOpen: true,
+    regStartDate: '',
+    regEndDate: '',
+    posterImage: null,
+    tutorialImage: null,
+    tutorialImages: [],
+    helpImages: [],
+    posterMediaType: 'image',
+    posterVideoUrl: '',
+    liveDrawEnabled: false,
+    drawDurationSeconds: 5,
+    registrationDeadline: '',
+    soundTheme: 'classic',
+    startGateEnforcedFor: ''
+  };
 }
+function serverTodayStr(){
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function enforceDeadline(cfg){
+  if(cfg.registrationDeadline){
+    const deadlineMs = new Date(cfg.registrationDeadline).getTime();
+    if(!isNaN(deadlineMs) && Date.now() >= deadlineMs && cfg.registrationOpen !== false){
+      cfg.registrationOpen = false;
+      cfg.registrationDeadline = '';
+      writeConfig(cfg);
+    }
+  }
+  if(cfg.regStartDate){
+    const today = serverTodayStr();
+    if(today < cfg.regStartDate){
+      if(cfg.registrationOpen !== false && cfg.startGateEnforcedFor !== cfg.regStartDate){
+        cfg.registrationOpen = false;
+        cfg.startGateEnforcedFor = cfg.regStartDate;
+        writeConfig(cfg);
+      }
+    } else if(cfg.startGateEnforcedFor){
+      cfg.startGateEnforcedFor = '';
+      writeConfig(cfg);
+    }
+  }
+  return cfg;
+}
+
+function ensureDirs() {
+  fs.mkdirSync(ENTRIES_DIR, { recursive: true });
+  fs.mkdirSync(ARCHIVES_DIR, { recursive: true });
+  fs.mkdirSync(MEDIA_DIR, { recursive: true });
+  if (!fs.existsSync(CONFIG_FILE)) {
+    fs.writeFileSync(CONFIG_FILE, JSON.stringify(defaultConfig(), null, 2));
+  }
+  if (!fs.existsSync(PRIZES_FILE)) fs.writeFileSync(PRIZES_FILE, '[]');
+  if (!fs.existsSync(DRAWS_FILE)) fs.writeFileSync(DRAWS_FILE, '[]');
+}
+ensureDirs();
+
+function readJson(file, fallback) {
+  try { return JSON.parse(fs.readFileSync(file, 'utf8')); }
+  catch (e) { return fallback; }
+}
+function writeJson(file, data) {
+  fs.writeFileSync(file, JSON.stringify(data, null, 2));
+}
+function readConfig() { return readJson(CONFIG_FILE, {}); }
+function writeConfig(cfg) { writeJson(CONFIG_FILE, cfg); }
 
 function hashPassword(password, salt) {
-  return crypto.scryptSync(password, salt, 64).toString("hex");
+  salt = salt || crypto.randomBytes(16).toString('hex');
+  const hash = crypto.scryptSync(password, salt, 64).toString('hex');
+  return { salt, hash };
+}
+function verifyPassword(password, salt, hash) {
+  if (!salt || !hash) return false;
+  const check = crypto.scryptSync(password, salt, 64).toString('hex');
+  try { return crypto.timingSafeEqual(Buffer.from(check, 'hex'), Buffer.from(hash, 'hex')); }
+  catch (e) { return false; }
 }
 
-function generateToken() {
-  return crypto.randomBytes(32).toString("hex");
+// in-memory admin session tokens (cleared on server restart -> admin just logs in again)
+const tokens = new Map();
+function issueToken() {
+  const token = crypto.randomBytes(24).toString('hex');
+  tokens.set(token, Date.now() + 1000 * 60 * 60 * 12); // valid 12 hours
+  return token;
 }
-
-function readUsers() {
-  try {
-    const raw = fs.readFileSync(USERS_FILE, "utf-8");
-    return JSON.parse(raw);
-  } catch (e) {
-    return [];
+function requireAdmin(req, res, next) {
+  const auth = req.headers.authorization || '';
+  const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
+  const expiry = token && tokens.get(token);
+  if (!expiry || expiry < Date.now()) {
+    return res.status(401).json({ error: '未登录或登录已过期，请重新登录' });
   }
-}
-
-function writeUsers(users) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-  fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2), "utf-8");
-}
-
-function findUser(username) {
-  return readUsers().find((u) => u.username === username);
-}
-
-// 登录会话存在内存里(服务器重启后需要重新登录,属于合理的简化做法)
-const sessions = {}; // token -> username
-
-function userDataDir(username) {
-  return path.join(DATA_DIR, "users", username);
-}
-
-function userFilePath(username, filename) {
-  return path.join(userDataDir(username), filename);
-}
-
-// 需要登录才能访问的接口,统一用这个中间件检查
-function authMiddleware(req, res, next) {
-  const authHeader = req.headers["authorization"] || "";
-  const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
-  const username = token ? sessions[token] : null;
-  if (!token || !username) {
-    return res.status(401).json({ error: "未登录或登录已过期,请重新登录" });
-  }
-  const user = findUser(username);
-  if (!user) {
-    delete sessions[token];
-    return res.status(401).json({ error: "账号不存在,请重新登录" });
-  }
-  req.user = { username: user.username, role: user.role };
   next();
 }
 
-// 决定这次请求实际要读/写"谁"的资料。
-// allowViewAs=true 时(只有查看/GET 用),如果是管理员而且带了 ?viewAs=下线用户名,
-// 而且这个下线确实是他自己开的账号,就改成读那个下线的资料(仍然只能读,不能写)。
-function resolveDataUsername(req, allowViewAs) {
-  if (allowViewAs && req.user.role === "admin" && req.query.viewAs) {
-    const target = String(req.query.viewAs);
-    const targetUser = findUser(target);
-    if (targetUser && targetUser.upline === req.user.username) {
-      return target;
+function genId(prefix, len) {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let s = '';
+  for (let i = 0; i < (len || 6); i++) s += chars[Math.floor(Math.random() * chars.length)];
+  return prefix + s;
+}
+
+function computeTicketCount(amount, rate, tiers, maxTicketsPerPerson) {
+  const amt = parseFloat(amount) || 0;
+  const r = parseFloat(rate) || 0;
+  let base = 0;
+  if (r <= 0) base = amt > 0 ? 1 : 0;
+  else base = Math.max(0, Math.floor(amt / r));
+  let bonus = 0;
+  (tiers || []).forEach(t => {
+    const threshold = parseFloat(t.threshold) || 0;
+    const b = parseFloat(t.bonus) || 0;
+    if (threshold > 0 && amt >= threshold) bonus += b;
+  });
+  let total = base + bonus;
+  const cap = parseFloat(maxTicketsPerPerson) || 0;
+  if (cap > 0 && total > cap) total = cap;
+  return total;
+}
+
+/* ---------------- event config ---------------- */
+function isDateStr(s){ return typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s); }
+app.get('/api/config', (req, res) => {
+  const cfg = enforceDeadline(readConfig());
+  res.json({
+    title: cfg.title || '幸运抽奖登记',
+    subtitle: cfg.subtitle || '',
+    conversionRate: cfg.conversionRate || 100,
+    tiers: cfg.tiers || [],
+    maxWinsPerPerson: cfg.maxWinsPerPerson || 0,
+    guaranteedGiftThreshold: cfg.guaranteedGiftThreshold || 0,
+    maxTicketsPerPerson: cfg.maxTicketsPerPerson || 0,
+    registrationOpen: cfg.registrationOpen !== false,
+    regStartDate: cfg.regStartDate || '',
+    regEndDate: cfg.regEndDate || '',
+    posterImage: cfg.posterImage || null,
+    tutorialImage: cfg.tutorialImage || null,
+    tutorialImages: (Array.isArray(cfg.tutorialImages) && cfg.tutorialImages.length) ? cfg.tutorialImages : (cfg.tutorialImage ? [cfg.tutorialImage] : []),
+    helpImages: Array.isArray(cfg.helpImages) ? cfg.helpImages : [],
+    posterMediaType: cfg.posterMediaType || 'image',
+    posterVideoUrl: cfg.posterVideoUrl || '',
+    liveDrawEnabled: !!cfg.liveDrawEnabled,
+    drawDurationSeconds: cfg.drawDurationSeconds || 5,
+    registrationDeadline: cfg.registrationDeadline || '',
+    soundTheme: cfg.soundTheme || 'classic'
+  });
+});
+app.put('/api/config', requireAdmin, (req, res) => {
+  const cfg = readConfig();
+  cfg.title = (req.body.title || cfg.title || '幸运抽奖登记').toString().slice(0, 60);
+  if (req.body.subtitle !== undefined) {
+    cfg.subtitle = (req.body.subtitle || '').toString().slice(0, 140);
+  }
+  const rate = parseFloat(req.body.conversionRate);
+  cfg.conversionRate = (!isNaN(rate) && rate > 0) ? rate : (cfg.conversionRate || 100);
+  if (Array.isArray(req.body.tiers)) {
+    cfg.tiers = req.body.tiers
+      .map(t => ({ threshold: parseFloat(t.threshold), bonus: parseFloat(t.bonus) }))
+      .filter(t => !isNaN(t.threshold) && t.threshold > 0 && !isNaN(t.bonus) && t.bonus >= 0)
+      .sort((a, b) => a.threshold - b.threshold);
+  }
+  if (req.body.maxWinsPerPerson !== undefined) {
+    const m = parseInt(req.body.maxWinsPerPerson, 10);
+    cfg.maxWinsPerPerson = (!isNaN(m) && m >= 0) ? m : (cfg.maxWinsPerPerson || 0);
+  }
+  if (req.body.guaranteedGiftThreshold !== undefined) {
+    const g = parseFloat(req.body.guaranteedGiftThreshold);
+    cfg.guaranteedGiftThreshold = (!isNaN(g) && g >= 0) ? g : (cfg.guaranteedGiftThreshold || 0);
+  }
+  if (req.body.maxTicketsPerPerson !== undefined) {
+    const mt = parseInt(req.body.maxTicketsPerPerson, 10);
+    cfg.maxTicketsPerPerson = (!isNaN(mt) && mt >= 0) ? mt : (cfg.maxTicketsPerPerson || 0);
+  }
+  if (req.body.registrationOpen !== undefined) {
+    cfg.registrationOpen = !!req.body.registrationOpen;
+  }
+  if (req.body.regStartDate !== undefined) {
+    cfg.regStartDate = isDateStr(req.body.regStartDate) ? req.body.regStartDate : '';
+  }
+  if (req.body.regEndDate !== undefined) {
+    cfg.regEndDate = isDateStr(req.body.regEndDate) ? req.body.regEndDate : '';
+  }
+  if (req.body.posterImage !== undefined) {
+    cfg.posterImage = req.body.posterImage || null;
+    if (req.body.posterImage) cfg.posterMediaType = 'image';
+  }
+  if (req.body.tutorialImage !== undefined) {
+    cfg.tutorialImage = req.body.tutorialImage || null;
+  }
+  if (req.body.tutorialImages !== undefined) {
+    cfg.tutorialImages = Array.isArray(req.body.tutorialImages) ? req.body.tutorialImages.filter(Boolean).slice(0, 20) : [];
+    cfg.tutorialImage = cfg.tutorialImages[0] || null;
+  }
+  if (req.body.helpImages !== undefined) {
+    cfg.helpImages = Array.isArray(req.body.helpImages) ? req.body.helpImages.filter(Boolean).slice(0, 20) : [];
+  }
+  if (req.body.drawDurationSeconds !== undefined) {
+    const ds = parseFloat(req.body.drawDurationSeconds);
+    cfg.drawDurationSeconds = (!isNaN(ds) && ds >= 1.5 && ds <= 10) ? ds : (cfg.drawDurationSeconds || 5);
+  }
+  if (req.body.registrationDeadline !== undefined) {
+    const dl = req.body.registrationDeadline;
+    if (!dl) { cfg.registrationDeadline = ''; }
+    else {
+      const ms = new Date(dl).getTime();
+      cfg.registrationDeadline = !isNaN(ms) ? dl : '';
     }
   }
-  return req.user.username;
-}
-
-/* ============================================================
-   账号相关 API(设置管理员、登录、登出、管理下线账号)
-   ============================================================ */
-
-// 检查是否已经有账号(决定前端要显示"设置管理员"还是"登录")
-app.get("/api/auth/status", (req, res) => {
-  const users = readUsers();
-  res.json({ hasUsers: users.length > 0 });
+  if (req.body.soundTheme !== undefined) {
+    cfg.soundTheme = ['classic','electronic','drum'].includes(req.body.soundTheme) ? req.body.soundTheme : (cfg.soundTheme || 'classic');
+  }
+  if (req.body.liveDrawEnabled !== undefined) {
+    cfg.liveDrawEnabled = !!req.body.liveDrawEnabled;
+  }
+  writeConfig(cfg);
+  res.json({ ok: true });
 });
 
-// 第一次使用时,设置管理员(上线)账号。只有在完全没有账号时才能用这个接口。
-app.post("/api/auth/setup", (req, res) => {
-  const users = readUsers();
-  if (users.length > 0) {
-    return res.status(400).json({ error: "已经设置过管理员账号了" });
+/* ---------------- poster video upload ---------------- */
+app.use('/media', express.static(MEDIA_DIR));
+const posterVideoUpload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => cb(null, MEDIA_DIR),
+    filename: (req, file, cb) => {
+      const ext = path.extname(file.originalname || '').toLowerCase() || '.mp4';
+      cb(null, 'poster-' + Date.now() + ext);
+    }
+  }),
+  limits: { fileSize: 50 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (!file.mimetype || !file.mimetype.startsWith('video/')) {
+      return cb(new Error('只支持上传视频文件 / Only video files are supported'));
+    }
+    cb(null, true);
   }
-  const { username, password } = req.body || {};
-  if (!username || !username.trim() || !password || password.length < 4) {
-    return res.status(400).json({ error: "请填写用户名,密码至少 4 位" });
+});
+function deleteOldPosterVideo(cfg) {
+  if (cfg.posterVideoUrl) {
+    const oldPath = path.join(MEDIA_DIR, path.basename(cfg.posterVideoUrl));
+    try { if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath); } catch (e) {}
   }
-  const salt = generateSalt();
-  const newUser = {
-    username: username.trim(),
-    salt,
-    passwordHash: hashPassword(password, salt),
-    role: "admin",
-    upline: null,
-    createdAt: new Date().toISOString(),
+}
+app.post('/api/admin/poster-video', requireAdmin, (req, res) => {
+  posterVideoUpload.single('video')(req, res, (err) => {
+    if (err) return res.status(400).json({ error: err.message || '视频上传失败 / Video upload failed' });
+    if (!req.file) return res.status(400).json({ error: '没有收到视频文件 / No video file received' });
+    const cfg = readConfig();
+    deleteOldPosterVideo(cfg);
+    cfg.posterMediaType = 'video';
+    cfg.posterVideoUrl = '/media/' + req.file.filename;
+    writeConfig(cfg);
+    res.json({ posterMediaType: cfg.posterMediaType, posterVideoUrl: cfg.posterVideoUrl });
+  });
+});
+app.delete('/api/admin/poster-video', requireAdmin, (req, res) => {
+  const cfg = readConfig();
+  deleteOldPosterVideo(cfg);
+  cfg.posterVideoUrl = '';
+  cfg.posterMediaType = 'image';
+  writeConfig(cfg);
+  res.json({ ok: true });
+});
+
+/* ---------------- admin auth ---------------- */
+app.get('/api/admin/status', (req, res) => {
+  const cfg = readConfig();
+  res.json({ passwordSet: !!cfg.passwordHash });
+});
+app.post('/api/admin/setup', (req, res) => {
+  const cfg = readConfig();
+  if (cfg.passwordHash) return res.status(400).json({ error: '管理员密码已经设置过了' });
+  const { password } = req.body || {};
+  if (!password || password.length < 4) return res.status(400).json({ error: '密码至少4位' });
+  const { salt, hash } = hashPassword(password);
+  cfg.passwordSalt = salt; cfg.passwordHash = hash;
+  writeConfig(cfg);
+  res.json({ token: issueToken() });
+});
+app.post('/api/admin/login', (req, res) => {
+  const cfg = readConfig();
+  const { password } = req.body || {};
+  if (!verifyPassword(password, cfg.passwordSalt, cfg.passwordHash)) {
+    return res.status(401).json({ error: '密码不正确' });
+  }
+  res.json({ token: issueToken() });
+});
+app.post('/api/admin/change-password', requireAdmin, (req, res) => {
+  const { password } = req.body || {};
+  if (!password || password.length < 4) return res.status(400).json({ error: '密码至少4位' });
+  const cfg = readConfig();
+  const { salt, hash } = hashPassword(password);
+  cfg.passwordSalt = salt; cfg.passwordHash = hash;
+  writeConfig(cfg);
+  res.json({ ok: true });
+});
+
+/* ---------------- entries (public submits, admin manages) ---------------- */
+app.post('/api/entries', (req, res) => {
+  const cfg = enforceDeadline(readConfig());
+  if (cfg.registrationOpen === false) {
+    const today = serverTodayStr();
+    if (cfg.regStartDate && today < cfg.regStartDate) {
+      return res.status(400).json({ error: '报名尚未开始 / Registration has not started yet' });
+    }
+    return res.status(400).json({ error: '报名已结束 / Registration is closed' });
+  }
+  const { name, contact, ddName, customerName, orderId, amount, photo, ocrOverride, orderDate } = req.body || {};
+  if (!name || !contact || !ddName || !String(customerName || '').trim() || !orderId || !amount || !photo) {
+    return res.status(400).json({ error: '资料不完整，请填写全部字段并上传照片 / Missing information, please fill in all fields and upload a photo' });
+  }
+  if (!orderDate && !ocrOverride) {
+    return res.status(400).json({ error: '请输入订单日期，或勾选OCR确认框 / Please enter the order date, or check the OCR confirmation box' });
+  }
+  const orderIdNorm = String(orderId).trim().toLowerCase();
+  const existingFiles = fs.readdirSync(ENTRIES_DIR).filter(f => f.endsWith('.json'));
+  const isDuplicate = existingFiles.some(f => {
+    const existing = readJson(path.join(ENTRIES_DIR, f), null);
+    return existing && String(existing.orderId || '').trim().toLowerCase() === orderIdNorm;
+  });
+  if (isDuplicate) {
+    return res.status(400).json({ error: '该订单号已经登记过 / This Order ID has already been registered' });
+  }
+  const id = genId('LD-', 6);
+  const entry = {
+    id,
+    name: String(name).slice(0, 100),
+    contact: String(contact).slice(0, 100),
+    ddName: String(ddName).slice(0, 100),
+    customerName: String(customerName || '').slice(0, 100),
+    orderId: String(orderId).slice(0, 100),
+    amount: String(amount).slice(0, 50),
+    orderDate: isDateStr(orderDate) ? orderDate : '',
+    photo,
+    ocrOverride: !!ocrOverride,
+    submittedAt: Date.now(),
+    wonPrizes: []
   };
-  writeUsers([newUser]);
-  const token = generateToken();
-  sessions[token] = newUser.username;
-  res.status(201).json({ token, username: newUser.username, role: newUser.role });
+  fs.writeFileSync(path.join(ENTRIES_DIR, id + '.json'), JSON.stringify(entry));
+  const rate = cfg.conversionRate || 100;
+  const tiers = cfg.tiers || [];
+  const maxTickets = cfg.maxTicketsPerPerson || 0;
+  const ticketCount = computeTicketCount(entry.amount, rate, tiers, maxTickets);
+  const threshold = cfg.guaranteedGiftThreshold || 0;
+  const wheelEligible = threshold > 0 && (parseFloat(entry.amount) || 0) >= threshold;
+  res.json({ id, ticketCount, wheelEligible });
 });
-
-// 登录
-app.post("/api/auth/login", (req, res) => {
-  const { username, password } = req.body || {};
-  const user = findUser((username || "").trim());
-  if (!user || hashPassword(password || "", user.salt) !== user.passwordHash) {
-    return res.status(401).json({ error: "用户名或密码不正确" });
+app.post('/api/admin/entries', requireAdmin, (req, res) => {
+  const cfg = readConfig();
+  const { name, contact, ddName, customerName, orderId, amount, photo, orderDate } = req.body || {};
+  if (!name || !contact || !ddName || !customerName || !orderId || !amount) {
+    return res.status(400).json({ error: '资料不完整，请填写全部必填字段 / Missing information, please fill in all required fields' });
   }
-  const token = generateToken();
-  sessions[token] = user.username;
-  res.json({ token, username: user.username, role: user.role });
-});
-
-// 确认目前登录状态(前端刷新页面时用来检查 token 还有没有效)
-app.get("/api/auth/me", authMiddleware, (req, res) => {
-  res.json({ username: req.user.username, role: req.user.role });
-});
-
-// 登出
-app.post("/api/auth/logout", authMiddleware, (req, res) => {
-  const authHeader = req.headers["authorization"] || "";
-  const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
-  delete sessions[token];
-  res.status(204).end();
-});
-
-// 查看自己开的下线账号列表(只有管理员/上线能用)
-app.get("/api/auth/downlines", authMiddleware, (req, res) => {
-  if (req.user.role !== "admin") {
-    return res.status(403).json({ error: "没有权限" });
+  const orderIdNorm = String(orderId).trim().toLowerCase();
+  const existingFiles = fs.readdirSync(ENTRIES_DIR).filter(f => f.endsWith('.json'));
+  const isDuplicate = existingFiles.some(f => {
+    const existing = readJson(path.join(ENTRIES_DIR, f), null);
+    return existing && String(existing.orderId || '').trim().toLowerCase() === orderIdNorm;
+  });
+  if (isDuplicate) {
+    return res.status(400).json({ error: '该订单号已经登记过 / This Order ID has already been registered' });
   }
-  const users = readUsers();
-  const downlines = users
-    .filter((u) => u.upline === req.user.username)
-    .map((u) => ({ username: u.username, createdAt: u.createdAt }));
-  res.json(downlines);
-});
-
-// 新增一个下线账号(只有管理员/上线能用)
-app.post("/api/auth/downlines", authMiddleware, (req, res) => {
-  if (req.user.role !== "admin") {
-    return res.status(403).json({ error: "没有权限" });
-  }
-  const { username, password } = req.body || {};
-  const cleanUsername = (username || "").trim();
-  if (!cleanUsername || !password || password.length < 4) {
-    return res.status(400).json({ error: "请填写用户名,密码至少 4 位" });
-  }
-  const users = readUsers();
-  if (users.some((u) => u.username === cleanUsername)) {
-    return res.status(400).json({ error: "这个用户名已经有人用了" });
-  }
-  const salt = generateSalt();
-  const newUser = {
-    username: cleanUsername,
-    salt,
-    passwordHash: hashPassword(password, salt),
-    role: "downline",
-    upline: req.user.username,
-    createdAt: new Date().toISOString(),
+  const id = genId('LD-', 6);
+  const entry = {
+    id,
+    name: String(name).slice(0, 100),
+    contact: String(contact).slice(0, 100),
+    ddName: String(ddName).slice(0, 100),
+    customerName: String(customerName).slice(0, 100),
+    orderId: String(orderId).slice(0, 100),
+    amount: String(amount).slice(0, 50),
+    orderDate: isDateStr(orderDate) ? orderDate : '',
+    photo: photo || null,
+    ocrOverride: false,
+    manuallyAdded: true,
+    submittedAt: Date.now(),
+    wonPrizes: []
   };
-  users.push(newUser);
-  writeUsers(users);
-  res.status(201).json({ username: newUser.username, createdAt: newUser.createdAt });
+  fs.writeFileSync(path.join(ENTRIES_DIR, id + '.json'), JSON.stringify(entry));
+  res.json({ id });
+});
+app.get('/api/entries', requireAdmin, (req, res) => {
+  const cfg = readConfig();
+  const rate = cfg.conversionRate || 100;
+  const tiers = cfg.tiers || [];
+  const maxTickets = cfg.maxTicketsPerPerson || 0;
+  const files = fs.readdirSync(ENTRIES_DIR).filter(f => f.endsWith('.json'));
+  const list = files.map(f => readJson(path.join(ENTRIES_DIR, f), null)).filter(Boolean);
+  list.forEach(entry => {
+    const count = computeTicketCount(entry.amount, rate, tiers, maxTickets);
+    entry.ticketCount = count;
+    entry.ticketIds = Array.from({ length: count }, (_, i) => entry.id + '-' + (i + 1));
+    entry.hasPhoto = !!entry.photo;
+    delete entry.photo;
+  });
+  list.sort((a, b) => b.submittedAt - a.submittedAt);
+  res.json(list);
+});
+app.get('/api/entries/:id/photo', requireAdmin, (req, res) => {
+  const id = String(req.params.id).replace(/[^A-Za-z0-9_-]/g, '');
+  const entry = readJson(path.join(ENTRIES_DIR, id + '.json'), null);
+  if (!entry) return res.status(404).json({ error: '登记资料不存在' });
+  res.json({ photo: entry.photo || null });
+});
+app.put('/api/entries/:id', requireAdmin, (req, res) => {
+  const file = path.join(ENTRIES_DIR, req.params.id + '.json');
+  const entry = readJson(file, null);
+  if (!entry) return res.status(404).json({ error: '登记资料不存在' });
+  const { orderId, amount, orderDate } = req.body || {};
+  if (orderId !== undefined) {
+    const newOrderId = String(orderId).trim();
+    if (!newOrderId) return res.status(400).json({ error: '订单号不能为空' });
+    const newOrderIdNorm = newOrderId.toLowerCase();
+    const existingFiles = fs.readdirSync(ENTRIES_DIR).filter(f => f.endsWith('.json') && f !== req.params.id + '.json');
+    const isDuplicate = existingFiles.some(f => {
+      const other = readJson(path.join(ENTRIES_DIR, f), null);
+      return other && String(other.orderId || '').trim().toLowerCase() === newOrderIdNorm;
+    });
+    if (isDuplicate) return res.status(400).json({ error: '该订单号已经登记过 / This Order ID has already been registered' });
+    entry.orderId = newOrderId.slice(0, 100);
+  }
+  if (amount !== undefined) {
+    const newAmount = String(amount).trim();
+    if (!newAmount) return res.status(400).json({ error: '金额不能为空' });
+    entry.amount = newAmount.slice(0, 50);
+  }
+  if (orderDate !== undefined) {
+    entry.orderDate = isDateStr(orderDate) ? orderDate : '';
+  }
+  entry.ocrOverride = false;
+  fs.writeFileSync(file, JSON.stringify(entry));
+  res.json({ ok: true });
+});
+app.delete('/api/entries/:id', requireAdmin, (req, res) => {
+  const file = path.join(ENTRIES_DIR, req.params.id + '.json');
+  if (fs.existsSync(file)) fs.unlinkSync(file);
+  res.json({ ok: true });
+});
+app.delete('/api/entries', requireAdmin, (req, res) => {
+  const files = fs.readdirSync(ENTRIES_DIR).filter(f => f.endsWith('.json'));
+  files.forEach(f => fs.unlinkSync(path.join(ENTRIES_DIR, f)));
+  res.json({ ok: true, deleted: files.length });
 });
 
-// 删除一个下线账号(只有管理员/上线能用,而且只能删自己开的)
-app.delete("/api/auth/downlines/:username", authMiddleware, (req, res) => {
-  if (req.user.role !== "admin") {
-    return res.status(403).json({ error: "没有权限" });
-  }
-  const users = readUsers();
-  const target = users.find((u) => u.username === req.params.username);
-  if (!target || target.upline !== req.user.username) {
-    return res.status(404).json({ error: "未找到该下线账号" });
-  }
-  const filtered = users.filter((u) => u.username !== req.params.username);
-  writeUsers(filtered);
-  res.status(204).end();
+/* ---------------- prizes ---------------- */
+app.get('/api/prizes', requireAdmin, (req, res) => {
+  res.json(readJson(PRIZES_FILE, []));
 });
-
-/* ============================================================
-   各种资料的读写函数(全部改成"每个账号自己一份")
-   ============================================================ */
-
-function sanitizePurchases(purchases) {
-  if (!Array.isArray(purchases)) return [];
-  return purchases
-    .map((p) => ({
-      date: p && p.date ? String(p.date).trim() : "",
-      product: p && p.product ? String(p.product).trim() : "",
-      amount: p && p.amount ? String(p.amount).trim() : "",
-      note: p && p.note ? String(p.note).trim() : "",
-    }))
-    .filter((p) => p.date || p.product || p.amount || p.note);
-}
-
-function sanitizeFollowUps(followUps) {
-  if (!Array.isArray(followUps)) return [];
-  return followUps
-    .map((f) => ({
-      date: f && f.date ? String(f.date).trim() : "",
-      note: f && f.note ? String(f.note).trim() : "",
-    }))
-    .filter((f) => f.date || f.note);
-}
-
-const VALID_CATEGORIES = ["new", "regular", "vip", "vvip"];
-function sanitizeCategory(category) {
-  return VALID_CATEGORIES.includes(category) ? category : "new";
-}
-
-const VALID_PROSPECT_STATUS = ["pending", "considering", "not_interested", "joined", "customer", "other_member", "unreachable"];
-function sanitizeProspectStatus(status) {
-  return VALID_PROSPECT_STATUS.includes(status) ? status : "pending";
-}
-
-const VALID_GENDERS = ["male", "female"];
-function sanitizeGender(gender) {
-  return VALID_GENDERS.includes(gender) ? gender : "";
-}
-
-const VALID_SAW_DEMO = ["yes", "no"];
-function sanitizeSawDemo(val) {
-  return VALID_SAW_DEMO.includes(val) ? val : "";
-}
-
-const VALID_PARTNER_TYPE = ["new_start", "builder", "leader"];
-function sanitizePartnerType(val) {
-  return VALID_PARTNER_TYPE.includes(val) ? val : "new_start";
-}
-
-// 新ABO清单项目:简单的勾选(是/否)
-function sanitizeChecklistBool(val) {
-  return val === true || val === "true";
-}
-
-function isValidDateOrEmpty(d) {
-  return !d || /^\d{4}-\d{2}-\d{2}$/.test(d);
-}
-
-// 生日只需要月/日,不需要年份;兼容旧数据(YYYY-MM-DD)自动去掉年份部分
-function toMonthDay(dateStr) {
-  if (!dateStr) return "";
-  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr.slice(5);
-  if (/^\d{2}-\d{2}$/.test(dateStr)) return dateStr;
-  return "";
-}
-
-function isValidMonthDayOrEmpty(md) {
-  if (!md) return true;
-  return /^(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.test(md);
-}
-
-function migrateCustomer(c) {
-  let next = c;
-  if (!Array.isArray(next.purchases)) {
-    // 兼容旧版本(单一 product / amount 字段),自动转换成购买记录数组
-    const purchases = (next.product || next.amount)
-      ? [{ date: "", product: next.product || "", amount: next.amount || "", note: "" }]
-      : [];
-    const { product, amount, ...rest } = next;
-    next = { ...rest, purchases };
+const VALID_TIERS = ['', '大奖', '二奖', '三奖'];
+app.post('/api/prizes', requireAdmin, (req, res) => {
+  const { name, qty, photo, value, guaranteedEligible, guaranteedQty, tier, outsideGift } = req.body || {};
+  if (!name || !String(name).trim()) return res.status(400).json({ error: '请输入奖品名称' });
+  const prizes = readJson(PRIZES_FILE, []);
+  const prize = { id: genId('PZ-', 6), name: String(name).slice(0, 100), qty: Math.max(1, parseInt(qty, 10) || 1), photo: photo || null, value: value ? String(value).slice(0, 30) : '', guaranteedEligible: !!guaranteedEligible, guaranteedQty: Math.max(0, parseInt(guaranteedQty, 10) || 0), tier: VALID_TIERS.includes(tier) ? tier : '', outsideGift: !!outsideGift, createdAt: Date.now() };
+  prizes.push(prize);
+  writeJson(PRIZES_FILE, prizes);
+  res.json(prize);
+});
+app.delete('/api/prizes/:id', requireAdmin, (req, res) => {
+  let prizes = readJson(PRIZES_FILE, []);
+  prizes = prizes.filter(p => p.id !== req.params.id);
+  writeJson(PRIZES_FILE, prizes);
+  res.json({ ok: true });
+});
+app.put('/api/prizes/:id', requireAdmin, (req, res) => {
+  const prizes = readJson(PRIZES_FILE, []);
+  const prize = prizes.find(p => p.id === req.params.id);
+  if (!prize) return res.status(404).json({ error: '奖品不存在' });
+  const { name, qty, photo, value, guaranteedEligible, guaranteedQty, tier, outsideGift } = req.body || {};
+  if (name && String(name).trim()) prize.name = String(name).slice(0, 100);
+  if (qty !== undefined) prize.qty = Math.max(0, parseInt(qty, 10) || 0);
+  if (value !== undefined) prize.value = value ? String(value).slice(0, 30) : '';
+  if (photo !== undefined) prize.photo = photo || null;
+  if (guaranteedEligible !== undefined) prize.guaranteedEligible = !!guaranteedEligible;
+  if (guaranteedQty !== undefined) prize.guaranteedQty = Math.max(0, parseInt(guaranteedQty, 10) || 0);
+  if (tier !== undefined) prize.tier = VALID_TIERS.includes(tier) ? tier : '';
+  if (outsideGift !== undefined) prize.outsideGift = !!outsideGift;
+  writeJson(PRIZES_FILE, prizes);
+  res.json(prize);
+});
+/* ---------------- draws ---------------- */
+app.get('/api/draws', requireAdmin, (req, res) => {
+  res.json(readJson(DRAWS_FILE, []));
+});
+app.post('/api/draws', requireAdmin, (req, res) => {
+  const { prizeId, entryId, guaranteed } = req.body || {};
+  const cfg = readConfig();
+  const prizes = readJson(PRIZES_FILE, []);
+  const prize = prizes.find(p => p.id === prizeId);
+  if (!prize) return res.status(400).json({ error: '奖品无效' });
+  if (guaranteed) {
+    if ((prize.guaranteedQty || 0) < 1) return res.status(400).json({ error: '该礼物幸运轮盘预留数量不足' });
+  } else {
+    if (prize.qty < 1) return res.status(400).json({ error: '奖品无效或数量不足' });
   }
-  if (!next.category) {
-    next = { ...next, category: "new" };
-  }
-  if (typeof next.gender !== "string") {
-    next = { ...next, gender: "" };
-  }
-  if (typeof next.lastMeeting !== "string") {
-    next = { ...next, lastMeeting: "" };
-  }
-  if (typeof next.sawDemo !== "string") {
-    next = { ...next, sawDemo: "" };
-  }
-  if (typeof next.preference !== "string") {
-    next = { ...next, preference: "" };
-  }
-  const migratedDate = toMonthDay(next.date);
-  if (migratedDate !== next.date) {
-    next = { ...next, date: migratedDate };
-  }
-  return next;
-}
+  const entryFile = path.join(ENTRIES_DIR, entryId + '.json');
+  const entry = readJson(entryFile, null);
+  if (!entry) return res.status(400).json({ error: '参与者不存在，可能已被删除' });
 
-function readData(username) {
-  try {
-    const raw = fs.readFileSync(userFilePath(username, "data.json"), "utf-8");
-    const parsed = JSON.parse(raw);
-    return parsed.map(migrateCustomer);
-  } catch (e) {
-    return [];
-  }
-}
-
-function writeData(username, customers) {
-  fs.mkdirSync(userDataDir(username), { recursive: true });
-  fs.writeFileSync(userFilePath(username, "data.json"), JSON.stringify(customers, null, 2), "utf-8");
-}
-
-function readProspects(username) {
-  try {
-    const raw = fs.readFileSync(userFilePath(username, "prospects.json"), "utf-8");
-    const parsed = JSON.parse(raw);
-    return parsed.map((p) => ({
-      id: p.id,
-      name: p.name || "",
-      gender: sanitizeGender(p.gender),
-      background: p.background || "",
-      date: toMonthDay(p.date),
-      phone: p.phone || "",
-      oppDate: isValidDateOrEmpty(p.oppDate) ? (p.oppDate || "") : "",
-      notes: p.notes || "",
-      status: sanitizeProspectStatus(p.status),
-      followUps: sanitizeFollowUps(p.followUps),
-      rejectionReason: (p.rejectionReason || "").toString().trim(),
-      createdAt: p.createdAt || "",
-      updatedAt: p.updatedAt || p.createdAt || "",
-    }));
-  } catch (e) {
-    return [];
-  }
-}
-
-function writeProspects(username, prospects) {
-  fs.mkdirSync(userDataDir(username), { recursive: true });
-  fs.writeFileSync(userFilePath(username, "prospects.json"), JSON.stringify(prospects, null, 2), "utf-8");
-}
-
-function readBirthdays(username) {
-  try {
-    const raw = fs.readFileSync(userFilePath(username, "birthdays.json"), "utf-8");
-    const parsed = JSON.parse(raw);
-    return parsed.map((b) => ({
-      id: b.id,
-      name: b.name || "",
-      gender: sanitizeGender(b.gender),
-      date: toMonthDay(b.date),
-      phone: b.phone || "",
-      notes: b.notes || "",
-    }));
-  } catch (e) {
-    return [];
-  }
-}
-
-function writeBirthdays(username, birthdays) {
-  fs.mkdirSync(userDataDir(username), { recursive: true });
-  fs.writeFileSync(userFilePath(username, "birthdays.json"), JSON.stringify(birthdays, null, 2), "utf-8");
-}
-
-// ---------- ABO(正式合伙人:名字/电话/ADA/生日/PIN/类型)----------
-
-function readPartners(username) {
-  try {
-    const raw = fs.readFileSync(userFilePath(username, "partners.json"), "utf-8");
-    const parsed = JSON.parse(raw);
-    return parsed.map((p) => ({
-      id: p.id,
-      name: p.name || "",
-      phone: p.phone || "",
-      ada: p.ada || "",
-      date: toMonthDay(p.date),
-      pin: p.pin || "",
-      partnerType: sanitizePartnerType(p.partnerType),
-      notes: p.notes || "",
-      createdAt: p.createdAt || "",
-      updatedAt: p.updatedAt || p.createdAt || "",
-    }));
-  } catch (e) {
-    return [];
-  }
-}
-
-function writePartners(username, partners) {
-  fs.mkdirSync(userDataDir(username), { recursive: true });
-  fs.writeFileSync(userFilePath(username, "partners.json"), JSON.stringify(partners, null, 2), "utf-8");
-}
-
-function partnerValidationError(body) {
-  const { name, date } = body;
-  if (!name || !name.trim()) return "姓名不能为空";
-  if (date && !isValidMonthDayOrEmpty(date)) return "生日日期格式不正确";
-  return null;
-}
-
-function buildPartnerFields(body) {
-  const { name, phone, ada, date, pin, partnerType, notes } = body;
-  return {
-    name: name.trim(),
-    phone: (phone || "").toString().trim(),
-    ada: (ada || "").toString().trim(),
-    date: toMonthDay(date),
-    pin: (pin || "").toString().trim(),
-    partnerType: sanitizePartnerType(partnerType),
-    notes: (notes || "").toString().trim(),
+  const maxWins = cfg.maxWinsPerPerson || 0;
+  const custKey = (e) => {
+    const k = String((e && e.customerName) || '').trim().toLowerCase().replace(/\s+/g, ' ');
+    return (k && k !== '—' && k !== '-') ? k : '';
   };
-}
-
-// ---------- 跟进对象(新ABO / 刚OPP完成的伙伴)----------
-
-function readAbos(username) {
-  try {
-    const raw = fs.readFileSync(userFilePath(username, "abos.json"), "utf-8");
-    const parsed = JSON.parse(raw);
-    return parsed.map((a) => ({
-      id: a.id,
-      name: a.name || "",
-      gender: sanitizeGender(a.gender),
-      phone: a.phone || "",
-      class2: sanitizeChecklistBool(a.class2),
-      hasList: sanitizeChecklistBool(a.hasList),
-      watchedDemo: sanitizeChecklistBool(a.watchedDemo),
-      visitedHQ: sanitizeChecklistBool(a.visitedHQ),
-      centerMeeting: sanitizeChecklistBool(a.centerMeeting),
-      houseMeeting: sanitizeChecklistBool(a.houseMeeting),
-      abcUpline: sanitizeChecklistBool(a.abcUpline),
-      audioListened: a.audioListened || "",
-      meetingsAttended: a.meetingsAttended || "",
-      currentStatus: a.currentStatus || "",
-      notes: a.notes || "",
-      createdAt: a.createdAt || "",
-      updatedAt: a.updatedAt || a.createdAt || "",
-    }));
-  } catch (e) {
-    return [];
+  let currentWins = (entry.wonPrizes || []).length;
+  const myKey = custKey(entry);
+  if (myKey) {
+    currentWins = 0;
+    for (const f of fs.readdirSync(ENTRIES_DIR).filter(f => f.endsWith('.json'))) {
+      const other = readJson(path.join(ENTRIES_DIR, f), null);
+      if (other && custKey(other) === myKey) currentWins += (other.wonPrizes || []).length;
+    }
   }
-}
-
-function writeAbos(username, abos) {
-  fs.mkdirSync(userDataDir(username), { recursive: true });
-  fs.writeFileSync(userFilePath(username, "abos.json"), JSON.stringify(abos, null, 2), "utf-8");
-}
-
-function aboValidationError(body) {
-  const { name } = body;
-  if (!name || !name.trim()) return "姓名不能为空";
-  return null;
-}
-
-function buildAboFields(body) {
-  const {
-    name, gender, phone,
-    class2, hasList, watchedDemo, visitedHQ, centerMeeting, houseMeeting, abcUpline,
-    audioListened, meetingsAttended, currentStatus, notes,
-  } = body;
-  return {
-    name: name.trim(),
-    gender: sanitizeGender(gender),
-    phone: (phone || "").toString().trim(),
-    class2: sanitizeChecklistBool(class2),
-    hasList: sanitizeChecklistBool(hasList),
-    watchedDemo: sanitizeChecklistBool(watchedDemo),
-    visitedHQ: sanitizeChecklistBool(visitedHQ),
-    centerMeeting: sanitizeChecklistBool(centerMeeting),
-    houseMeeting: sanitizeChecklistBool(houseMeeting),
-    abcUpline: sanitizeChecklistBool(abcUpline),
-    audioListened: (audioListened || "").toString().trim(),
-    meetingsAttended: (meetingsAttended || "").toString().trim(),
-    currentStatus: (currentStatus || "").toString().trim(),
-    notes: (notes || "").toString().trim(),
-  };
-}
-
-function birthdayValidationError(body) {
-  const { name, date } = body;
-  if (!name || !name.trim()) return "姓名不能为空";
-  if (!date || !isValidMonthDayOrEmpty(date) || date.length !== 5) return "生日日期格式不正确";
-  return null;
-}
-
-function buildBirthdayFields(body) {
-  const { name, gender, date, phone, notes } = body;
-  return {
-    name: name.trim(),
-    gender: sanitizeGender(gender),
-    date: toMonthDay(date),
-    phone: (phone || "").toString().trim(),
-    notes: (notes || "").toString().trim(),
-  };
-}
-
-function prospectValidationError(body) {
-  const { name, date, oppDate } = body;
-  if (!name || !name.trim()) return "姓名不能为空";
-  if (!isValidMonthDayOrEmpty(date)) return "生日日期格式不正确";
-  if (!isValidDateOrEmpty(oppDate)) return "日期格式不正确";
-  return null;
-}
-
-function buildProspectFields(body) {
-  const { name, gender, background, date, phone, oppDate, notes, status, followUps, rejectionReason } = body;
-  return {
-    name: name.trim(),
-    gender: sanitizeGender(gender),
-    background: (background || "").toString().trim(),
-    date: toMonthDay(date),
-    phone: (phone || "").toString().trim(),
-    oppDate: isValidDateOrEmpty(oppDate) ? (oppDate || "") : "",
-    notes: (notes || "").toString().trim(),
-    status: sanitizeProspectStatus(status),
-    followUps: sanitizeFollowUps(followUps),
-    rejectionReason: (rejectionReason || "").toString().trim(),
-  };
-}
-
-function validationError(body) {
-  const { name, date } = body;
-  if (!name || !name.trim()) return "姓名不能为空";
-  if (date && !isValidMonthDayOrEmpty(date)) return "生日日期格式不正确";
-  return null;
-}
-
-function buildCustomerFields(body) {
-  const { name, date, phone, emoji, gender, purchases, notes, category, lastMeeting, sawDemo, preference } = body;
-  return {
-    name: name.trim(),
-    date: toMonthDay(date),
-    phone: (phone || "").toString().trim(),
-    gender: sanitizeGender(gender),
-    emoji: (emoji && emoji.trim()) || "",
-    purchases: sanitizePurchases(purchases),
-    notes: (notes || "").toString().trim(),
-    category: sanitizeCategory(category),
-    lastMeeting: isValidDateOrEmpty(lastMeeting) ? (lastMeeting || "") : "",
-    sawDemo: sanitizeSawDemo(sawDemo),
-    preference: (preference || "").toString().trim(),
-  };
-}
-
-// ---------- Dashboard 展示区(海报 + 标语 + 公告)----------
-
-function readDashboard(username) {
-  try {
-    const raw = fs.readFileSync(userFilePath(username, "dashboard.json"), "utf-8");
-    const parsed = JSON.parse(raw);
-    return {
-      poster: parsed.poster || "",
-      tagline: parsed.tagline || "",
-      announcement: parsed.announcement || "",
-    };
-  } catch (e) {
-    return { poster: "", tagline: "", announcement: "" };
+  if (maxWins > 0 && currentWins >= maxWins) {
+    return res.status(400).json({ error: '该顾客已达到最多中奖次数上限' });
   }
-}
+  if (guaranteed) {
+    const threshold = cfg.guaranteedGiftThreshold || 0;
+    if (threshold > 0 && (parseFloat(entry.amount) || 0) < threshold) {
+      return res.status(400).json({ error: '该顾客金额未达到幸运轮盘门槛' });
+    }
+    if (!prize.guaranteedEligible) {
+      return res.status(400).json({ error: '该礼物未开放用于幸运轮盘' });
+    }
+    const allDraws = readJson(DRAWS_FILE, []);
+    const alreadyGuaranteed = allDraws.some(d => d.entryId === entryId && d.guaranteed);
+    if (alreadyGuaranteed) {
+      return res.status(400).json({ error: '该顾客已经领取过幸运轮盘礼物，每人限领一次' });
+    }
+  }
 
-function writeDashboard(username, data) {
-  fs.mkdirSync(userDataDir(username), { recursive: true });
-  const safe = {
-    poster: (data.poster || "").toString(),
-    tagline: (data.tagline || "").toString().trim(),
-    announcement: (data.announcement || "").toString().trim(),
+  const draw = {
+    id: genId('DR-', 6),
+    prizeId, prizeName: prize.name, prizeValue: prize.value || '',
+    entryId, winnerName: entry.name, winnerContact: entry.contact,
+    winnerDdName: entry.ddName || '', winnerCustomerName: entry.customerName || '',
+    winnerOrderId: entry.orderId,
+    guaranteed: !!guaranteed,
+    timestamp: Date.now()
   };
-  fs.writeFileSync(userFilePath(username, "dashboard.json"), JSON.stringify(safe, null, 2), "utf-8");
-  return safe;
+  const draws = readJson(DRAWS_FILE, []);
+  draws.push(draw);
+  writeJson(DRAWS_FILE, draws);
+
+  if (guaranteed) { prize.guaranteedQty = Math.max(0, (prize.guaranteedQty || 0) - 1); }
+  else { prize.qty -= 1; }
+  writeJson(PRIZES_FILE, prizes);
+
+  entry.wonPrizes = entry.wonPrizes || [];
+  entry.wonPrizes.push(prize.name);
+  fs.writeFileSync(entryFile, JSON.stringify(entry));
+
+  res.json(draw);
+});
+app.delete('/api/draws/:id', requireAdmin, (req, res) => {
+  let draws = readJson(DRAWS_FILE, []);
+  const draw = draws.find(d => d.id === req.params.id);
+  if (!draw) return res.status(404).json({ error: '记录不存在' });
+  draws = draws.filter(d => d.id !== req.params.id);
+  writeJson(DRAWS_FILE, draws);
+
+  const prizes = readJson(PRIZES_FILE, []);
+  const prize = prizes.find(p => p.id === draw.prizeId);
+  if (prize) {
+    if (draw.guaranteed) prize.guaranteedQty = (prize.guaranteedQty || 0) + 1;
+    else prize.qty += 1;
+    writeJson(PRIZES_FILE, prizes);
+  }
+
+  const entryFile = path.join(ENTRIES_DIR, draw.entryId + '.json');
+  const entry = readJson(entryFile, null);
+  if (entry && entry.wonPrizes) {
+    const idx = entry.wonPrizes.indexOf(draw.prizeName);
+    if (idx > -1) entry.wonPrizes.splice(idx, 1);
+    fs.writeFileSync(entryFile, JSON.stringify(entry));
+  }
+  res.json({ ok: true });
+});
+app.delete('/api/draws', requireAdmin, (req, res) => {
+  const draws = readJson(DRAWS_FILE, []);
+  const prizes = readJson(PRIZES_FILE, []);
+  draws.forEach(draw => {
+    const prize = prizes.find(p => p.id === draw.prizeId);
+    if (prize) {
+      if (draw.guaranteed) prize.guaranteedQty = (prize.guaranteedQty || 0) + 1;
+      else prize.qty += 1;
+    }
+    const entryFile = path.join(ENTRIES_DIR, draw.entryId + '.json');
+    const entry = readJson(entryFile, null);
+    if (entry && entry.wonPrizes) {
+      const idx = entry.wonPrizes.indexOf(draw.prizeName);
+      if (idx > -1) entry.wonPrizes.splice(idx, 1);
+      fs.writeFileSync(entryFile, JSON.stringify(entry));
+    }
+  });
+  writeJson(PRIZES_FILE, prizes);
+  writeJson(DRAWS_FILE, []);
+  res.json({ ok: true, reset: draws.length });
+});
+
+/* ---------------- archives (snapshot current event, start fresh, restore) ---------------- */
+const ACTIVE_ARCHIVE_FILE = path.join(DATA_DIR, 'active-archive.json');
+function readActiveArchiveId() {
+  const d = readJson(ACTIVE_ARCHIVE_FILE, { archiveId: null });
+  return d.archiveId || null;
+}
+function writeActiveArchiveId(id) {
+  writeJson(ACTIVE_ARCHIVE_FILE, { archiveId: id || null });
+}
+function snapshotActiveInto(archiveDir, label) {
+  fs.mkdirSync(path.join(archiveDir, 'entries'), { recursive: true });
+  const oldEntryFiles = fs.readdirSync(path.join(archiveDir, 'entries'));
+  oldEntryFiles.forEach(f => fs.unlinkSync(path.join(archiveDir, 'entries', f)));
+  const entryFiles = fs.readdirSync(ENTRIES_DIR).filter(f => f.endsWith('.json'));
+  entryFiles.forEach(f => {
+    fs.copyFileSync(path.join(ENTRIES_DIR, f), path.join(archiveDir, 'entries', f));
+  });
+  fs.copyFileSync(PRIZES_FILE, path.join(archiveDir, 'prizes.json'));
+  fs.copyFileSync(DRAWS_FILE, path.join(archiveDir, 'draws.json'));
+  fs.copyFileSync(CONFIG_FILE, path.join(archiveDir, 'config.json'));
+  const draws = readJson(DRAWS_FILE, []);
+  const cfg = readConfig();
+  const existingMeta = readJson(path.join(archiveDir, 'meta.json'), null);
+  const meta = {
+    id: path.basename(archiveDir),
+    label: label || (existingMeta && existingMeta.label) || (cfg.title || '未命名活动') + ' - ' + new Date().toLocaleString(),
+    createdAt: (existingMeta && existingMeta.createdAt) || Date.now(),
+    updatedAt: Date.now(),
+    entryCount: entryFiles.length,
+    drawCount: draws.length,
+    title: cfg.title || ''
+  };
+  writeJson(path.join(archiveDir, 'meta.json'), meta);
+  return meta;
+}
+function clearActiveData() {
+  const entryFiles = fs.readdirSync(ENTRIES_DIR).filter(f => f.endsWith('.json'));
+  entryFiles.forEach(f => fs.unlinkSync(path.join(ENTRIES_DIR, f)));
+  writeJson(PRIZES_FILE, []);
+  writeJson(DRAWS_FILE, []);
+  const cfg = readConfig();
+  const fresh = defaultConfig();
+  fresh.passwordHash = cfg.passwordHash;
+  fresh.passwordSalt = cfg.passwordSalt;
+  writeConfig(fresh);
 }
 
-/* ============================================================
-   顾客 API(全部需要登录;GET 支持上线用 ?viewAs= 查看下线资料,只读)
-   ============================================================ */
+app.get('/api/archives', requireAdmin, (req, res) => {
+  const ids = fs.readdirSync(ARCHIVES_DIR).filter(f => fs.statSync(path.join(ARCHIVES_DIR, f)).isDirectory());
+  const list = ids.map(id => readJson(path.join(ARCHIVES_DIR, id, 'meta.json'), null)).filter(Boolean);
+  list.sort((a, b) => (b.updatedAt||b.createdAt) - (a.updatedAt||a.createdAt));
+  const activeId = readActiveArchiveId();
+  list.forEach(m => { m.isActive = m.id === activeId; });
+  res.json(list);
+});
+app.post('/api/archives', requireAdmin, (req, res) => {
+  const id = genId('AR-', 8);
+  const archiveDir = path.join(ARCHIVES_DIR, id);
+  const meta = snapshotActiveInto(archiveDir, (req.body && req.body.label) || '');
+  clearActiveData();
+  writeActiveArchiveId(null);
+  res.json(meta);
+});
+app.get('/api/archives/:id', requireAdmin, (req, res) => {
+  const archiveDir = path.join(ARCHIVES_DIR, req.params.id);
+  const meta = readJson(path.join(archiveDir, 'meta.json'), null);
+  if (!meta) return res.status(404).json({ error: '存档不存在' });
+  const cfg = readJson(path.join(archiveDir, 'config.json'), {});
+  const rate = cfg.conversionRate || 100;
+  const tiers = cfg.tiers || [];
+  const maxTickets = cfg.maxTicketsPerPerson || 0;
+  const entriesDir = path.join(archiveDir, 'entries');
+  const entryFiles = fs.existsSync(entriesDir) ? fs.readdirSync(entriesDir).filter(f => f.endsWith('.json')) : [];
+  const entries = entryFiles.map(f => readJson(path.join(entriesDir, f), null)).filter(Boolean);
+  entries.forEach(entry => {
+    const count = computeTicketCount(entry.amount, rate, tiers, maxTickets);
+    entry.ticketCount = count;
+  });
+  entries.sort((a, b) => b.submittedAt - a.submittedAt);
+  const prizes = readJson(path.join(archiveDir, 'prizes.json'), []);
+  const draws = readJson(path.join(archiveDir, 'draws.json'), []);
+  draws.sort((a, b) => b.timestamp - a.timestamp);
+  res.json({ meta, config: { title: cfg.title, subtitle: cfg.subtitle }, entries, prizes, draws });
+});
+app.post('/api/archives/:id/restore', requireAdmin, (req, res) => {
+  const archiveDir = path.join(ARCHIVES_DIR, req.params.id);
+  const meta = readJson(path.join(archiveDir, 'meta.json'), null);
+  if (!meta) return res.status(404).json({ error: '存档不存在' });
 
-app.get("/api/customers", authMiddleware, (req, res) => {
-  res.json(readData(resolveDataUsername(req, true)));
+  const currentActiveId = readActiveArchiveId();
+  if (currentActiveId && currentActiveId !== req.params.id) {
+    const currentArchiveDir = path.join(ARCHIVES_DIR, currentActiveId);
+    if (fs.existsSync(currentArchiveDir)) {
+      snapshotActiveInto(currentArchiveDir, null);
+    }
+  } else if (!currentActiveId) {
+    const autoArchiveId = genId('AR-', 8);
+    snapshotActiveInto(path.join(ARCHIVES_DIR, autoArchiveId), '自动备份 - ' + new Date().toLocaleString());
+  }
+  clearActiveData();
+
+  const entriesDir = path.join(archiveDir, 'entries');
+  if (fs.existsSync(entriesDir)) {
+    fs.readdirSync(entriesDir).filter(f => f.endsWith('.json')).forEach(f => {
+      fs.copyFileSync(path.join(entriesDir, f), path.join(ENTRIES_DIR, f));
+    });
+  }
+  const archivedPrizes = readJson(path.join(archiveDir, 'prizes.json'), []);
+  writeJson(PRIZES_FILE, archivedPrizes);
+  const archivedDraws = readJson(path.join(archiveDir, 'draws.json'), []);
+  writeJson(DRAWS_FILE, archivedDraws);
+
+  const archivedConfig = readJson(path.join(archiveDir, 'config.json'), defaultConfig());
+  const currentCfg = readConfig();
+  archivedConfig.passwordHash = currentCfg.passwordHash;
+  archivedConfig.passwordSalt = currentCfg.passwordSalt;
+  writeConfig(archivedConfig);
+
+  writeActiveArchiveId(req.params.id);
+  res.json({ ok: true });
+});
+function rimraf(dir) {
+  if (!fs.existsSync(dir)) return;
+  fs.readdirSync(dir).forEach(f => {
+    const p = path.join(dir, f);
+    if (fs.statSync(p).isDirectory()) rimraf(p);
+    else fs.unlinkSync(p);
+  });
+  fs.rmdirSync(dir);
+}
+app.delete('/api/archives/:id', requireAdmin, (req, res) => {
+  const archiveDir = path.join(ARCHIVES_DIR, req.params.id);
+  const meta = readJson(path.join(archiveDir, 'meta.json'), null);
+  if (!meta) return res.status(404).json({ error: '存档不存在' });
+  rimraf(archiveDir);
+  if (readActiveArchiveId() === req.params.id) writeActiveArchiveId(null);
+  res.json({ ok: true });
 });
 
-app.post("/api/customers", authMiddleware, (req, res) => {
-  const err = validationError(req.body);
-  if (err) return res.status(400).json({ error: err });
-  const username = req.user.username;
-  const customers = readData(username);
-  const now = new Date().toISOString();
-  const newCustomer = { id: Date.now().toString(), ...buildCustomerFields(req.body), createdAt: now, updatedAt: now };
-  customers.push(newCustomer);
-  writeData(username, customers);
-  res.status(201).json(newCustomer);
+app.use(express.static(path.join(__dirname, 'public')));
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-app.put("/api/customers/:id", authMiddleware, (req, res) => {
-  const err = validationError(req.body);
-  if (err) return res.status(400).json({ error: err });
-  const username = req.user.username;
-  const customers = readData(username);
-  const idx = customers.findIndex((c) => c.id === req.params.id);
-  if (idx === -1) return res.status(404).json({ error: "未找到该记录" });
-  customers[idx] = { id: customers[idx].id, ...buildCustomerFields(req.body), createdAt: customers[idx].createdAt || new Date().toISOString(), updatedAt: new Date().toISOString() };
-  writeData(username, customers);
-  res.json(customers[idx]);
+const PORT = process.env.PORT || 3000;
+const server = http.createServer(app);
+const wss = new WebSocketServer({ server });
+let lastLiveState = null;
+wss.on('connection', (ws) => {
+  if (lastLiveState) {
+    try { ws.send(JSON.stringify(lastLiveState)); } catch (e) {}
+  }
+  ws.on('message', (raw) => {
+    let msg;
+    try { msg = JSON.parse(raw); } catch (e) { return; }
+    if (!msg || (msg.type !== 'draw_start' && msg.type !== 'draw_reveal' && msg.type !== 'prize_selected' && msg.type !== 'focus')) return;
+    // only a logged-in admin session may broadcast live draw events
+    const token = msg.token;
+    const expiry = token && tokens.get(token);
+    if (!expiry || expiry < Date.now()) return;
+    const outbound = Object.assign({}, msg);
+    delete outbound.token;
+    lastLiveState = outbound;
+    const payload = JSON.stringify(outbound);
+    wss.clients.forEach((client) => {
+      if (client !== ws && client.readyState === 1) {
+        try { client.send(payload); } catch (e) {}
+      }
+    });
+  });
 });
-
-app.delete("/api/customers/:id", authMiddleware, (req, res) => {
-  const username = req.user.username;
-  const customers = readData(username);
-  const filtered = customers.filter((c) => c.id !== req.params.id);
-  if (filtered.length === customers.length) return res.status(404).json({ error: "未找到该记录" });
-  writeData(username, filtered);
-  res.status(204).end();
-});
-
-/* ============================================================
-   OPP 名单 API
-   ============================================================ */
-
-app.get("/api/prospects", authMiddleware, (req, res) => {
-  res.json(readProspects(resolveDataUsername(req, true)));
-});
-
-app.post("/api/prospects", authMiddleware, (req, res) => {
-  const err = prospectValidationError(req.body);
-  if (err) return res.status(400).json({ error: err });
-  const username = req.user.username;
-  const prospects = readProspects(username);
-  const now = new Date().toISOString();
-  const newProspect = { id: Date.now().toString(), ...buildProspectFields(req.body), createdAt: now, updatedAt: now };
-  prospects.push(newProspect);
-  writeProspects(username, prospects);
-  res.status(201).json(newProspect);
-});
-
-app.put("/api/prospects/:id", authMiddleware, (req, res) => {
-  const err = prospectValidationError(req.body);
-  if (err) return res.status(400).json({ error: err });
-  const username = req.user.username;
-  const prospects = readProspects(username);
-  const idx = prospects.findIndex((p) => p.id === req.params.id);
-  if (idx === -1) return res.status(404).json({ error: "未找到该记录" });
-  prospects[idx] = { id: prospects[idx].id, ...buildProspectFields(req.body), createdAt: prospects[idx].createdAt || new Date().toISOString(), updatedAt: new Date().toISOString() };
-  writeProspects(username, prospects);
-  res.json(prospects[idx]);
-});
-
-app.delete("/api/prospects/:id", authMiddleware, (req, res) => {
-  const username = req.user.username;
-  const prospects = readProspects(username);
-  const filtered = prospects.filter((p) => p.id !== req.params.id);
-  if (filtered.length === prospects.length) return res.status(404).json({ error: "未找到该记录" });
-  writeProspects(username, filtered);
-  res.status(204).end();
-});
-
-/* ============================================================
-   生日名单 API
-   ============================================================ */
-
-app.get("/api/birthdays", authMiddleware, (req, res) => {
-  res.json(readBirthdays(resolveDataUsername(req, true)));
-});
-
-app.post("/api/birthdays", authMiddleware, (req, res) => {
-  const err = birthdayValidationError(req.body);
-  if (err) return res.status(400).json({ error: err });
-  const username = req.user.username;
-  const birthdays = readBirthdays(username);
-  const newBirthday = { id: Date.now().toString(), ...buildBirthdayFields(req.body) };
-  birthdays.push(newBirthday);
-  writeBirthdays(username, birthdays);
-  res.status(201).json(newBirthday);
-});
-
-app.put("/api/birthdays/:id", authMiddleware, (req, res) => {
-  const err = birthdayValidationError(req.body);
-  if (err) return res.status(400).json({ error: err });
-  const username = req.user.username;
-  const birthdays = readBirthdays(username);
-  const idx = birthdays.findIndex((b) => b.id === req.params.id);
-  if (idx === -1) return res.status(404).json({ error: "未找到该记录" });
-  birthdays[idx] = { id: birthdays[idx].id, ...buildBirthdayFields(req.body) };
-  writeBirthdays(username, birthdays);
-  res.json(birthdays[idx]);
-});
-
-app.delete("/api/birthdays/:id", authMiddleware, (req, res) => {
-  const username = req.user.username;
-  const birthdays = readBirthdays(username);
-  const filtered = birthdays.filter((b) => b.id !== req.params.id);
-  if (filtered.length === birthdays.length) return res.status(404).json({ error: "未找到该记录" });
-  writeBirthdays(username, filtered);
-  res.status(204).end();
-});
-
-/* ============================================================
-   跟进对象(新ABO / 刚OPP完成的伙伴)API
-   ============================================================ */
-
-app.get("/api/abos", authMiddleware, (req, res) => {
-  res.json(readAbos(resolveDataUsername(req, true)));
-});
-
-app.post("/api/abos", authMiddleware, (req, res) => {
-  const err = aboValidationError(req.body);
-  if (err) return res.status(400).json({ error: err });
-  const username = req.user.username;
-  const abos = readAbos(username);
-  const now = new Date().toISOString();
-  const newAbo = { id: Date.now().toString(), createdAt: now, updatedAt: now, ...buildAboFields(req.body) };
-  abos.push(newAbo);
-  writeAbos(username, abos);
-  res.status(201).json(newAbo);
-});
-
-app.put("/api/abos/:id", authMiddleware, (req, res) => {
-  const err = aboValidationError(req.body);
-  if (err) return res.status(400).json({ error: err });
-  const username = req.user.username;
-  const abos = readAbos(username);
-  const idx = abos.findIndex((a) => a.id === req.params.id);
-  if (idx === -1) return res.status(404).json({ error: "未找到该记录" });
-  abos[idx] = { id: abos[idx].id, createdAt: abos[idx].createdAt || new Date().toISOString(), updatedAt: new Date().toISOString(), ...buildAboFields(req.body) };
-  writeAbos(username, abos);
-  res.json(abos[idx]);
-});
-
-app.delete("/api/abos/:id", authMiddleware, (req, res) => {
-  const username = req.user.username;
-  const abos = readAbos(username);
-  const filtered = abos.filter((a) => a.id !== req.params.id);
-  if (filtered.length === abos.length) return res.status(404).json({ error: "未找到该记录" });
-  writeAbos(username, filtered);
-  res.status(204).end();
-});
-
-/* ============================================================
-   ABO(正式合伙人)API
-   ============================================================ */
-
-app.get("/api/partners", authMiddleware, (req, res) => {
-  res.json(readPartners(resolveDataUsername(req, true)));
-});
-
-app.post("/api/partners", authMiddleware, (req, res) => {
-  const err = partnerValidationError(req.body);
-  if (err) return res.status(400).json({ error: err });
-  const username = req.user.username;
-  const partners = readPartners(username);
-  const now = new Date().toISOString();
-  const newPartner = { id: Date.now().toString(), ...buildPartnerFields(req.body), createdAt: now, updatedAt: now };
-  partners.push(newPartner);
-  writePartners(username, partners);
-  res.status(201).json(newPartner);
-});
-
-app.put("/api/partners/:id", authMiddleware, (req, res) => {
-  const err = partnerValidationError(req.body);
-  if (err) return res.status(400).json({ error: err });
-  const username = req.user.username;
-  const partners = readPartners(username);
-  const idx = partners.findIndex((p) => p.id === req.params.id);
-  if (idx === -1) return res.status(404).json({ error: "未找到该记录" });
-  partners[idx] = { id: partners[idx].id, ...buildPartnerFields(req.body), createdAt: partners[idx].createdAt || new Date().toISOString(), updatedAt: new Date().toISOString() };
-  writePartners(username, partners);
-  res.json(partners[idx]);
-});
-
-app.delete("/api/partners/:id", authMiddleware, (req, res) => {
-  const username = req.user.username;
-  const partners = readPartners(username);
-  const filtered = partners.filter((p) => p.id !== req.params.id);
-  if (filtered.length === partners.length) return res.status(404).json({ error: "未找到该记录" });
-  writePartners(username, filtered);
-  res.status(204).end();
-});
-
-/* ============================================================
-   Dashboard 展示区 API
-   ============================================================ */
-
-app.get("/api/dashboard", authMiddleware, (req, res) => {
-  res.json(readDashboard(resolveDataUsername(req, true)));
-});
-
-app.put("/api/dashboard", authMiddleware, (req, res) => {
-  const saved = writeDashboard(req.user.username, req.body || {});
-  res.json(saved);
-});
-
-app.listen(PORT, () => {
-  console.log(`服务器已启动,监听端口 ${PORT}`);
-});
+server.listen(PORT, () => console.log('幸运抽奖系统 running on port ' + PORT));
